@@ -2,10 +2,11 @@
 
 A streaming library for esp32 with a vs1053 mp3/aac/ogg decoder.
 
-Plays chunked streams and parses some of the metadata.
-Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
+Plays http, https (insecure mode) and chunked streams and parses the metadata.
 
 This library depends on the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
+
+Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
 
 Install `ESP_VS1053_Library` and `ESP32_VS1053_Stream` in your Arduino library folder.
 
