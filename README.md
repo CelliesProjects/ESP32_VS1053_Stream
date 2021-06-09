@@ -56,8 +56,13 @@ void audio_showstation(const char* info) {
     Serial.printf("showstation: %s\n", info);
 }
 
+void audio_showstreamtitle(const char* info) {
+    Serial.printf("streamtitle: %s\n", info);
+}
+
 void audio_eof_stream(const char* info) {
     Serial.printf("eof: %s\n", info);
+}
 ```
 
 
