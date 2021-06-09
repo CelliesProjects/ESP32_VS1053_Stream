@@ -18,13 +18,13 @@ Open `VS1053.h` and move `void write_register(uint8_t _reg, uint16_t _value) con
 ## Example code
 
 ```c++
-#include <vs1053_Stream.h>
+#include <ESP32_VS1053_Stream.h>
 
 #define VS1053_CS     5
 #define VS1053_DCS    21
 #define VS1053_DREQ   22
 
-vs1053_Stream stream;
+ESP32_VS1053_Stream stream;
 
 const char* SSID = "xxx";
 const char* PSK = "xxx";
@@ -41,7 +41,7 @@ void setup() {
 
     SPI.begin();  /* start SPI before starting decoder */
 
-    stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ));
+    stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ);
 
     stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
     Serial.print("codec:");
@@ -58,7 +58,6 @@ void audio_showstation(const char* info) {
 
 void audio_eof_stream(const char* info) {
     Serial.printf("eof: %s\n", info);
-}
 ```
 
 
