@@ -19,6 +19,8 @@ void setup() {
     while (!WiFi.isConnected())
         delay(10);
 
+    Serial.println("connected - starting stream");
+
     SPI.begin();  /* start SPI before starting decoder */
 
     stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ);
@@ -34,6 +36,10 @@ void loop() {
 
 void audio_showstation(const char* info) {
     Serial.printf("showstation: %s\n", info);
+}
+
+void audio_showstreamtitle(const char* info) {
+    Serial.printf("streamtitle: %s\n", info);
 }
 
 void audio_eof_stream(const char* info) {
