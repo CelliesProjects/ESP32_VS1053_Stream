@@ -8,6 +8,8 @@ This library depends on the [ESP_VS1053_Library](https://github.com/baldram/ESP_
 
 Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
 
+## How to
+
 Install `ESP_VS1053_Library` and `ESP32_VS1053_Stream` in your Arduino library folder.
 
 For now you will have to modify `ESP_VS1053_Library` to be able to load the latest firmware patch. [A commit addressing this issue](https://github.com/baldram/ESP_VS1053_Library/pull/65) has been opened at the `ESP_VS1053_Library` repo.
