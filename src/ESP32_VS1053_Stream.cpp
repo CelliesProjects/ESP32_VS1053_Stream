@@ -167,8 +167,8 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                 else if (_http->header(CONTENT_TYPE).equals("audio/mpeg"))
                     _currentMimetype = MP3;
 
-                //else if (_http->header(CONTENT_TYPE).equals("audio/ogg"))
-                //    _currentMimetype = OGG;
+                else if (_http->header(CONTENT_TYPE).equals("audio/ogg"))
+                    _currentMimetype = OGG;
 
                 else if (_http->header(CONTENT_TYPE).equals("audio/wav"))
                     _currentMimetype = WAV;
@@ -375,7 +375,7 @@ void ESP32_VS1053_Stream::loop() {
 #endif
 
     if (_startMute) {
-        const auto WAIT_TIME_MS = (_currentMimetype == MP3) ? 60 : 120;
+        const auto WAIT_TIME_MS = (_currentMimetype == MP3) ? 60 : 100;
         if ((unsigned long)millis() - _startMute > WAIT_TIME_MS) {
             _vs1053->setVolume(_volume);
             _startMute = 0;
