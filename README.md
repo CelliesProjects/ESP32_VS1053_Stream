@@ -1,16 +1,20 @@
 # ESP32_VS1053_Stream
 
-A streaming library for esp32 with a vs1053 mp3/aac/ogg decoder.
+A streaming library for esp32 with a vs1053 mp3/ogg/aac/wav decoder.
 
 Plays http, https (insecure mode) and chunked streams and parses the metadata.
+
+Supports playback of mp3, ogg, aac, aac+ and wav files/streams.
+
+Playlists are parsed and the first link found is opened.
 
 This library depends on the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
 Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
 
-## How to
+## How to install
 
-Install `ESP_VS1053_Library` and `ESP32_VS1053_Stream` in your Arduino library folder.
+Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and `ESP32_VS1053_Stream` in your Arduino library folder.
 
 ## Example code
 
@@ -36,7 +40,6 @@ void setup() {
 
     while (!WiFi.isConnected())
         delay(10);
-
     Serial.println("connected - starting stream");
 
     SPI.begin();  /* start SPI before starting decoder */
@@ -44,6 +47,7 @@ void setup() {
     stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ);
 
     stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
+
     Serial.print("codec:");
     Serial.println(stream.currentCodec());
 }
