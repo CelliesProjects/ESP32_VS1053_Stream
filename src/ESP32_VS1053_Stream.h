@@ -1,5 +1,5 @@
 #ifndef __ESP32_VS1053_Stream__
-#define __ESP32_VS1053_Stream_
+#define __ESP32_VS1053_Stream__
 
 #include <Arduino.h>
 #include <HTTPClient.h>
@@ -14,9 +14,10 @@
 #define CONNECT_TIMEOUT_MS            250
 #define CONNECT_TIMEOUT_MS_SSL        2500
 
-#define VS1053_USE_HTTP_BUFFER        true
-#define VS1053_HTTP_BUFFERSIZE        (size_t)(1024 * 6)          // on stream start - try to wait for this amount of bytes in the buffer
-#define VS1053_MAX_RETRIES            5                           // but just start playing after MAX_RETRIES regardless of stored amount
+#define VS1053_USE_HTTP_BUFFER        true                        // if set to false - decoding starts as soon as data is received
+                                                                  // if set to true - see VS1053_HTTP_BUFFERSIZE and VS1053_MAX_RETRIES
+#define VS1053_HTTP_BUFFERSIZE        ((size_t)1024 * 6)          // on stream start - try to wait for this amount of bytes in the buffer
+#define VS1053_MAX_RETRIES            5                           // but just start decoding after MAX_RETRIES regardless of stored amount
 
 extern void audio_showstation(const char*) __attribute__((weak));
 extern void audio_eof_stream(const char*) __attribute__((weak));
@@ -40,7 +41,7 @@ class ESP32_VS1053_Stream {
         bool isRunning();
         void stopSong();
         uint8_t getVolume();
-        void setVolume(const uint8_t vol); /* 0-100 but only range 60-100 is used in web interface */
+        void setVolume(const uint8_t vol); /* 0-100 */
         String currentCodec();
 
     private:
