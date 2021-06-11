@@ -288,12 +288,8 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
         if (!_dataSeen) {
             ESP_LOGD(TAG, "first data bytes are seen - %i bytes", size);
             _dataSeen = true;
-
-            if (_remainingBytes == -1) {
-                _startMute = millis();
-                _vs1053->setVolume(0);
-            }
-
+            _startMute = millis();
+            _vs1053->setVolume(0);
             _vs1053->startSong();
         }
         if (_metaint && (_blockPos > (_metaint - VS1053_PACKETSIZE))) {
@@ -305,10 +301,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
             int32_t metaLength = stream->read() * 16;
             _remainingBytes -= _remainingBytes > 0 ? 1 : 0;
 
-            ESP_LOGD(TAG, "meta length = %i", metaLength);
-
             if (metaLength) {
-                //while (stream->available() < metaLength) delay(1);
                 String data;
                 while (metaLength) {
                     data.concat((char)stream->read());
@@ -330,7 +323,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
 void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
     if (!_bytesLeftInChunk) {
         _bytesLeftInChunk = strtol(stream->readStringUntil('\n').c_str(), NULL, 16);
-        ESP_LOGD(TAG, "chunk size: %i", _bytesLeftInChunk);
+        ESP_LOGV(TAG, "chunk size: %i", _bytesLeftInChunk);
 
         if (!_dataSeen && _bytesLeftInChunk) {
             ESP_LOGD(TAG, "first data chunk is seen - %i bytes", _bytesLeftInChunk);
