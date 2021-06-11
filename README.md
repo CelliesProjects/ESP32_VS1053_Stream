@@ -12,15 +12,10 @@ Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPla
 
 Install `ESP_VS1053_Library` and `ESP32_VS1053_Stream` in your Arduino library folder.
 
-For now you will have to modify `ESP_VS1053_Library` to be able to load the latest firmware patch. [A commit addressing this issue](https://github.com/baldram/ESP_VS1053_Library/pull/65) has been opened at the `ESP_VS1053_Library` repo.
-
-## How to modify `ESP_VS1053_Library`
-
-Open `VS1053.h` and move `void write_register(uint8_t _reg, uint16_t _value) const;` from the `private:` section to the `public:` section and save the file.
-
 ## Example code
 
 ```c++
+#include <VS1053.h>               /* https://github.com/baldram/ESP_VS1053_Library */
 #include <ESP32_VS1053_Stream.h>
 
 #define VS1053_CS     5
