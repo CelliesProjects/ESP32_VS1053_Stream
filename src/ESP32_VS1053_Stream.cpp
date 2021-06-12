@@ -198,6 +198,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                 _user.clear();
                 _pwd.clear();
                 _startrange = 0;
+                _blockPos = _metaint ? 0 : -100;
                 return true;
             }
         default :
@@ -294,26 +295,21 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
 
         size_t amount = 0;
 
-        while (stream->available() && _vs1053->data_request() && _remainingBytes && _blockPos < _metaint - VS1053_PACKETSIZE) {
-            const int c = stream->readBytes(buff, min((size_t)stream->available(), VS1053_PACKETSIZE));
+        while (stream->available() && _vs1053->data_request() && _remainingBytes && _blockPos < _metaint) {
+            const auto bytesLeft = _metaint - _blockPos;
+            const auto bytesToRead = _metaint ? bytesLeft : stream->available();
+            const int c = stream->readBytes(buff, min((size_t)bytesToRead, VS1053_PACKETSIZE));
             _remainingBytes -= _remainingBytes > 0 ? c : 0;
             _vs1053->playChunk(buff, c);
-            _blockPos += c;
+            _blockPos += _metaint ? c : 0;
             amount += c;
         }
 
-        ESP_LOGI(TAG, " %7lu bytes to decoder", amount);
+        ESP_LOGI(TAG, " %5lu bytes to decoder", amount);
 
-        if (_metaint && (_blockPos >= (_metaint - VS1053_PACKETSIZE)) && stream->available() && _vs1053->data_request()) {
-            ESP_LOGI(TAG, "remaining bytes to decoder: %lu", _metaint - _blockPos);
-            const int c = stream->readBytes(buff, _metaint - _blockPos);
-            _remainingBytes -= _remainingBytes > 0 ? c : 0;
-            _vs1053->playChunk(buff, c);
-            _blockPos = 0;
-
+        if (_metaint && (_blockPos == _metaint) && stream->available() && _vs1053->data_request()) {
             int32_t metaLength = stream->read() * 16;
             _remainingBytes -= _remainingBytes > 0 ? 1 : 0;
-
             if (metaLength) {
                 String data;
                 while (metaLength) {
@@ -323,6 +319,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
                 }
                 if (!data.equals("")) _parseMetaData(data);
             }
+            _blockPos = 0;
         }
     }
 }
