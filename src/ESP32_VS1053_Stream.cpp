@@ -297,17 +297,17 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
 
         while (stream->available() && _vs1053->data_request() && _remainingBytes && _blockPos < _metaint) {
             const auto bytesLeft = _metaint - _blockPos;
-            const auto bytesToRead = _metaint ? bytesLeft : stream->available();
-            const int c = stream->readBytes(buff, min((size_t)bytesToRead, VS1053_PACKETSIZE));
+            const size_t bytesToRead = _metaint ? bytesLeft : stream->available();
+            const int c = stream->readBytes(buff, min(bytesToRead, VS1053_PACKETSIZE));
             _remainingBytes -= _remainingBytes > 0 ? c : 0;
             _vs1053->playChunk(buff, c);
             _blockPos += _metaint ? c : 0;
             amount += c;
         }
 
-        ESP_LOGI(TAG, " %5lu bytes to decoder", amount);
+        ESP_LOGD(TAG, " %5lu bytes to decoder", amount);
 
-        if (_metaint && (_blockPos == _metaint) && stream->available() && _vs1053->data_request()) {
+        if (_metaint && (_blockPos == _metaint) && stream->available()) {
             int32_t metaLength = stream->read() * 16;
             _remainingBytes -= _remainingBytes > 0 ? 1 : 0;
             if (metaLength) {
