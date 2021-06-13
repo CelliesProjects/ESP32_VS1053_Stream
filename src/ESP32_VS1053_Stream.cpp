@@ -193,12 +193,12 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                 _remainingBytes = _http->getSize();  // -1 when Server sends no Content-Length header
                 _chunkedResponse = _http->header(ENCODING).equals("chunked") ? true : false;
                 _metaint = _http->header(ICY_METAINT).toInt();
+                _blockPos = _metaint ? 0 : -100;
                 ESP_LOGD(TAG, "metadata interval is %i", _metaint);
                 _url = url;
                 _user.clear();
                 _pwd.clear();
                 _startrange = 0;
-                _blockPos = _metaint ? 0 : -100;
                 return true;
             }
         default :
@@ -283,44 +283,38 @@ void ESP32_VS1053_Stream::_handleChunkedMetaData(WiFiClient* const stream) {
 }
 
 void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
+    if (!_dataSeen && stream->available()) {
+        ESP_LOGD(TAG, "first data bytes are seen - %i bytes", size);
+        _dataSeen = true;
+        _startMute = millis();
+        _vs1053->setVolume(0);
+        _vs1053->startSong();
+    }
 
-    if (stream->available()) {
-        if (!_dataSeen) {
-            ESP_LOGD(TAG, "first data bytes are seen - %i bytes", size);
-            _dataSeen = true;
-            _startMute = millis();
-            _vs1053->setVolume(0);
-            _vs1053->startSong();
-        }
+    //size_t amount = 0;
 
-        size_t amount = 0;
+    while (stream->available() && _vs1053->data_request() && _remainingBytes && _blockPos < _metaint) {
+        const size_t bytesToRead = _metaint ? _metaint - _blockPos : stream->available();
+        const int c = stream->readBytes(buff, min(bytesToRead, VS1053_PACKETSIZE));
+        _remainingBytes -= _remainingBytes > 0 ? c : 0;
+        _vs1053->playChunk(buff, c);
+        _blockPos += _metaint ? c : 0;
+        //amount += c;
+    }
 
-        while (stream->available() && _vs1053->data_request() && _remainingBytes && _blockPos < _metaint) {
-            const auto bytesLeft = _metaint - _blockPos;
-            const size_t bytesToRead = _metaint ? bytesLeft : stream->available();
-            const int c = stream->readBytes(buff, min(bytesToRead, VS1053_PACKETSIZE));
-            _remainingBytes -= _remainingBytes > 0 ? c : 0;
-            _vs1053->playChunk(buff, c);
-            _blockPos += _metaint ? c : 0;
-            amount += c;
-        }
+    ESP_LOGD(TAG, "%5lu bytes to decoder", amount);
 
-        ESP_LOGD(TAG, " %5lu bytes to decoder", amount);
-
-        if (_metaint && (_blockPos == _metaint) && stream->available()) {
-            int32_t metaLength = stream->read() * 16;
-            _remainingBytes -= _remainingBytes > 0 ? 1 : 0;
-            if (metaLength) {
-                String data;
-                while (metaLength) {
-                    data.concat((char)stream->read());
-                    _remainingBytes -= _remainingBytes > 0 ? 1 : 0;
-                    metaLength--;
-                }
-                if (!data.equals("")) _parseMetaData(data);
+    if (_metaint && (_blockPos == _metaint) && stream->available()) {
+        int32_t metaLength = stream->read() * 16;
+        if (metaLength) {
+            String data;
+            while (metaLength) {
+                data.concat(data.length() < 255 ? (char)stream->read() : (char){});
+                metaLength--;
             }
-            _blockPos = 0;
+            if (!data.equals("")) _parseMetaData(data);
         }
+        _blockPos = 0;
     }
 }
 
@@ -415,7 +409,6 @@ void ESP32_VS1053_Stream::stopSong() {
             _vs1053->stopSong();
             _dataSeen = false;
             _bytesLeftInChunk = 0;
-            _blockPos = 0;
             _bufferFilled = false;
             _currentMimetype = UNKNOWN;
             _url.clear();
