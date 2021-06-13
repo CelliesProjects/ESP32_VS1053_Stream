@@ -193,6 +193,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                 _remainingBytes = _http->getSize();  // -1 when Server sends no Content-Length header
                 _chunkedResponse = _http->header(ENCODING).equals("chunked") ? true : false;
                 _metaint = _http->header(ICY_METAINT).toInt();
+                _blockPos = _metaint ? 0 : -100;
                 ESP_LOGD(TAG, "metadata interval is %i", _metaint);
                 _url = url;
                 _user.clear();
@@ -282,41 +283,38 @@ void ESP32_VS1053_Stream::_handleChunkedMetaData(WiFiClient* const stream) {
 }
 
 void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
-    const size_t size = stream->available();
+    if (!_dataSeen && stream->available()) {
+        ESP_LOGD(TAG, "first data bytes are seen - %i bytes", size);
+        _dataSeen = true;
+        _startMute = millis();
+        _vs1053->setVolume(0);
+        _vs1053->startSong();
+    }
 
-    if (size) {
-        if (!_dataSeen) {
-            ESP_LOGD(TAG, "first data bytes are seen - %i bytes", size);
-            _dataSeen = true;
-            _startMute = millis();
-            _vs1053->setVolume(0);
-            _vs1053->startSong();
-        }
-        if (_metaint && (_blockPos > (_metaint - VS1053_PACKETSIZE))) {
-            const int c = stream->readBytes(buff, _metaint - _blockPos);
-            _remainingBytes -= _remainingBytes > 0 ? c : 0;
-            _vs1053->playChunk(buff, c);
-            _blockPos = 0;
+    //size_t amount = 0;
 
-            int32_t metaLength = stream->read() * 16;
-            _remainingBytes -= _remainingBytes > 0 ? 1 : 0;
+    while (stream->available() && _vs1053->data_request() && _remainingBytes && _blockPos < _metaint) {
+        const size_t bytesToRead = _metaint ? _metaint - _blockPos : stream->available();
+        const int c = stream->readBytes(buff, min(bytesToRead, VS1053_PACKETSIZE));
+        _remainingBytes -= _remainingBytes > 0 ? c : 0;
+        _vs1053->playChunk(buff, c);
+        _blockPos += _metaint ? c : 0;
+        //amount += c;
+    }
 
-            if (metaLength) {
-                String data;
-                while (metaLength) {
-                    data.concat((char)stream->read());
-                    _remainingBytes -= _remainingBytes > 0 ? 1 : 0;
-                    metaLength--;
-                }
-                if (!data.equals("")) _parseMetaData(data);
+    ESP_LOGD(TAG, "%5lu bytes to decoder", amount);
+
+    if (_metaint && (_blockPos == _metaint) && stream->available()) {
+        int32_t metaLength = stream->read() * 16;
+        if (metaLength) {
+            String data;
+            while (metaLength) {
+                data.concat(data.length() < 255 ? (char)stream->read() : (char){});
+                metaLength--;
             }
+            if (!data.equals("")) _parseMetaData(data);
         }
-        else {
-            const int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
-            _remainingBytes -= _remainingBytes > 0 ? c : 0;
-            _vs1053->playChunk(buff, c);
-            _blockPos += c;
-        }
+        _blockPos = 0;
     }
 }
 
@@ -334,6 +332,8 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
         }
     }
 
+    size_t amount = 0;
+
     while (_bytesLeftInChunk && _vs1053->data_request()) {
         if (_metaint && (_metaint - _blockPos) < VS1053_PACKETSIZE) _handleChunkedMetaData(stream);
         const size_t bytes = min(_bytesLeftInChunk, VS1053_PACKETSIZE);
@@ -341,7 +341,10 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
         _vs1053->playChunk(buff, c);
         _bytesLeftInChunk -= c;
         _blockPos += c;
+        amount += c;
     }
+
+    ESP_LOGD(TAG, " %5lu bytes to decoder", amount);
 
     if (!_bytesLeftInChunk)
         stream->readStringUntil('\n');
@@ -406,7 +409,6 @@ void ESP32_VS1053_Stream::stopSong() {
             _vs1053->stopSong();
             _dataSeen = false;
             _bytesLeftInChunk = 0;
-            _blockPos = 0;
             _bufferFilled = false;
             _currentMimetype = UNKNOWN;
             _url.clear();
