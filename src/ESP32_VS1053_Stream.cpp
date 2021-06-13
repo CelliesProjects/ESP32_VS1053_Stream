@@ -338,6 +338,8 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
         }
     }
 
+    size_t amount = 0;
+
     while (_bytesLeftInChunk && _vs1053->data_request()) {
         if (_metaint && (_metaint - _blockPos) < VS1053_PACKETSIZE) _handleChunkedMetaData(stream);
         const size_t bytes = min(_bytesLeftInChunk, VS1053_PACKETSIZE);
@@ -345,7 +347,10 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
         _vs1053->playChunk(buff, c);
         _bytesLeftInChunk -= c;
         _blockPos += c;
+        amount += c;
     }
+
+    ESP_LOGD(TAG, " %5lu bytes to decoder", amount);
 
     if (!_bytesLeftInChunk)
         stream->readStringUntil('\n');
