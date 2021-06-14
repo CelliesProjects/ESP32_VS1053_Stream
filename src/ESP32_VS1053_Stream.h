@@ -16,8 +16,11 @@
 
 #define VS1053_USE_HTTP_BUFFER        true                        // if set to false - decoding starts as soon as data is received
                                                                   // if set to true - see VS1053_HTTP_BUFFERSIZE and VS1053_MAX_RETRIES
+
 #define VS1053_HTTP_BUFFERSIZE        ((size_t)1024 * 6)          // on stream start - try to wait for this amount of bytes in the buffer
 #define VS1053_MAX_RETRIES            5                           // but just start decoding after MAX_RETRIES regardless of stored amount
+
+#define VS1053_MAX_METADATA_LENGTH    255
 
 extern void audio_showstation(const char*) __attribute__((weak));
 extern void audio_eof_stream(const char*) __attribute__((weak));
@@ -49,8 +52,6 @@ class ESP32_VS1053_Stream {
         void _loadUserCode();
         void _handleStream(WiFiClient* const stream);
         void _handleChunkedStream(WiFiClient* const stream);
-        void _nextChunk(WiFiClient* const stream);
-        void _handleChunkedMetaData(WiFiClient* const stream);
 };
 
 #endif

@@ -228,13 +228,6 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url, const String& user, c
     return connecttohost(url);
 }
 
-void ESP32_VS1053_Stream::_nextChunk(WiFiClient* const stream) {
-    stream->readStringUntil('\n');
-    while (!stream->available()) delay(1);
-    _bytesLeftInChunk = strtol(stream->readStringUntil('\n').c_str(), NULL, 16);
-    ESP_LOGD(TAG, "_nextChunk was called - chunk size: %i", _bytesLeftInChunk);
-}
-
 static void _parseMetaData(const String& data) {
     ESP_LOGD(TAG, "metadata: %s", data.c_str());
     if (audio_showstreamtitle && data.startsWith("StreamTitle")) {
@@ -252,46 +245,16 @@ static void _parseMetaData(const String& data) {
     }
 }
 
-void ESP32_VS1053_Stream::_handleChunkedMetaData(WiFiClient* const stream) {
-    size_t remainingBytes = _metaint - _blockPos;
-    uint32_t c = 0;
-    while (remainingBytes) {
-        if (!_bytesLeftInChunk) _nextChunk(stream);
-        buff[c] = stream->read();
-        remainingBytes--;
-        _bytesLeftInChunk--;
-        c++;
-    }
-    if (c) _vs1053->playChunk(buff, c);
-
-    if (!_bytesLeftInChunk) _nextChunk(stream);
-
-    int32_t metaLength = stream->read() * 16;
-    _bytesLeftInChunk--;
-
-    if (metaLength) {
-        String data;
-        while (metaLength) {
-            if (!_bytesLeftInChunk) _nextChunk(stream);
-            data.concat((char)stream->read());
-            _bytesLeftInChunk--;
-            metaLength--;
-        }
-        if (!data.equals("")) _parseMetaData(data);
-    }
-    _blockPos = 0;
-}
-
 void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
     if (!_dataSeen && stream->available()) {
-        ESP_LOGD(TAG, "first data bytes are seen - %i bytes", size);
+        ESP_LOGD(TAG, "first data bytes are seen - %i bytes", stream->available());
         _dataSeen = true;
         _startMute = millis();
         _vs1053->setVolume(0);
         _vs1053->startSong();
     }
 
-    //size_t amount = 0;
+    size_t amount = 0;
 
     while (stream->available() && _vs1053->data_request() && _remainingBytes && _blockPos < _metaint) {
         const size_t bytesToRead = _metaint ? _metaint - _blockPos : stream->available();
@@ -299,7 +262,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
         _remainingBytes -= _remainingBytes > 0 ? c : 0;
         _vs1053->playChunk(buff, c);
         _blockPos += _metaint ? c : 0;
-        //amount += c;
+        amount += c;
     }
 
     ESP_LOGD(TAG, "%5lu bytes to decoder", amount);
@@ -309,7 +272,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
         if (metaLength) {
             String data;
             while (metaLength) {
-                data.concat(data.length() < 255 ? (char)stream->read() : (char){});
+                data.concat(data.length() < VS1053_MAX_METADATA_LENGTH ? (char)stream->read() : (char){});
                 metaLength--;
             }
             if (!data.equals("")) _parseMetaData(data);
@@ -334,17 +297,36 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
 
     size_t amount = 0;
 
-    while (_bytesLeftInChunk && _vs1053->data_request()) {
-        if (_metaint && (_metaint - _blockPos) < VS1053_PACKETSIZE) _handleChunkedMetaData(stream);
-        const size_t bytes = min(_bytesLeftInChunk, VS1053_PACKETSIZE);
-        const int c = stream->readBytes(buff, bytes);
+    while (_bytesLeftInChunk && _vs1053->data_request() && _blockPos < _metaint) {
+        const size_t bytesToRead = min(_bytesLeftInChunk, (size_t)_metaint - _blockPos);
+        const int c = stream->readBytes(buff, min(bytesToRead, VS1053_PACKETSIZE));
         _vs1053->playChunk(buff, c);
         _bytesLeftInChunk -= c;
-        _blockPos += c;
+        _blockPos += _metaint ? c : 0;
         amount += c;
     }
 
-    ESP_LOGD(TAG, " %5lu bytes to decoder", amount);
+    ESP_LOGD(TAG, "%5lu bytes to decoder", amount);
+
+    if (_metaint && (_metaint == _blockPos) && _bytesLeftInChunk) {
+        int32_t metaLength = stream->read() * 16;
+        _bytesLeftInChunk--;
+        if (metaLength) {
+            String data;
+            while (metaLength) {
+                if (!_bytesLeftInChunk) {
+                    stream->readStringUntil('\n');
+                    while (!stream->available()) delay(1);
+                    _bytesLeftInChunk = strtol(stream->readStringUntil('\n').c_str(), NULL, 16);
+                }
+                data.concat(data.length() < VS1053_MAX_METADATA_LENGTH ? (char)stream->read() : (char){});
+                _bytesLeftInChunk--;
+                metaLength--;
+            }
+            if (!data.equals("")) _parseMetaData(data);
+        }
+        _blockPos = 0;
+    }
 
     if (!_bytesLeftInChunk)
         stream->readStringUntil('\n');
@@ -378,8 +360,8 @@ void ESP32_VS1053_Stream::loop() {
         }
     }
 
-    if (_http->connected() && (_remainingBytes > 0 || _remainingBytes == -1)) {
-        while (_vs1053->data_request() && stream->available()) {
+    if (_http->connected() && _remainingBytes) {
+        while (stream->available() && _vs1053->data_request()) {
             if (_chunkedResponse) _handleChunkedStream(stream);
             else _handleStream(stream);
         }
