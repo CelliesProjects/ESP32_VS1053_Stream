@@ -22,6 +22,8 @@
 
 #define VS1053_MAX_METADATA_LENGTH    255
 
+const size_t VS1053_PACKETSIZE = 32;
+
 extern void audio_showstation(const char*) __attribute__((weak));
 extern void audio_eof_stream(const char*) __attribute__((weak));
 extern void audio_showstreamtitle(const char*) __attribute__((weak));

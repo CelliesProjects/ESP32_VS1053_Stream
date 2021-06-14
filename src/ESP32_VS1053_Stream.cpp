@@ -15,7 +15,6 @@ static size_t _bytesLeftInChunk = 0;
 static bool _dataSeen = false;
 static unsigned long _startMute = 0; /* mutes the sound during stream startup to supress the crack that comes with starting a stream */
 
-const size_t VS1053_PACKETSIZE = 32;
 static uint8_t buff[VS1053_PACKETSIZE];
 
 static enum mimetype_t {
@@ -232,9 +231,10 @@ static void _parseMetaData(const String& data) {
     ESP_LOGD(TAG, "metadata: %s", data.c_str());
     if (audio_showstreamtitle && data.startsWith("StreamTitle")) {
         int32_t pos = data.indexOf("'");
-        const int32_t pos2 = data.indexOf("';");
-        if (pos != -1 && pos2 != -1) {
+        if (pos != -1) {
             pos++;
+            int32_t pos2 = data.indexOf("';", pos);
+            pos2 = (pos2 == -1) ? data.length() : pos2;
             String streamtitle;
             while (pos < pos2) {
                 streamtitle.concat(data.charAt(pos));
