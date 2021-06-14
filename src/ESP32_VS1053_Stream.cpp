@@ -272,7 +272,8 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
         if (metaLength) {
             String data;
             while (metaLength) {
-                data.concat(data.length() < VS1053_MAX_METADATA_LENGTH ? (char)stream->read() : (char){});
+                const char ch = stream->read();
+                data.concat(data.length() < VS1053_MAX_METADATA_LENGTH ? ch : (char){});
                 metaLength--;
             }
             if (!data.equals("")) _parseMetaData(data);
@@ -319,7 +320,8 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
                     while (!stream->available()) delay(1);
                     _bytesLeftInChunk = strtol(stream->readStringUntil('\n').c_str(), NULL, 16);
                 }
-                data.concat(data.length() < VS1053_MAX_METADATA_LENGTH ? (char)stream->read() : (char){});
+                const char ch = stream->read();
+                data.concat(data.length() < VS1053_MAX_METADATA_LENGTH ? ch : (char){});
                 _bytesLeftInChunk--;
                 metaLength--;
             }
@@ -360,11 +362,9 @@ void ESP32_VS1053_Stream::loop() {
         }
     }
 
-    if (_http->connected() && _remainingBytes) {
-        while (stream->available() && _vs1053->data_request()) {
-            if (_chunkedResponse) _handleChunkedStream(stream);
-            else _handleStream(stream);
-        }
+    if (_http->connected() && _remainingBytes && _vs1053->data_request()) {
+        if (_chunkedResponse) _handleChunkedStream(stream);
+        else _handleStream(stream);
     }
 
     if (!_remainingBytes) {
