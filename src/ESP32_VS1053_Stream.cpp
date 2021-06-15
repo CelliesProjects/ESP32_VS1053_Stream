@@ -13,6 +13,7 @@ static int32_t _blockPos = 0; /* position within music data block */
 static bool _chunkedResponse = false;
 static size_t _bytesLeftInChunk = 0;
 static bool _dataSeen = false;
+static int _bitrate = 0;
 static unsigned long _startMute = 0; /* mutes the sound during stream startup to supress the crack that comes with starting a stream */
 
 static uint8_t buff[VS1053_PACKETSIZE];
@@ -116,8 +117,10 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
     const char* ICY_NAME = "icy-name";
     const char* ICY_METAINT = "icy-metaint";
     const char* ENCODING = "Transfer-Encoding";
+    const char* BITRATE = "icy-br";
+    const char* SIZE = "Content-Length";
 
-    const char* header[] = {CONTENT_TYPE, ICY_NAME, ICY_METAINT, ENCODING};
+    const char* header[] = {CONTENT_TYPE, ICY_NAME, ICY_METAINT, ENCODING, BITRATE};
     _http->collectHeaders(header, sizeof(header) / sizeof(char*));
 
     _http->setConnectTimeout(url.startsWith("https") ? CONNECT_TIMEOUT_MS_SSL : CONNECT_TIMEOUT_MS);
@@ -194,6 +197,8 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                 _metaint = _http->header(ICY_METAINT).toInt();
                 _blockPos = _metaint ? 0 : -100;
                 ESP_LOGD(TAG, "metadata interval is %i", _metaint);
+                _bitrate = _http->header(BITRATE).toInt();
+                ESP_LOGD(TAG, "bitrate is %i", _bitrate);
                 _url = url;
                 _user.clear();
                 _pwd.clear();
@@ -250,6 +255,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
         ESP_LOGD(TAG, "first data bytes are seen - %i bytes", stream->available());
         _dataSeen = true;
         _startMute = millis();
+        _startMute += _startMute ? 0 : 1;
         _vs1053->setVolume(0);
         _vs1053->startSong();
     }
@@ -291,6 +297,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
             ESP_LOGD(TAG, "first data chunk is seen - %i bytes", _bytesLeftInChunk);
             _dataSeen = true;
             _startMute = millis();
+            _startMute += _startMute ? 0 : 1;
             _vs1053->setVolume(0);
             _vs1053->startSong();
         }
@@ -355,9 +362,10 @@ void ESP32_VS1053_Stream::loop() {
 #endif
 
     if (_startMute) {
-        const auto WAIT_TIME_MS = (_currentMimetype == MP3) ? 60 : 100;
+        const auto WAIT_TIME_MS = (!_bitrate && _remainingBytes == -1) ? 180 : 60;
         if ((unsigned long)millis() - _startMute > WAIT_TIME_MS) {
             _vs1053->setVolume(_volume);
+            ESP_LOGD(TAG, "startmute ms: %i", WAIT_TIME_MS);
             _startMute = 0;
         }
     }
