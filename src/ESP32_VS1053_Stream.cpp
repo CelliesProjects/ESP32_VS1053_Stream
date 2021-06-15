@@ -118,7 +118,6 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
     const char* ICY_METAINT = "icy-metaint";
     const char* ENCODING = "Transfer-Encoding";
     const char* BITRATE = "icy-br";
-    const char* SIZE = "Content-Length";
 
     const char* header[] = {CONTENT_TYPE, ICY_NAME, ICY_METAINT, ENCODING, BITRATE};
     _http->collectHeaders(header, sizeof(header) / sizeof(char*));
