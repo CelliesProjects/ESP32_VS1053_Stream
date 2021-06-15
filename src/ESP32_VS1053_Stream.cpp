@@ -57,7 +57,7 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
         return false;
     }
     _vs1053->begin();
-    _loadUserCode();
+    //_loadUserCode();
     _vs1053->switchToMp3Mode();
     setVolume(_volume);
     return true;
@@ -419,25 +419,4 @@ void ESP32_VS1053_Stream::setVolume(const uint8_t vol) {
 
 String ESP32_VS1053_Stream::currentCodec() {
     return mimestr[_currentMimetype];
-}
-
-void ESP32_VS1053_Stream::_loadUserCode(void) {
-    int i = 0;
-    while (i < sizeof(plugin) / sizeof(plugin[0])) {
-        unsigned short addr, n, val;
-        addr = plugin[i++];
-        n = plugin[i++];
-        if (n & 0x8000U) { /* RLE run, replicate n samples */
-            n &= 0x7FFF;
-            val = plugin[i++];
-            while (n--) {
-                _vs1053->write_register(addr, val);
-            }
-        } else {           /* Copy run, copy n samples */
-            while (n--) {
-                val = plugin[i++];
-                _vs1053->write_register(addr, val);
-            }
-        }
-    }
 }

@@ -51,7 +51,6 @@ class ESP32_VS1053_Stream {
 
     private:
         VS1053* _vs1053 = NULL;
-        void _loadUserCode();
         void _handleStream(WiFiClient* const stream);
         void _handleChunkedStream(WiFiClient* const stream);
 };
