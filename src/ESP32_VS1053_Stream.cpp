@@ -272,7 +272,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
 
     ESP_LOGD(TAG, "%5lu bytes to decoder", amount);
 
-    if (_metaint && (_blockPos == _metaint) && stream->available()) {
+    if (_metaint && _blockPos == _metaint && stream->available()) {
         int32_t metaLength = stream->read() * 16;
         if (metaLength) {
             String data;
