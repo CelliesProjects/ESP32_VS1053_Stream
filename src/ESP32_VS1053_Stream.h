@@ -5,8 +5,6 @@
 #include <HTTPClient.h>
 #include <VS1053.h>
 
-#include "vs1053b-patches.plg.h"
-
 #define VS1053_INITIALVOLUME          95
 #define VS1053_MAXVOLUME              100
 #define VS1053_ICY_METADATA           true
