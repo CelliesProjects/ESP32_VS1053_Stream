@@ -350,7 +350,7 @@ void ESP32_VS1053_Stream::loop() {
     {
         static auto count = 0;
 
-        if (!_bufferFilled) ESP_LOGD(TAG, "Pass: %i available: %i", count, stream->available());
+        if (!_bufferFilled) {ESP_LOGD(TAG, "Pass: %i available: %i", count, stream->available());}
 
         if ((!_bufferFilled && count++ < VS1053_MAX_RETRIES) && stream->available() < min(VS1053_HTTP_BUFFERSIZE, _remainingBytes))
             return;
