@@ -125,9 +125,9 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
     _http->setConnectTimeout(url.startsWith("https") ? CONNECT_TIMEOUT_MS_SSL : CONNECT_TIMEOUT_MS);
     _http->setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 
-    const int _httpCode = _http->GET();
+    const int result = _http->GET();
 
-    switch (_httpCode) {
+    switch (result) {
         case 206 : ESP_LOGD(TAG, "server can resume");
         case 200 :
             {
@@ -206,7 +206,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
             }
         default :
             {
-                ESP_LOGE(TAG, "error %i", _httpCode);
+                ESP_LOGE(TAG, "error %i", result);
                 stopSong();
                 return false;
             }
@@ -315,7 +315,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
 
     ESP_LOGD(TAG, "%5lu bytes to decoder", amount);
 
-    if (_metaint && (_metaint == _blockPos) && _bytesLeftInChunk) {
+    if (_metaint && _metaint == _blockPos && _bytesLeftInChunk) {
         int32_t metaLength = stream->read() * 16;
         _bytesLeftInChunk--;
         if (metaLength) {
