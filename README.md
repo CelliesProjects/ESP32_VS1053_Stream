@@ -40,15 +40,17 @@ void setup() {
 
     while (!WiFi.isConnected())
         delay(10);
-    Serial.println("connected - starting stream");
+    Serial.println("wifi connected - starting decoder");
 
     SPI.begin();  /* start SPI before starting decoder */
 
     stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ);
 
+    Serial.println("decoder running - starting stream");
+
     stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
 
-    Serial.print("codec:");
+    Serial.print("codec: ");
     Serial.println(stream.currentCodec());
 }
 
