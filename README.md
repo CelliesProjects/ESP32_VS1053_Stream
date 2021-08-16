@@ -1,12 +1,12 @@
 # ESP32_VS1053_Stream
 
-A streaming library for esp32 with a vs1053 mp3/ogg/aac/wav decoder.
+A streaming library for esp32 with a separate vs1053 mp3/ogg/aac/wav decoder.
 
-Plays http, https (insecure mode) and chunked streams and parses the metadata.
+This library plays http, https (insecure mode) and chunked streams and parses the stream metadata.
 
 Supports playback of mp3, ogg, aac, aac+ and wav files/streams.
 
-Playlists are parsed and the first link found is opened.
+If a playlists is opened the file is parsed and the first link found is followed.
 
 This library depends on the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
@@ -70,5 +70,27 @@ void audio_eof_stream(const char* info) {
     Serial.printf("eof: %s\n", info);
 }
 ```
+
+MIT License
+
+Copyright (c) 2021 Cellie
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 
