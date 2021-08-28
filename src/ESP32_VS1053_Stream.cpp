@@ -153,10 +153,9 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                     }
 
                     String newUrl;
-                    while (payload.charAt(index) != '\n' && index < payload.length()) {
-                        newUrl.concat(payload.charAt(index));
-                        index++;
-                    }
+                    while (payload.charAt(index) != '\n' && index < payload.length())
+                        newUrl.concat(payload.charAt(index++));
+
                     newUrl.trim();
 
                     ESP_LOGW(TAG, "file parsed - reconnecting to: %s", newUrl.c_str());
@@ -240,10 +239,9 @@ static void _parseMetaData(const String& data) {
             int32_t pos2 = data.indexOf("';", pos);
             pos2 = (pos2 == -1) ? data.length() : pos2;
             String streamtitle;
-            while (pos < pos2) {
-                streamtitle.concat(data.charAt(pos));
-                pos++;
-            }
+            while (pos < pos2)
+                streamtitle.concat(data.charAt(pos++));
+
             if (!streamtitle.equals("")) audio_showstreamtitle(streamtitle.c_str());
         }
     }
@@ -350,10 +348,10 @@ void ESP32_VS1053_Stream::loop() {
     {
         static auto count = 0;
 
-        if (!_bufferFilled) {ESP_LOGD(TAG, "Pass: %i available: %i", count, stream->available());}
-
-        if ((!_bufferFilled && count++ < VS1053_MAX_RETRIES) && stream->available() < min(VS1053_HTTP_BUFFERSIZE, _remainingBytes))
+        if ((!_bufferFilled && count++ < VS1053_MAX_RETRIES) && stream->available() < min(VS1053_HTTP_BUFFERSIZE, _remainingBytes)) {
+            ESP_LOGD(TAG, "Pass: %i available: %i", count, stream->available());
             return;
+        }
 
         _bufferFilled = true;
         count = 0;
@@ -389,22 +387,19 @@ bool ESP32_VS1053_Stream::isRunning() {
 void ESP32_VS1053_Stream::stopSong() {
     if (_http) {
         if (_http->connected()) {
-            {
-                WiFiClient* const stream = _http->getStreamPtr();
-                stream->stop();
-                stream->flush();
-            }
-            _http->end();
-            _vs1053->stopSong();
-            _dataSeen = false;
-            _bytesLeftInChunk = 0;
-            _bufferFilled = false;
-            _currentMimetype = UNKNOWN;
-            _url.clear();
-            ESP_LOGD(TAG, "closed stream");
+            WiFiClient* const stream = _http->getStreamPtr();
+            stream->stop();
+            stream->flush(); // it seems that since 2.0.0 stream->flush() is not needed anymore after a stream->close();
         }
+        _http->end();
         delete _http;
         _http = NULL;
+        _vs1053->stopSong();
+        _dataSeen = false;
+        _bytesLeftInChunk = 0;
+        _bufferFilled = false;
+        _currentMimetype = UNKNOWN;
+        _url.clear();
     }
 }
 
