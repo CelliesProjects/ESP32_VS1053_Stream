@@ -15,7 +15,7 @@
 #define VS1053_USE_HTTP_BUFFER        true                        // if set to false - decoding starts as soon as data is received
                                                                   // if set to true - see VS1053_HTTP_BUFFERSIZE and VS1053_MAX_RETRIES
 
-#define VS1053_HTTP_BUFFERSIZE        ((size_t)1024 * 6)          // on stream start - try to wait for this amount of bytes in the buffer
+#define VS1053_HTTP_BUFFERSIZE        ((size_t)1024 * 4)          // on stream start - try to wait for this amount of bytes in the buffer
 #define VS1053_MAX_RETRIES            5                           // but just start decoding after MAX_RETRIES regardless of stored amount
 
 #define VS1053_MAX_METADATA_LENGTH    255
