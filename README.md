@@ -1,5 +1,7 @@
 # ESP32_VS1053_Stream
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/7571166c872e4dc8a899382389b73f8e)](https://app.codacy.com/gh/CelliesProjects/ESP32_VS1053_Stream?utm_source=github.com&utm_medium=referral&utm_content=CelliesProjects/ESP32_VS1053_Stream&utm_campaign=Badge_Grade_Settings)
+
 A streaming library for esp32 with a separate vs1053 mp3/ogg/aac/wav decoder.
 
 This library plays http, https (insecure mode) and chunked streams and parses the stream metadata.
