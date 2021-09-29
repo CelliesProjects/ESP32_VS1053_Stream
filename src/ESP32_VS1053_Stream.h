@@ -42,10 +42,12 @@ class ESP32_VS1053_Stream {
 
         void loop();
         bool isRunning();
-        void stopSong();
+        void stopSong(const bool resume=false);
         uint8_t getVolume();
         void setVolume(const uint8_t vol); /* 0-100 */
         String currentCodec();
+        size_t size();
+        size_t position();
 
     private:
         VS1053* _vs1053 = NULL;
