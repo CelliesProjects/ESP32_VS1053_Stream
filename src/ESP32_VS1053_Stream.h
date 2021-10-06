@@ -48,6 +48,7 @@ class ESP32_VS1053_Stream {
         String currentCodec();
         size_t size();
         size_t position();
+        String lastUrl();
 
     private:
         VS1053* _vs1053 = NULL;
