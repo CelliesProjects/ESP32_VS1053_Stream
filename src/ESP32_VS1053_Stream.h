@@ -20,6 +20,8 @@
 
 #define VS1053_MAX_METADATA_LENGTH    255
 
+#define VS1053_RESUME                 true
+
 const size_t VS1053_PACKETSIZE = 32;
 
 extern void audio_showstation(const char*) __attribute__((weak));
