@@ -20,6 +20,8 @@
 
 #define VS1053_MAX_METADATA_LENGTH    255
 
+#define VS1053_RESUME                 true
+
 const size_t VS1053_PACKETSIZE = 32;
 
 extern void audio_showstation(const char*) __attribute__((weak));
@@ -42,10 +44,13 @@ class ESP32_VS1053_Stream {
 
         void loop();
         bool isRunning();
-        void stopSong();
+        void stopSong(const bool resume=false);
         uint8_t getVolume();
         void setVolume(const uint8_t vol); /* 0-100 */
         String currentCodec();
+        size_t size();
+        size_t position();
+        String lastUrl();
 
     private:
         VS1053* _vs1053 = NULL;
