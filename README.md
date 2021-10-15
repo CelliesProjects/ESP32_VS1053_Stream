@@ -4,11 +4,17 @@
 
 A streaming library for esp32 with a separate vs1053 mp3/ogg/aac/wav decoder.
 
-This library plays http, https (insecure mode) and chunked streams and parses the stream metadata.
+With this library you can play http, https (insecure mode) and chunked audio streams.
 
-Supports playback of mp3, ogg, aac, aac+ and wav files/streams.
+-  Supports playback of mp3, ogg, aac, aac+ and wav files/streams.
 
-If a playlists is opened the file is parsed and the first link found is followed.
+-  You can set some callbacks on parsed stream metadata becoming available.  
+These are `audio_showstation()` and `audio_showstreamtitle()`.  
+A callback for EOF is also available. This is `audio_eof_stream()`.  
+See the example code.
+
+-  If a playlists is opened the file is parsed and the first url found is followed.  
+You can use `lastUrl()` to get that url.
 
 This library depends on the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
@@ -72,6 +78,8 @@ void audio_eof_stream(const char* info) {
     Serial.printf("eof: %s\n", info);
 }
 ```
+
+## License
 
 MIT License
 
