@@ -8,14 +8,6 @@ With this library you can play http, https (insecure mode) and chunked audio str
 
 -  Supports playback of mp3, ogg, aac, aac+ and wav files/streams.
 
--  You can set some callbacks on parsed stream metadata becoming available.  
-These are `audio_showstation()` and `audio_showstreamtitle()`.  
-A callback for EOF is also available. This is `audio_eof_stream()`.  
-See the example code.
-
--  If a playlists is opened the file is parsed and the first url found is followed.  
-You can use `lastUrl()` to get that url.
-
 This library depends on the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
 Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
@@ -23,6 +15,59 @@ Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPla
 ## How to install
 
 Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and `ESP32_VS1053_Stream` in your Arduino library folder.
+
+## Functions
+
+### Connecting to a stream
+`stream.connecttohost(const String& url)`
+Will return `true` or `false` depending on the result.
+You can resume (or start playing with an offset) by requesting a stream with
+`stream.connecttohost(const String& url, const size_t startrange)`
+For streams that need login credentials use
+`stream.connecttohost(const String& url, const String& user, const String& pwd)`
+
+### Feeding the decoder
+`stream.loop()`
+This function has to called every couple of ms to feed the decoder with data.
+
+### Check if stream is still running
+`stream.isRunning()`
+Will return `true` or `false`.
+
+### Get the current volume
+`stream.getVolume()`
+
+### Set the volume
+`stream.setVolume()`
+Value should be between 0-100.
+
+### Get the currently used code
+`stream.currentCodec()`
+Return a string with the currently used codec.
+Returns `UNKNOWN` if no stream is running.
+
+### Get the filesize
+`stream.size()`
+Will return `0` if the stream is a radio stream.
+
+### Get the current position in the stream
+`stream.position()`
+Will return `0` if the stream is a radio stream.
+
+### Get the current url
+`stream.lastUrl()`
+The current stream url might differ from the request url if the request url is a playlist.
+
+## Event callbacks
+
+`audio_showstation(const char* info)`
+Returns the station name.
+
+`audio_showstreamtitle(const char* info)`
+Returns ICY stream information.
+
+`audio_eof_stream(const char* info)`
+Is called when the current stream reaches the end of file.
 
 ## Example code
 
