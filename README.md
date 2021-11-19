@@ -18,6 +18,12 @@ Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and 
 
 ## Functions
 
+### Initialize the VS1053 codec
+
+-  `stream.startDecoder(CS, DCS, DREQ)`
+
+Will return `true` or `false` depending on the result.
+
 ### Starting or resuming a stream
 
 -  `stream.connecttohost(const String& url)`
