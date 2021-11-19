@@ -32,6 +32,37 @@ For streams that need login credentials use
 
 -  `stream.connecttohost(const String& url, const String& user, const String& pwd)`
 
+### Stopping or pausing a stream
+
+Stop a stream with:
+
+-  `stream.stopSong()` 
+
+Pause a stream with:
+
+-  `stream.stopSong(VS1053_RESUME)`
+
+#### Example how to pause a stream
+
+```c++
+const String HOST = "http://some_file_with_a_filesize";
+
+stream.connecttohost(HOST);
+
+//[stream starts playing from the start]
+
+const size_t FILE_POS = stream.position();
+stream.stopSong(VS1053_RESUME);
+
+//[stream is paused]
+
+stream.connecttohost(HOST, FILE_POS);
+...
+//[stream will resume from FILE_POS]
+...
+```
+This is only needed on real files. Radiostreams always return `0` on `stream.position()` and `stream.size()`.
+
 ### Feeding the decoder
 
 -  `stream.loop()`
