@@ -26,17 +26,17 @@ Will return `true` or `false` depending on the result.
 
 ### Starting or resuming a stream
 
--  `stream.connecttohost(const String& url)`
+-  `stream.connecttohost(url)`
 
 Will return `true` or `false` depending on the result.
 
 You can resume (or start playing with an offset) by requesting a stream with
 
--  `stream.connecttohost(const String& url, const size_t startrange)`
+-  `stream.connecttohost(url, startrange)`
 
 For streams that need login credentials use
 
--  `stream.connecttohost(const String& url, const String& user, const String& pwd)`
+-  `stream.connecttohost(url, user, pwd)`
 
 ### Stopping or pausing a stream
 
@@ -63,11 +63,14 @@ stream.stopSong(VS1053_RESUME);
 //[stream is paused]
 
 stream.connecttohost(HOST, FILE_POS);
-...
+
 //[stream will resume from FILE_POS]
-...
+
 ```
 This is only needed on real files. Radiostreams always return `0` on `stream.position()` and `stream.size()`.
+
+If a stream reaches EOF `stream.stopSong()` is called automagically. 
+<br>In that case you can use `stream.connecttohost(NEW_HOST)` without first calling `stream.stopSong()`.
 
 ### Feeding the decoder
 
@@ -86,7 +89,8 @@ Will return `true` or `false`.
 -  `stream.getVolume()`
 
 ### Set the volume
--  `stream.setVolume()`
+
+-  `stream.setVolume(value)`
 
 Value should be between 0-100.
 
