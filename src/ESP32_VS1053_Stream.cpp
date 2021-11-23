@@ -16,7 +16,7 @@ static bool _dataSeen = false;
 static int _bitrate = 0;
 static unsigned long _startMute = 0; /* mutes the sound during stream startup to supress the crack that comes with starting a stream */
 
-static uint8_t buff[VS1053_PACKETSIZE];
+static uint8_t _vs1053Buffer[VS1053_PACKETSIZE];
 
 static enum mimetype_t {
     MP3,
@@ -170,9 +170,6 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                 else if (_http->header(CONTENT_TYPE).equals("audio/ogg"))
                     _currentMimetype = OGG;
 
-                else if (_http->header(CONTENT_TYPE).equals("audio/wav"))
-                    _currentMimetype = WAV;
-
                 else if (_http->header(CONTENT_TYPE).equals("audio/aac"))
                     _currentMimetype = AAC;
 
@@ -261,9 +258,9 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
 
     while (stream->available() && _vs1053->data_request() && _remainingBytes && _blockPos < _metaint) {
         const size_t bytesToRead = _metaint ? _metaint - _blockPos : stream->available();
-        const int c = stream->readBytes(buff, min(bytesToRead, VS1053_PACKETSIZE));
+        const int c = stream->readBytes(_vs1053Buffer, min(bytesToRead, VS1053_PACKETSIZE));
         _remainingBytes -= _remainingBytes > 0 ? c : 0;
-        _vs1053->playChunk(buff, c);
+        _vs1053->playChunk(_vs1053Buffer, c);
         _blockPos += _metaint ? c : 0;
         amount += c;
     }
@@ -304,8 +301,8 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
 
     while (_bytesLeftInChunk && _vs1053->data_request() && _blockPos < _metaint) {
         const size_t bytesToRead = min(_bytesLeftInChunk, (size_t)_metaint - _blockPos);
-        const int c = stream->readBytes(buff, min(bytesToRead, VS1053_PACKETSIZE));
-        _vs1053->playChunk(buff, c);
+        const int c = stream->readBytes(_vs1053Buffer, min(bytesToRead, VS1053_PACKETSIZE));
+        _vs1053->playChunk(_vs1053Buffer, c);
         _bytesLeftInChunk -= c;
         _blockPos += _metaint ? c : 0;
         amount += c;
