@@ -21,13 +21,12 @@ static uint8_t _vs1053Buffer[VS1053_PACKETSIZE];
 static enum mimetype_t {
     MP3,
     OGG,
-    WAV,
     AAC,
     AACP,
     UNKNOWN
 } _currentMimetype = UNKNOWN;
 
-static const String mimestr[] = {"MP3", "OGG", "WAV", "AAC", "AAC+", "UNKNOWN"};
+static const String mimestr[] = {"MP3", "OGG", "AAC", "AAC+", "UNKNOWN"};
 
 inline __attribute__((always_inline))
 static bool networkIsActive() {
