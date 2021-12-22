@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <HTTPClient.h>
-#include <VS1053.h>
+#include <VS1053.h>  /* https://github.com/baldram/ESP_VS1053_Library */
 
 #define VS1053_INITIALVOLUME          95
 #define VS1053_MAXVOLUME              100
@@ -12,10 +12,11 @@
 #define CONNECT_TIMEOUT_MS            250
 #define CONNECT_TIMEOUT_MS_SSL        2500
 
-#define VS1053_USE_HTTP_BUFFER        true                        // if set to false - decoding starts as soon as data is received
+#define VS1053_USE_HTTP_BUFFER        false                       // if set to false - decoding starts as soon as data is received
                                                                   // if set to true - see VS1053_HTTP_BUFFERSIZE and VS1053_MAX_RETRIES
 
 #define VS1053_HTTP_BUFFERSIZE        ((size_t)1024 * 4)          // on stream start - try to wait for this amount of bytes in the buffer
+
 #define VS1053_MAX_RETRIES            5                           // but just start decoding after MAX_RETRIES regardless of stored amount
 
 #define VS1053_MAX_METADATA_LENGTH    255
