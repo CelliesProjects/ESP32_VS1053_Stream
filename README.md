@@ -2,11 +2,11 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7571166c872e4dc8a899382389b73f8e)](https://app.codacy.com/gh/CelliesProjects/ESP32_VS1053_Stream?utm_source=github.com&utm_medium=referral&utm_content=CelliesProjects/ESP32_VS1053_Stream&utm_campaign=Badge_Grade_Settings)
 
-A streaming library for esp32 with a separate vs1053 mp3/ogg/aac/wav decoder.
+A streaming library for esp32 with a separate vs1053 mp3/ogg/aac/flac/wav decoder.
 
 With this library you can play http, https (insecure mode) and chunked audio streams.
 
-Supports playback of mp3, ogg, aac, aac+ files/streams.
+Supports playback of mp3, ogg, aac, aac+ and flac files and streams.
 
 This library depends on the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
