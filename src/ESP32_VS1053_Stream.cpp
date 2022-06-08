@@ -124,7 +124,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
     _http->setConnectTimeout(url.startsWith("https") ? CONNECT_TIMEOUT_MS_SSL : CONNECT_TIMEOUT_MS);
     _http->setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 
-    //const unsigned long START_TIME_MS {millis()};
+    const unsigned long START_TIME_MS {millis()};
 
     const int result = _http->GET();
 
