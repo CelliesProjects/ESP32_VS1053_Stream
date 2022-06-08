@@ -170,7 +170,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                 else if (_http->header(CONTENT_TYPE).equals("audio/mpeg"))
                     _currentMimetype = MP3;
 
-                else if (_http->header(CONTENT_TYPE).equals("audio/ogg"))
+                else if (_http->header(CONTENT_TYPE).equals("audio/ogg") || _http->header(CONTENT_TYPE).equals("application/ogg"))
                     _currentMimetype = OGG;
 
                 else if (_http->header(CONTENT_TYPE).equals("audio/aac"))
