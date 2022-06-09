@@ -3,7 +3,7 @@
 static HTTPClient* _http = NULL;
 static String _url;
 static size_t _remainingBytes = 0;
-static size_t _startrange;
+static size_t _startrange = 0;
 static String _user;
 static String _pwd;
 static bool _bufferFilled = false;
@@ -404,6 +404,7 @@ void ESP32_VS1053_Stream::stopSong(const bool resume) {
         _bytesLeftInChunk = 0;
         _currentMimetype = UNKNOWN;
         _url.clear();
+        _bitrate = 0;
     }
 }
 
@@ -430,4 +431,8 @@ size_t ESP32_VS1053_Stream::position() {
 
 String ESP32_VS1053_Stream::lastUrl() {
     return _url;
+}
+
+uint32_t ESP32_VS1053_Stream::bitrate(){
+    return _bitrate;
 }

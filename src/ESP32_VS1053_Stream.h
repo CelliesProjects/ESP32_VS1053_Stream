@@ -62,6 +62,7 @@ class ESP32_VS1053_Stream {
         size_t size();
         size_t position();
         String lastUrl();
+        uint32_t bitrate();
 
     private:
         VS1053* _vs1053 = NULL;
