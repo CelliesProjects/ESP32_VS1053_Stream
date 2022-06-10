@@ -339,7 +339,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
 }
 
 void ESP32_VS1053_Stream::loop() {
-    if (!_http || !_http->connected() || !_vs1053) return;
+    if (!_http || !_http->connected()) return;
 
     WiFiClient* const stream = _http->getStreamPtr();
     if (!stream->available()) return;
@@ -367,7 +367,7 @@ void ESP32_VS1053_Stream::loop() {
         }
     }
 
-    if (_http->connected() && _remainingBytes && _vs1053->data_request()) {
+    if (_remainingBytes && _vs1053->data_request()) {
         if (_chunkedResponse) _handleChunkedStream(stream);
         else _handleStream(stream);
     }
