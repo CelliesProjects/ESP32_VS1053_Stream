@@ -56,8 +56,8 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
         return false;
     }
     _vs1053->begin();
-    _vs1053->loadDefaultVs1053Patches();
     _vs1053->switchToMp3Mode();
+    _vs1053->loadDefaultVs1053Patches();
     setVolume(_volume);
     return true;
 }
