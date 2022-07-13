@@ -395,7 +395,7 @@ void ESP32_VS1053_Stream::stopSong(const bool resume) {
         delete _http;
         _http = NULL;
 
-        if (_vs1053 && !resume)
+        if (!resume)
             _vs1053->stopSong();
 
         _dataSeen = false;
