@@ -248,7 +248,7 @@ static void _parseMetaData(const String& data) {
 }
 
 void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
-    if (!_dataSeen && stream->available()) {
+    if (!_dataSeen) {
         ESP_LOGD(TAG, "first data bytes are seen - %i bytes", stream->available());
         _dataSeen = true;
         _startMute = millis();
@@ -290,7 +290,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
         _bytesLeftInChunk = strtol(stream->readStringUntil('\n').c_str(), NULL, 16);
         ESP_LOGD(TAG, "chunk size: %i", _bytesLeftInChunk);
 
-        if (!_dataSeen && _bytesLeftInChunk) {
+        if (!_dataSeen) {
             ESP_LOGD(TAG, "first data chunk: %i bytes", _bytesLeftInChunk);
             _dataSeen = true;
             _startMute = millis();
@@ -374,9 +374,9 @@ void ESP32_VS1053_Stream::loop() {
 
     if (!_remainingBytes) {
         ESP_LOGD(TAG, "all data read - closing stream");
-        const String temp = audio_eof_stream ? _url : "";
+        const String url = audio_eof_stream ? _url : "";
         stopSong();
-        if (audio_eof_stream) audio_eof_stream(temp.c_str());
+        if (audio_eof_stream) audio_eof_stream(url.c_str());
     }
 }
 
