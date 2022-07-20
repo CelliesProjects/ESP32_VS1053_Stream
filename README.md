@@ -4,11 +4,11 @@
 
 A streaming library for esp32 with a separate vs1053 mp3/ogg/aac/flac/wav decoder.
 
-With this library you can play http, https (insecure mode) and chunked audio streams.
+This library plays mp3, ogg, aac, aac+ and flac files and streams. 
 
-Supports playback of mp3, ogg, aac, aac+ and flac files and streams.
+Supports http, https (insecure mode) and chunked audio streams.
 
-This library depends on the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
+You need [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
 Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
 
