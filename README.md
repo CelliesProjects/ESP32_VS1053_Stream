@@ -16,6 +16,12 @@ Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPla
 
 Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and `ESP32_VS1053_Stream` in your Arduino library folder.
 
+## Known issues
+
+From Arduino ESP32 core version 2.0.3 onwards HTTPClient has some issues that will be addressed as soon as I can find the time to debug and solve this.
+
+For now use the Arduino ESP32 core version 1.0.6 for troublefree streaming.
+
 ## Example code
 
 ```c++
