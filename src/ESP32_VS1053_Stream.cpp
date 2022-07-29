@@ -2,19 +2,19 @@
 
 static HTTPClient* _http = NULL;
 static String _url;
-static size_t _remainingBytes = 0;
-static size_t _startrange = 0;
 static String _user;
 static String _pwd;
-static bool _bufferFilled = false;
-static uint8_t _volume = VS1053_INITIALVOLUME;
+static unsigned long _startMute = 0; /* mutes the sound during stream startup to supress the crack that comes with starting a stream */
+static size_t _remainingBytes = 0;
+static size_t _startrange = 0;
+static size_t _bytesLeftInChunk = 0;
 static int32_t _metaDataStart = 0;
 static int32_t _musicDataPosition = 0; /* position within current music data block */
-static bool _chunkedResponse = false;
-static size_t _bytesLeftInChunk = 0;
-static bool _dataSeen = false;
+static uint8_t _volume = VS1053_INITIALVOLUME;
 static int _bitrate = 0;
-static unsigned long _startMute = 0; /* mutes the sound during stream startup to supress the crack that comes with starting a stream */
+static bool _chunkedResponse = false;
+static bool _bufferFilled = false;
+static bool _dataSeen = false;
 
 static uint8_t _vs1053Buffer[VS1053_PACKETSIZE];
 
