@@ -418,7 +418,7 @@ void ESP32_VS1053_Stream::setVolume(const uint8_t vol) {
 }
 
 void ESP32_VS1053_Stream::setTone(uint8_t *rtone) {
-     _vs1053->setTone(rtone);
+    if (_vs1053) _vs1053->setTone(rtone);
 }
 
 String ESP32_VS1053_Stream::currentCodec() {
