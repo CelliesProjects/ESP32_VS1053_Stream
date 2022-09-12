@@ -58,7 +58,7 @@ class ESP32_VS1053_Stream {
         void stopSong(const bool resume=false);
         uint8_t getVolume();
         void setVolume(const uint8_t vol); /* 0-100 */
-        void setTone(uint8_t *rtone);
+        void setTone(const uint8_t *rtone);
         /*  Bass/Treble: void setTone(uint8_t *rtone);
             toneha       = <0..15>        // Setting treble gain (0 off, 1.5dB steps)
             tonehf       = <0..15>        // Setting treble frequency lower limit x 1000 Hz
