@@ -417,6 +417,10 @@ void ESP32_VS1053_Stream::setVolume(const uint8_t vol) {
     if (_vs1053 && !_startMute) _vs1053->setVolume(_volume);
 }
 
+void ESP32_VS1053_Stream::setTone(const uint8_t *rtone) {
+    if (_vs1053) _vs1053->setTone(rtone);
+}
+
 String ESP32_VS1053_Stream::currentCodec() {
     return mimestr[_currentMimetype];
 }

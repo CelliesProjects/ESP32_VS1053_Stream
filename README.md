@@ -160,6 +160,20 @@ Will return `true` or `false`.
 
 Value should be between 0-100.
 
+### Set bass and treble
+
+`uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};`
+
+-  `stream.setTone(rtone)`
+
+Values should be:
+```
+toneha       = <0..15>        // Setting treble gain (0 off, 1.5dB steps)
+tonehf       = <0..15>        // Setting treble frequency lower limit x 1000 Hz
+tonela       = <0..15>        // Setting bass gain (0 = off, 1dB steps)
+tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
+```
+
 ### Get the currently used codec
 -  `stream.currentCodec()`
 
