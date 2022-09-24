@@ -18,7 +18,7 @@ Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and 
 
 ## Known issues
 
-From Arduino ESP32 core version 2.0.3 onwards HTTPClient has some issues that will be addressed as soon as I can find the time to debug and solve this.
+From Arduino ESP32 core version 2.0.0 and later HTTPClient has timeout issues that hopefully will be fixed in somne future version.
 
 For now use the Arduino ESP32 core version 1.0.6 for troublefree streaming.
 
