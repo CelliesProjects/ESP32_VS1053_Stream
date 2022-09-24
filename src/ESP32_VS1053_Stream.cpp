@@ -290,6 +290,12 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
         _bytesLeftInChunk = strtol(stream->readStringUntil('\n').c_str(), NULL, 16);
         ESP_LOGD(TAG, "chunk size: %i", _bytesLeftInChunk);
 
+        if (!_bytesLeftInChunk) {
+            ESP_LOGD(TAG, "Current chunk size is zero. Stopping song");
+            stopSong();
+            return;
+        }
+
         if (!_dataSeen) {
             ESP_LOGD(TAG, "first data chunk: %i bytes", _bytesLeftInChunk);
             _dataSeen = true;
