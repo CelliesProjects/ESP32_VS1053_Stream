@@ -94,7 +94,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
     {
         String escapedUrl = url;
         escapedUrl.replace(" ", "%20");
-        ESP_LOGD(TAG, "connecting to %s", url.c_str());
+        ESP_LOGI(TAG, "connecting to %s", url.c_str());
         if (!_http->begin(escapedUrl)) {
             ESP_LOGE(TAG, "could not connect to %s", url.c_str());
             stopSong();
@@ -104,12 +104,8 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
 
     // add request headers
     _http->addHeader("Icy-MetaData", VS1053_ICY_METADATA ? "1" : "0");
-
-    if (_startrange)
-        _http->addHeader("Range", " bytes=" + String(_startrange) + "-");
-
-    if (_user || _pwd)
-        _http->setAuthorization(_user.c_str(), _pwd.c_str());
+    _http->addHeader("Range", " bytes=" + String(_startrange) + "-");
+    _http->setAuthorization(_user.c_str(), _pwd.c_str());
 
     //prepare for response headers
     const char* CONTENT_TYPE = "Content-Type";
@@ -124,7 +120,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
     _http->setConnectTimeout(url.startsWith("https") ? CONNECT_TIMEOUT_MS_SSL : CONNECT_TIMEOUT_MS);
     _http->setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 
-    const unsigned long START_TIME_MS {millis()};
+    //const unsigned long START_TIME_MS {millis()}; //only used for debug
 
     const int result = _http->GET();
 
