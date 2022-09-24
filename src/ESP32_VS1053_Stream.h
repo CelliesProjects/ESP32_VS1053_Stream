@@ -64,7 +64,8 @@ class ESP32_VS1053_Stream {
             tonehf       = <0..15>        // Setting treble frequency lower limit x 1000 Hz
             tonela       = <0..15>        // Setting bass gain (0 = off, 1dB steps)
             tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
-            e.g. uint8_t rtone[4]  = {12, 15, 15, 15}; // initialize bass & treble */
+            e.g. uint8_t rtone[4]  = {12, 15, 15, 15}; // initialize bass & treble
+            See https://www.vlsi.fi/fileadmin/datasheets/vs1053.pdf */
         String currentCodec();
         size_t size();
         size_t position();
