@@ -1,16 +1,6 @@
 #ifndef __ESP32_VS1053_Stream__
 #define __ESP32_VS1053_Stream__
 
-// Since ESP32 Arduino Core 2.0.3 logging does not work without the following code
-// see: https://github.com/espressif/arduino-esp32/issues/6083
-#if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
-#include "esp32-hal-log.h"
-#define TAG ""
-#else
-#include "esp_log.h"
-static const char *TAG = "esp32_vs1053_stream";
-#endif
-
 #include <Arduino.h>
 #include <HTTPClient.h>
 #include <VS1053.h>  /* https://github.com/baldram/ESP_VS1053_Library */
