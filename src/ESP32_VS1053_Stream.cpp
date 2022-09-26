@@ -63,26 +63,8 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
 }
 
 bool ESP32_VS1053_Stream::connecttohost(const String& url) {
-
-    if (!_vs1053) {
-        ESP_LOGE(TAG, "vs1053 is not initialized");
+    if (!_vs1053 || _http || !networkIsActive() || !url.startsWith("http"))
         return false;
-    }
-
-    if (!url.startsWith("http")) {
-        ESP_LOGE(TAG, "url should start with http or https");
-        return false;
-    }
-
-    if (_http) {
-        ESP_LOGE(TAG, "client already running!");
-        return false;
-    }
-
-    if (!networkIsActive()) {
-        ESP_LOGE(TAG, "no active network adapter");
-        return false;
-    }
 
     _http = new HTTPClient;
 
