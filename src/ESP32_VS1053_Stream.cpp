@@ -186,7 +186,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                 if (audio_showstation && !_http->header(ICY_NAME).equals(""))
                     audio_showstation(_http->header(ICY_NAME).c_str());
 
-                _remainingBytes = _http->getSize();  // -1 when Server sends no Content-Length header
+                _remainingBytes = _http->getSize();  // -1 when Server sends no Content-Length header (chunked streams)
                 _chunkedResponse = _http->header(ENCODING).equals("chunked") ? true : false;
                 _metaDataStart = _http->header(ICY_METAINT).toInt();
                 _musicDataPosition = _metaDataStart ? 0 : -100;
@@ -287,7 +287,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
         ESP_LOGD(TAG, "chunk size: %i", _bytesLeftInChunk);
 
         if (!_bytesLeftInChunk) {
-            _remainingBytes = 0;
+            _remainingBytes = 0; // _remainingBytes was set to -1 in connecttohost() on chunked streams
             return;
         }
 
