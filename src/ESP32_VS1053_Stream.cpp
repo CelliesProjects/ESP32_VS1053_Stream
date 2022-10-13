@@ -326,7 +326,7 @@ void ESP32_VS1053_Stream::loop() {
     WiFiClient* const stream = _http->getStreamPtr();
     if (!stream->available()) return;
 
-#if (VS1053_USE_HTTP_BUFFER == true)
+#if (VS1053_USE_HTTP_BUFFER)
     {
         static auto count = 0;
 
