@@ -304,7 +304,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
             while (metaLength) {
                 if (!_bytesLeftInChunk) {
                     stream->readStringUntil('\n');
-                    while (!stream->available()) delay(1);
                     _bytesLeftInChunk = strtol(stream->readStringUntil('\n').c_str(), NULL, 16);
                 }
                 const char ch = stream->read();
