@@ -326,20 +326,6 @@ void ESP32_VS1053_Stream::loop() {
     WiFiClient* const stream = _http->getStreamPtr();
     if (!stream->available()) return;
 
-#if (VS1053_USE_HTTP_BUFFER)
-    {
-        static auto count = 0;
-
-        if ((!_bufferFilled && count++ < VS1053_MAX_RETRIES) && stream->available() < min(VS1053_HTTP_BUFFERSIZE, _remainingBytes)) {
-            ESP_LOGI(TAG, "Pass: %i available: %i", count, stream->available());
-            return;
-        }
-
-        _bufferFilled = true;
-        count = 0;
-    }
-#endif
-
     if (_startMute) {
         const auto WAIT_TIME_MS = (!_bitrate && _remainingBytes == -1) ? 180 : 60;
         if ((unsigned long)millis() - _startMute > WAIT_TIME_MS) {
