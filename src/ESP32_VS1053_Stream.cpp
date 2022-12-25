@@ -362,7 +362,7 @@ void ESP32_VS1053_Stream::loop() {
         log_d("All data read - closing stream");
         if (audio_eof_stream) {
             char tmp[_url.length()];
-            strncpy(tmp, _url.c_str(), sizeof(tmp));
+            snprintf(tmp, sizeof(tmp), "%s", _url.c_str());
             stopSong();
             audio_eof_stream(tmp);
         }
