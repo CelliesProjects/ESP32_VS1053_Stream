@@ -66,7 +66,7 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     return true;
 }
 
-bool ESP32_VS1053_Stream::isConnected() {
+bool ESP32_VS1053_Stream::isChipConnected() {
     return _vs1053 ? _vs1053->isChipConnected() : false;
 }
 

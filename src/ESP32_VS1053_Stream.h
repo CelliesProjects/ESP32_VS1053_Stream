@@ -12,8 +12,6 @@
 #define CONNECT_TIMEOUT_MS            250
 #define CONNECT_TIMEOUT_MS_SSL        2500
 
-#define VS1053_MAX_METADATA_LENGTH    255
-
 const size_t VS1053_PACKETSIZE = 32;
 
 extern void audio_showstation(const char*) __attribute__((weak));
@@ -27,7 +25,7 @@ class ESP32_VS1053_Stream {
         ~ESP32_VS1053_Stream();
 
         bool startDecoder(const uint8_t CS, const uint8_t DCS, const uint8_t DREQ);
-        bool isConnected();
+        bool isChipConnected();
 
         bool connecttohost(const String& url);
         bool connecttohost(const String& url, const size_t startrange);
