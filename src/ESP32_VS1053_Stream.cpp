@@ -199,8 +199,8 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
     }
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const String& url, const size_t startrange) {
-    _offset = startrange;
+bool ESP32_VS1053_Stream::connecttohost(const String& url, const size_t offset) {
+    _offset = offset;
     return connecttohost(url);
 }
 
@@ -210,10 +210,10 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url, const String& user, c
     return connecttohost(url);
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const String& url, const String& user, const String& pwd, const size_t startrange) {
+bool ESP32_VS1053_Stream::connecttohost(const String& url, const String& user, const String& pwd, const size_t offset) {
     _user = user;
     _pwd = pwd;
-    _offset = startrange;
+    _offset = offset;
     return connecttohost(url);
 }
 

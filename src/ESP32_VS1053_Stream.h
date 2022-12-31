@@ -28,9 +28,9 @@ class ESP32_VS1053_Stream {
         bool isChipConnected();
 
         bool connecttohost(const String& url);
-        bool connecttohost(const String& url, const size_t startrange);
+        bool connecttohost(const String& url, const size_t offset);
         bool connecttohost(const String& url, const String& user, const String& pwd);
-        bool connecttohost(const String& url, const String& user, const String& pwd, const size_t startrange);
+        bool connecttohost(const String& url, const String& user, const String& pwd, const size_t offset);
 
         void loop();
         bool isRunning();

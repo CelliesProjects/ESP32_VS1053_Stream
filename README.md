@@ -8,19 +8,16 @@ This library plays mp3, ogg, aac, aac+ and flac files and streams.
 
 Supports http, https (insecure mode) and chunked audio streams.
 
-You need [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
+This library needs [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
 Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
 
-## How to install
+## How to install and use
 
-Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and `ESP32_VS1053_Stream` in your Arduino library folder.
+Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and this library in your Arduino library folder.
 
-## Known issues
 
-From Arduino ESP32 core version 2.0.0 and later HTTPClient has timeout issues that hopefully will be fixed in some future version.
-
-For now use the Arduino ESP32 core version 1.0.6 for troublefree streaming.
+Use [the latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest).
 
 ## Example code
 
@@ -86,77 +83,51 @@ void audio_eof_stream(const char* info) {
 
 ### Initialize the VS1053 codec
 
--  `stream.startDecoder(CS, DCS, DREQ)`
+`bool startDecoder(CS, DCS, DREQ)`
 
 Will return `true` or `false` depending on the result.
 
-### Starting or resuming a stream
+### Start or resume a stream
 
--  `stream.connecttohost(url)`
+`bool connecttohost(url)`
 
 Will return `true` or `false` depending on the result.
 
 You can resume (or start playing with an offset) by requesting a stream with
 
--  `stream.connecttohost(url, startrange)`
+`bool connecttohost(url, offset)`
 
 For streams that need login credentials use
 
--  `stream.connecttohost(url, user, pwd)`
+`bool connecttohost(url, user, pwd)`
 
-### Stopping or pausing a stream
+### Stopping a stream
 
 Stop a stream with:
 
--  `stream.stopSong()` 
-
-Pause a stream with:
-
--  `stream.stopSong(VS1053_RESUME)`
-
-#### Example how to pause a stream
-
-```c++
-const String HOST = "http://some_file_with_a_filesize";
-
-stream.connecttohost(HOST);
-
-//[stream starts playing from the start]
-
-const size_t FILE_POS = stream.position();
-stream.stopSong(VS1053_RESUME);
-
-//[stream is paused]
-
-stream.connecttohost(HOST, FILE_POS);
-
-//[stream will resume from FILE_POS]
-
-```
-This is only needed on real files. Radiostreams always return `0` on `stream.position()` and `stream.size()`.
-
-If a stream reaches EOF `stream.stopSong()` is called automagically. 
-<br>In that case you can use `stream.connecttohost(NEW_HOST)` without first calling `stream.stopSong()`.
+`void stopSong()` 
 
 ### Feeding the decoder
 
--  `stream.loop()`
+`void loop()`
 
 This function has to called every couple of ms to feed the decoder with data.
 
 ### Check if stream is running
 
--  `stream.isRunning()`
+ `bool isRunning()`
 
 Will return `true` or `false`.
 
 ### Get the current volume
 
--  `stream.getVolume()`
+`uint8_t getVolume()`
+
+Returns the current volume.
 
 ### Set the volume
 
--  `stream.setVolume(value)`
+`void setVolume(uint8_t volume)`
 
 Value should be between 0-100.
 
@@ -164,7 +135,7 @@ Value should be between 0-100.
 
 `uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};`
 
--  `stream.setTone(rtone)`
+`void setTone(rtone)`
 
 Values should be:
 ```
@@ -175,23 +146,25 @@ tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 ```
 
 ### Get the currently used codec
--  `stream.currentCodec()`
+`const char* currentCodec()`
 
-Return a string with the currently used codec.
-Returns `UNKNOWN` if no stream is running.
+Return a `const char*` containing the currently used codec.
+Returns `STOPPED` if no stream is running.
 
 ### Get the filesize
--  `stream.size()`
+
+`size_t size()`
 
 Will return `0` if the stream is a radio stream.
 
 ### Get the current position in the stream
--  `stream.position()`
 
-Will return `0` if the stream is a radio stream.
+`size_t position()`
 
-### Get the current url
--  `stream.lastUrl()`
+Will always return `0` if the stream is a radio stream.
+
+### Get the current stream url
+`char* lastUrl()`
 
 The current stream url might differ from the request url if the request url points to a playlist.
 
