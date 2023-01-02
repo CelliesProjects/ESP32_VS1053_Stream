@@ -147,12 +147,10 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                         stopSong();
                         return false;
                     }
-                    else {
-                        strtok(url, "\n;?");
-                        log_i("playlist reconnects to: %s", url);
-                        stopSong();
-                        return connecttohost(url);
-                    }
+                    strtok(url, "\n;?");
+                    log_i("playlist reconnects to: %s", url);
+                    stopSong();
+                    return connecttohost(url);
                 }
 
                 else if (_http->header(CONTENT_TYPE).equals("audio/mpeg"))
@@ -218,8 +216,8 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url, const String& user, c
     return connecttohost(url);
 }
 
-static void parseMetadata(char* data, const size_t len) {
-    log_i("parsing metadata: %s", data);
+static void handleMetadata(char* data, const size_t len) {
+    log_d("parsing metadata: %s", data);
     char* pch = strstr(data, "StreamTitle");
     if (!pch) return;
     pch = strstr(pch, "'");
@@ -257,7 +255,7 @@ static void _handleStream(WiFiClient* const stream) {
         if (METALENGTH) {
             char data[METALENGTH];
             stream->readBytes(data, METALENGTH);
-            if (audio_showstreamtitle) parseMetadata(data, METALENGTH);
+            if (audio_showstreamtitle) handleMetadata(data, METALENGTH);
         }
         _musicDataPosition = 0;
     }
@@ -328,7 +326,7 @@ static void _handleChunkedStream(WiFiClient* const stream) {
                 data[cnt++] = stream->read();
                 _bytesLeftInChunk--;
             }
-            if (audio_showstreamtitle) parseMetadata(data, METALENGTH);
+            if (audio_showstreamtitle) handleMetadata(data, METALENGTH);
         }
         _musicDataPosition = 0;
     }
