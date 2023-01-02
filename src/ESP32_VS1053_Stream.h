@@ -8,6 +8,7 @@
 #define VS1053_INITIALVOLUME          95
 #define VS1053_MAXVOLUME              100
 #define VS1053_ICY_METADATA           true
+#define VS1053_MAX_PLAYLIST_READ      512
 
 #define CONNECT_TIMEOUT_MS            250
 #define CONNECT_TIMEOUT_MS_SSL        2500
@@ -46,9 +47,9 @@ class ESP32_VS1053_Stream {
             e.g. uint8_t rtone[4]  = {12, 15, 15, 15}; // initialize bass & treble
             See https://www.vlsi.fi/fileadmin/datasheets/vs1053.pdf section 9.6.3 */
         const char* currentCodec();
+        const char* lastUrl();
         size_t size();
         size_t position();
-        String lastUrl();
         uint32_t bitrate();
 };
 

@@ -130,10 +130,10 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                         _http->header(CONTENT_TYPE).equals("application/x-mpegurl") ||
                         _http->header(CONTENT_TYPE).equals("application/pls+xml") ||
                         _http->header(CONTENT_TYPE).equals("application/vnd.apple.mpegurl")) {
-                    log_i("url %s is a playlist", url.c_str());
+                    log_d("url %s is a playlist", url.c_str());
 
                     WiFiClient* stream = _http->getStreamPtr();
-                    const auto BYTES_TO_READ = min(stream->available(), 512);
+                    const auto BYTES_TO_READ = min(stream->available(), VS1053_MAX_PLAYLIST_READ);
                     if (!BYTES_TO_READ) {
                         log_e("playlist contains no data");
                         stopSong();
@@ -148,7 +148,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                         return false;
                     }
                     strtok(url, "\n;?");
-                    log_i("playlist reconnects to: %s", url);
+                    log_d("playlist reconnects to: %s", url);
                     stopSong();
                     return connecttohost(url);
                 }
@@ -413,16 +413,16 @@ const char* ESP32_VS1053_Stream::currentCodec() {
     return _mimestr[_currentMimetype];
 }
 
+const char* ESP32_VS1053_Stream::lastUrl() {
+    return _url.c_str();
+}
+
 size_t ESP32_VS1053_Stream::size() {
     return _offset + (_http ? _http->getSize() != -1 ? _http->getSize() : 0 : 0);
 }
 
 size_t ESP32_VS1053_Stream::position() {
     return size() - _remainingBytes;
-}
-
-String ESP32_VS1053_Stream::lastUrl() {
-    return _url;
 }
 
 uint32_t ESP32_VS1053_Stream::bitrate() {
