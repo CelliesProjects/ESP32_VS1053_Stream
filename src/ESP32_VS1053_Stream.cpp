@@ -130,27 +130,28 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                         _http->header(CONTENT_TYPE).equals("application/x-mpegurl") ||
                         _http->header(CONTENT_TYPE).equals("application/pls+xml") ||
                         _http->header(CONTENT_TYPE).equals("application/vnd.apple.mpegurl")) {
-                    log_d("url %s is a playlist", url.c_str());
+                    log_i("url %s is a playlist", url.c_str());
 
-                    if (_http->getSize() < 6) {
-                        log_e("playlist contains no valid url");
+                    WiFiClient* stream = _http->getStreamPtr();
+                    const auto BYTES_TO_READ = min(stream->available(), 512);
+                    if (!BYTES_TO_READ) {
+                        log_e("playlist contains no data");
                         stopSong();
                         return false;
                     }
-
-                    WiFiClient* stream = _http->getStreamPtr();
-                    char playlist[_http->getSize()];
-                    stream->readBytes(playlist, _http->getSize());
-                    const char* pch = strstr(playlist, "http");
-                    if (!pch) {
-                        log_e("playlist contains no valid url");
+                    char file[BYTES_TO_READ];
+                    stream->readBytes(file, BYTES_TO_READ);
+                    char* url = strstr(file, "http");
+                    if (!url) {
+                        log_e("playlist contains no 'http'");
                         stopSong();
                         return false;
                     }
                     else {
-                        log_d("playlist reconnects to: %s", pch);
+                        strtok(url, "\n;?");
+                        log_i("playlist reconnects to: %s", url);
                         stopSong();
-                        return connecttohost(pch);
+                        return connecttohost(url);
                     }
                 }
 
@@ -192,7 +193,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
             }
         default :
             {
-                log_e("error %i %s", result, _http->errorToString(result));
+                log_e("error %i %s", result, _http->errorToString(result).c_str());
                 stopSong();
                 return false;
             }
@@ -218,10 +219,11 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url, const String& user, c
 }
 
 static void parseMetadata(char* data, const size_t len) {
-    log_d("parsing metadata: %s", data);
+    log_i("parsing metadata: %s", data);
     char* pch = strstr(data, "StreamTitle");
-    if (pch) pch = strstr(pch, "'");
-    else return;
+    if (!pch) return;
+    pch = strstr(pch, "'");
+    if (!pch) return;
     char* index = ++pch;
     while (index[0] != '\'' || index[1] != ';')
         if (index++ == data + len) return;
@@ -380,7 +382,6 @@ void ESP32_VS1053_Stream::stopSong() {
         if (_http->connected()) {
             WiFiClient* const stream = _http->getStreamPtr();
             stream->stop();
-            //stream->flush(); // it seems that since 2.0.0 stream->flush() is not needed anymore after a stream->close();
         }
         _http->end();
         delete _http;
