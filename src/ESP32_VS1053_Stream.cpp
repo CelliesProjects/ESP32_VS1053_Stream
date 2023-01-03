@@ -345,7 +345,7 @@ void ESP32_VS1053_Stream::loop() {
     }
 
     if (_startMute) {
-        const auto WAIT_TIME_MS = (!_bitrate && _remainingBytes == -1) ? 180 : 60;
+        const auto WAIT_TIME_MS = ((!_bitrate && _remainingBytes == -1) || _currentMimetype == AAC || _currentMimetype == AACP) ? 380 : 80;
         if ((unsigned long)millis() - _startMute > WAIT_TIME_MS) {
             _vs1053->setVolume(_volume);
             log_d("startmute ms: %i", WAIT_TIME_MS);
