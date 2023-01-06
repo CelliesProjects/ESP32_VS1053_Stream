@@ -1,7 +1,5 @@
 #include "ESP32_VS1053_Stream.h"
 
-#include <string>
-
 static VS1053* _vs1053 = NULL;
 static HTTPClient* _http = NULL;
 static char _url[VS1053_MAX_URL_LENGTH];
