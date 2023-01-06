@@ -9,6 +9,7 @@
 #define VS1053_MAXVOLUME              100
 #define VS1053_ICY_METADATA           true
 #define VS1053_MAX_PLAYLIST_READ      512
+#define VS1053_MAX_URL_LENGTH         512
 
 #define CONNECT_TIMEOUT_MS            250
 #define CONNECT_TIMEOUT_MS_SSL        2500
@@ -28,10 +29,10 @@ class ESP32_VS1053_Stream {
         bool startDecoder(const uint8_t CS, const uint8_t DCS, const uint8_t DREQ);
         bool isChipConnected();
 
-        bool connecttohost(const String& url);
-        bool connecttohost(const String& url, const size_t offset);
-        bool connecttohost(const String& url, const String& user, const String& pwd);
-        bool connecttohost(const String& url, const String& user, const String& pwd, const size_t offset);
+        bool connecttohost(const char* url);
+        bool connecttohost(const char* url, const size_t offset);
+        bool connecttohost(const char* url, const char* user, const char* pwd);
+        bool connecttohost(const char* url, const char* user, const char* pwd, const size_t offset);
 
         void loop();
         bool isRunning();

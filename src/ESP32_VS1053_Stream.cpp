@@ -1,18 +1,18 @@
 #include "ESP32_VS1053_Stream.h"
 
-static const auto MAX_BYTES_PER_LOOP = 16 * 1024; /* do not hog the system - some files have a lot of metadata at the start */
+#include <string>
 
 static VS1053* _vs1053 = NULL;
 static HTTPClient* _http = NULL;
-static String _url;
-static String _user;
-static String _pwd;
-static unsigned long _startMute = 0; /* mutes the sound during stream startup to supress the crack that comes with starting a stream */
+static char _url[VS1053_MAX_URL_LENGTH];
+static char _user[50];
+static char _pwd[50];
+static unsigned long _startMute = 0;
 static size_t _offset = 0;
 static size_t _remainingBytes = 0;
 static size_t _bytesLeftInChunk = 0;
 static int32_t _metaDataStart = 0;
-static int32_t _musicDataPosition = 0; /* position within current music data block */
+static int32_t _musicDataPosition = 0;
 static uint8_t _volume = VS1053_INITIALVOLUME;
 static int _bitrate = 0;
 static bool _chunkedResponse = false;
@@ -20,6 +20,7 @@ static bool _bufferFilled = false;
 static bool _dataSeen = false;
 
 static uint8_t _vs1053Buffer[VS1053_PACKETSIZE];
+static const auto MAX_BYTES_PER_LOOP = 16 * 1024;
 
 static enum mimetype_t {
     MP3,
@@ -70,8 +71,14 @@ bool ESP32_VS1053_Stream::isChipConnected() {
     return _vs1053 ? _vs1053->isChipConnected() : false;
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const String& url) {
-    if (!_vs1053 || _http || !networkIsActive() || !url.startsWith("http"))
+bool ESP32_VS1053_Stream::connecttohost(const char* url) {
+    if (!_vs1053 || _http || !networkIsActive())
+        return false;
+
+    if (tolower(url[0]) != 'h' ||
+        tolower(url[1]) != 't' ||
+        tolower(url[2]) != 't' ||
+        tolower(url[3]) != 'p' )
         return false;
 
     _http = new HTTPClient;
@@ -82,11 +89,29 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
     }
 
     {
-        String escapedUrl = url;
-        escapedUrl.replace(" ", "%20");
-        log_d("connecting to %s", url.c_str());
-        if (!_http->begin(escapedUrl)) {
-            log_e("could not connect to %s", url.c_str());
+        auto cnt = 0;
+        auto index = 0;
+        while (index < strlen(url))
+            cnt += (url[index++] == ' ') ? 1 : 0;
+        char escapedUrl[cnt ? strlen(url) + (3 * cnt) + 1 : 0];
+        if (cnt) {
+            auto in = 0;
+            auto out = 0;
+            while (in < strlen(url)) {
+                if (url[in] == ' ') {
+                    escapedUrl[out++] = '%';
+                    escapedUrl[out++] = '2';
+                    escapedUrl[out++] = '0';
+                }
+                else
+                    escapedUrl[out++] = url[in];
+                in++;
+            }
+            escapedUrl[out] = 0;
+        }
+
+        if (!_http->begin(cnt ? escapedUrl : url)) {
+            log_e("could not connect to %s", url);
             stopSong();
             return false;
         }
@@ -97,7 +122,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
     snprintf(buffer, sizeof(buffer), "bytes=%zu-", _offset);
     _http->addHeader("Range", buffer);
     _http->addHeader("Icy-MetaData", VS1053_ICY_METADATA ? "1" : "0");
-    _http->setAuthorization(_user.c_str(), _pwd.c_str());
+    _http->setAuthorization(_user, _pwd);
 
     //prepare for response headers
     const char* CONTENT_TYPE = "Content-Type";
@@ -122,7 +147,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
         case 206 : log_d("server can resume");
         case 200 :
             {
-                log_d("connected to %s", url.c_str());
+                log_d("connected to %s", _url);
 
                 /* check if we opened a playlist and try to parse it */
                 if (_http->header(CONTENT_TYPE).startsWith("audio/x-scpls") ||
@@ -184,9 +209,7 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
                 log_d("metadata interval is %i", _metaDataStart);
                 _bitrate = _http->header(BITRATE).toInt();
                 log_d("bitrate is %i", _bitrate);
-                _url = url;
-                _user.clear();
-                _pwd.clear();
+                snprintf(_url, sizeof(url), "%s", url);
                 return true;
             }
         default :
@@ -198,20 +221,20 @@ bool ESP32_VS1053_Stream::connecttohost(const String& url) {
     }
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const String& url, const size_t offset) {
+bool ESP32_VS1053_Stream::connecttohost(const char* url, const size_t offset) {
     _offset = offset;
     return connecttohost(url);
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const String& url, const String& user, const String& pwd) {
-    _user = user;
-    _pwd = pwd;
+bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* user, const char* pwd) {
+    snprintf(_user, sizeof(_user), user);
+    snprintf(_pwd, sizeof(_pwd), pwd);
     return connecttohost(url);
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const String& url, const String& user, const String& pwd, const size_t offset) {
-    _user = user;
-    _pwd = pwd;
+bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* user, const char* pwd, const size_t offset) {
+    snprintf(_user, sizeof(_user), user);
+    snprintf(_pwd, sizeof(_pwd), pwd);
     _offset = offset;
     return connecttohost(url);
 }
@@ -361,8 +384,8 @@ void ESP32_VS1053_Stream::loop() {
     if (!_remainingBytes) {
         log_d("All data read - closing stream");
         if (audio_eof_stream) {
-            char tmp[_url.length()];
-            snprintf(tmp, sizeof(tmp), "%s", _url.c_str());
+            char tmp[strlen(_url) + 1];
+            snprintf(tmp, sizeof(tmp), "%s", _url);
             stopSong();
             audio_eof_stream(tmp);
         }
@@ -390,7 +413,9 @@ void ESP32_VS1053_Stream::stopSong() {
         _remainingBytes = 0;
         _bytesLeftInChunk = 0;
         _currentMimetype = STOPPED;
-        _url.clear();
+        _url[0] = 0;
+        _user[0] = 0;
+        _pwd[0] = 0;
         _bitrate = 0;
         _offset = 0;
     }
@@ -414,7 +439,7 @@ const char* ESP32_VS1053_Stream::currentCodec() {
 }
 
 const char* ESP32_VS1053_Stream::lastUrl() {
-    return _url.c_str();
+    return _url;
 }
 
 size_t ESP32_VS1053_Stream::size() {
