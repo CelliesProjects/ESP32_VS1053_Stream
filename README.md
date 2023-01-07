@@ -128,7 +128,7 @@ tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 Returns `STOPPED` if no stream is running.
 
 ### Get the filesize
-`size_t size()'<br>
+`size_t size()`<br>
 Returns `0` if the stream is a radio stream.
 
 ### Get the current position in the file
