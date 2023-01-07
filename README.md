@@ -2,25 +2,19 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7571166c872e4dc8a899382389b73f8e)](https://app.codacy.com/gh/CelliesProjects/ESP32_VS1053_Stream?utm_source=github.com&utm_medium=referral&utm_content=CelliesProjects/ESP32_VS1053_Stream&utm_campaign=Badge_Grade_Settings)
 
-A streaming library for esp32 with a separate vs1053 mp3/ogg/aac/flac/wav decoder.
+A streaming library for esp32 with a separate VS1053 mp3/ogg/aac/flac/wav decoder.
+This library plays mp3, ogg, aac, aac+ and flac files and streams. Supports http, https (insecure mode) and chunked audio streams.
 
-This library plays mp3, ogg, aac, aac+ and flac files and streams. 
+This library needs [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
-Supports http, https (insecure mode) and chunked audio streams.
+Visit [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
 
-You need [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
+## How to install and use
 
-Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
+Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and this library in your Arduino library folder.
 
-## How to install
 
-Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and `ESP32_VS1053_Stream` in your Arduino library folder.
-
-## Known issues
-
-From Arduino ESP32 core version 2.0.0 and later HTTPClient has timeout issues that hopefully will be fixed in some future version.
-
-For now use the Arduino ESP32 core version 1.0.6 for troublefree streaming.
+Use [the latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest).
 
 ## Example code
 
@@ -85,89 +79,63 @@ void audio_eof_stream(const char* info) {
 ## Functions
 
 ### Initialize the VS1053 codec
-
--  `stream.startDecoder(CS, DCS, DREQ)`
-
-Will return `true` or `false` depending on the result.
-
-### Starting or resuming a stream
-
--  `stream.connecttohost(url)`
-
-Will return `true` or `false` depending on the result.
-
-You can resume (or start playing with an offset) by requesting a stream with
-
--  `stream.connecttohost(url, startrange)`
-
-For streams that need login credentials use
-
--  `stream.connecttohost(url, user, pwd)`
-
-### Stopping or pausing a stream
-
-Stop a stream with:
-
--  `stream.stopSong()` 
-
-Pause a stream with:
-
--  `stream.stopSong(VS1053_RESUME)`
-
-#### Example how to pause a stream
-
 ```c++
-const String HOST = "http://some_file_with_a_filesize";
-
-stream.connecttohost(HOST);
-
-//[stream starts playing from the start]
-
-const size_t FILE_POS = stream.position();
-stream.stopSong(VS1053_RESUME);
-
-//[stream is paused]
-
-stream.connecttohost(HOST, FILE_POS);
-
-//[stream will resume from FILE_POS]
-
+bool startDecoder(CS, DCS, DREQ)
 ```
-This is only needed on real files. Radiostreams always return `0` on `stream.position()` and `stream.size()`.
 
-If a stream reaches EOF `stream.stopSong()` is called automagically. 
-<br>In that case you can use `stream.connecttohost(NEW_HOST)` without first calling `stream.stopSong()`.
+### Check if VS1053 is responding
+```c++
+bool isChipConnected()
+```
 
-### Feeding the decoder
+### Start or resume a stream
+```c++
+bool connecttohost(url)
+```
+```c++
+bool connecttohost(url, offset)
+```
+```c++
+bool connecttohost(url, user, pwd
+```
+```c++
+bool connecttohost(url, user, pwd, offset)
+```
+### Stop a stream
+```c++
+void stopSong()
+```
 
--  `stream.loop()`
-
-This function has to called every couple of ms to feed the decoder with data.
+### Feed the decoder
+```c++
+void loop()
+```
+This function has to called every couple of ms to feed the decoder with data. For bitrates up to 320kbps once every 25 ms is about right.
 
 ### Check if stream is running
-
--  `stream.isRunning()`
-
-Will return `true` or `false`.
+```c++
+bool isRunning()
+```
 
 ### Get the current volume
-
--  `stream.getVolume()`
+```c++
+uint8_t getVolume()
+```
 
 ### Set the volume
-
--  `stream.setVolume(value)`
-
+```c++
+void setVolume(uint8_t volume)
+```
 Value should be between 0-100.
 
 ### Set bass and treble
-
-`uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};`
-
--  `stream.setTone(rtone)`
-
-Values should be:
+```c++
+uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};
+void setTone(rtone)
 ```
+
+Values for `rtone`:
+```c++
 toneha       = <0..15>        // Setting treble gain (0 off, 1.5dB steps)
 tonehf       = <0..15>        // Setting treble frequency lower limit x 1000 Hz
 tonela       = <0..15>        // Setting bass gain (0 = off, 1dB steps)
@@ -175,39 +143,44 @@ tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 ```
 
 ### Get the currently used codec
--  `stream.currentCodec()`
-
-Return a string with the currently used codec.
-Returns `UNKNOWN` if no stream is running.
+```c++
+const char* currentCodec()
+```
+Returns `STOPPED` if no stream is running.
 
 ### Get the filesize
--  `stream.size()`
+```c++
+size_t size()
+```
+Returns `0` if the stream is a radio stream.
 
-Will return `0` if the stream is a radio stream.
+### Get the current position in the file
+```c++
+size_t position()
+```
+Returns `0` if the stream is a radio stream.
 
-### Get the current position in the stream
--  `stream.position()`
-
-Will return `0` if the stream is a radio stream.
-
-### Get the current url
--  `stream.lastUrl()`
-
+### Get the current stream url
+```c++
+char* lastUrl()
+```
 The current stream url might differ from the request url if the request url points to a playlist.
 
 ## Event callbacks
-
--  `audio_showstation(const char* info)`
-
+```c++
+void audio_showstation(const char* info)
+```
 Returns the station name.
 
--  `audio_showstreamtitle(const char* info)`
-
+```c++
+void audio_showstreamtitle(const char* info)
+```
 Returns ICY stream information.
 
--  `audio_eof_stream(const char* info)`
-
-Is called when the current stream reaches the end of file.
+```c++
+void audio_eof_stream(const char* info)
+```
+Is called when the current stream reaches the end of file. Returns the current url.
 
 ## License
 
