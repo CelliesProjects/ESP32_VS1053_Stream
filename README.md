@@ -82,13 +82,9 @@ void audio_eof_stream(const char* info) {
 ## Functions
 
 ### Initialize the VS1053 codec
-
 `bool startDecoder(CS, DCS, DREQ)`
 
-Will return `true` or `false` depending on the result.
-
 ### Start or resume a stream
-
 `bool connecttohost(url)`
 
 `bool connecttohost(url, offset)`
@@ -96,17 +92,14 @@ Will return `true` or `false` depending on the result.
 `bool connecttohost(url, user, pwd)`
 
 ### Stop a stream
-
 `void stopSong()` 
 
 ### Feed the decoder
-
 `void loop()`
 
 This function has to called every couple of ms to feed the decoder with data. For bitrates up to 320kbps once every 25 ms is about right.
 
 ### Check if stream is running
-
  `bool isRunning()`
 
 ### Get the current volume
@@ -114,13 +107,11 @@ This function has to called every couple of ms to feed the decoder with data. Fo
 `uint8_t getVolume()`
 
 ### Set the volume
-
 `void setVolume(uint8_t volume)`
 
 Value should be between 0-100.
 
 ### Set bass and treble
-
 `uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};`
 
 `void setTone(rtone)`
@@ -135,8 +126,6 @@ tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 
 ### Get the currently used codec
 `const char* currentCodec()`
-
-Return a `const char*` containing the currently used codec.
 Returns `STOPPED` if no stream is running.
 
 ### Get the filesize
@@ -145,7 +134,7 @@ Returns `STOPPED` if no stream is running.
 
 Will return `0` if the stream is a radio stream.
 
-### Get the current position in the stream
+### Get the current position in the file
 
 `size_t position()`
 
