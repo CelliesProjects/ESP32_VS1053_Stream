@@ -126,19 +126,19 @@ tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 
 ### Get the currently used codec
 `const char* currentCodec()`
+
 Returns `STOPPED` if no stream is running.
 
 ### Get the filesize
-
 `size_t size()`
 
-Will return `0` if the stream is a radio stream.
+Returns `0` if the stream is a radio stream.
 
 ### Get the current position in the file
 
 `size_t position()`
 
-Will return `0` if the stream is a radio stream.
+Returns `0` if the stream is a radio stream.
 
 ### Get the current stream url
 `char* lastUrl()`
@@ -146,18 +146,15 @@ Will return `0` if the stream is a radio stream.
 The current stream url might differ from the request url if the request url points to a playlist.
 
 ## Event callbacks
-
 -  `audio_showstation(const char* info)`
 
 Returns the station name.
-
 -  `audio_showstreamtitle(const char* info)`
 
 Returns ICY stream information.
-
 -  `audio_eof_stream(const char* info)`
 
-Is called when the current stream reaches the end of file.
+Is called when the current stream reaches the end of file. Returns the current url.
 
 ## License
 
