@@ -91,39 +91,27 @@ Will return `true` or `false` depending on the result.
 
 `bool connecttohost(url)`
 
-Will return `true` or `false` depending on the result.
-
-You can resume (or start playing with an offset) by requesting a stream with
-
 `bool connecttohost(url, offset)`
-
-For streams that need login credentials use
 
 `bool connecttohost(url, user, pwd)`
 
-### Stopping a stream
-
-Stop a stream with:
+### Stop a stream
 
 `void stopSong()` 
 
-### Feeding the decoder
+### Feed the decoder
 
 `void loop()`
 
-This function has to called every couple of ms to feed the decoder with data.
+This function has to called every couple of ms to feed the decoder with data. For bitrates up to 320kbps once every 25 ms is about right.
 
 ### Check if stream is running
 
  `bool isRunning()`
 
-Will return `true` or `false`.
-
 ### Get the current volume
 
 `uint8_t getVolume()`
-
-Returns the current volume.
 
 ### Set the volume
 
@@ -161,7 +149,7 @@ Will return `0` if the stream is a radio stream.
 
 `size_t position()`
 
-Will always return `0` if the stream is a radio stream.
+Will return `0` if the stream is a radio stream.
 
 ### Get the current stream url
 `char* lastUrl()`
