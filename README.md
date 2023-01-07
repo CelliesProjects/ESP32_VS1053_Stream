@@ -2,7 +2,7 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7571166c872e4dc8a899382389b73f8e)](https://app.codacy.com/gh/CelliesProjects/ESP32_VS1053_Stream?utm_source=github.com&utm_medium=referral&utm_content=CelliesProjects/ESP32_VS1053_Stream&utm_campaign=Badge_Grade_Settings)
 
-A streaming library for esp32 with a separate vs1053 mp3/ogg/aac/flac/wav decoder.
+A streaming library for esp32 with a separate VS1053 mp3/ogg/aac/flac/wav decoder.
 
 This library plays mp3, ogg, aac, aac+ and flac files and streams. 
 
@@ -10,7 +10,7 @@ Supports http, https (insecure mode) and chunked audio streams.
 
 This library needs [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
-Check out [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
+Visit [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
 
 ## How to install and use
 
@@ -83,6 +83,9 @@ void audio_eof_stream(const char* info) {
 
 ### Initialize the VS1053 codec
 `bool startDecoder(CS, DCS, DREQ)`
+
+### Check if VS1053 is responding
+`bool isChipConnected()`<br>
 
 ### Start or resume a stream
 `bool connecttohost(url)`
