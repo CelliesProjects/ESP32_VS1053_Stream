@@ -96,7 +96,7 @@ bool connecttohost(url)
 bool connecttohost(url, offset)
 ```
 ```c++
-bool connecttohost(url, user, pwd
+bool connecttohost(url, user, pwd)
 ```
 ```c++
 bool connecttohost(url, user, pwd, offset)
