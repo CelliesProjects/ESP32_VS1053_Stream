@@ -98,25 +98,25 @@ void audio_eof_stream(const char* info) {
 
 
 ### Stop a stream
-`void stopSong()`
+```void stopSong()```
 
 ### Feed the decoder
-`void loop()`<br>
+```void loop()```<br>
 This function has to called every couple of ms to feed the decoder with data. For bitrates up to 320kbps once every 25 ms is about right.
 
 ### Check if stream is running
-`bool isRunning()`
+```bool isRunning()```
 
 ### Get the current volume
-`uint8_t getVolume()`
+```uint8_t getVolume()```
 
 ### Set the volume
-`void setVolume(uint8_t volume)`<br>
+```void setVolume(uint8_t volume)```<br>
 Value should be between 0-100.
 
 ### Set bass and treble
-`uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};`<br>
-`void setTone(rtone)`
+```uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};```<br>
+```void setTone(rtone)```
 
 Values for `rtone`:
 ```
@@ -127,29 +127,29 @@ tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 ```
 
 ### Get the currently used codec
-`const char* currentCodec()`<br>
+```const char* currentCodec()```<br>
 Returns `STOPPED` if no stream is running.
 
 ### Get the filesize
-`size_t size()`<br>
+```size_t size()```<br>
 Returns `0` if the stream is a radio stream.
 
 ### Get the current position in the file
-`size_t position()`<br>
+```size_t position()```<br>
 Returns `0` if the stream is a radio stream.
 
 ### Get the current stream url
-`char* lastUrl()`<br>
+```char* lastUrl()```<br>
 The current stream url might differ from the request url if the request url points to a playlist.
 
 ## Event callbacks
-`void audio_showstation(const char* info)`<br>
+```void audio_showstation(const char* info)```<br>
 Returns the station name.
 
-`void audio_showstreamtitle(const char* info)`<br>
+```void audio_showstreamtitle(const char* info)```<br>
 Returns ICY stream information.
 
-`void audio_eof_stream(const char* info)`<br>
+```void audio_eof_stream(const char* info)```<br>
 Is called when the current stream reaches the end of file. Returns the current url.
 
 ## License
