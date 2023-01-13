@@ -445,7 +445,7 @@ size_t ESP32_VS1053_Stream::size() {
 }
 
 size_t ESP32_VS1053_Stream::position() {
-    return size() - _remainingBytes;
+    return size() ? (size() - _remainingBytes) : 0;
 }
 
 uint32_t ESP32_VS1053_Stream::bitrate() {
