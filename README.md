@@ -148,6 +148,12 @@ const char* currentCodec()
 ```
 Returns `STOPPED` if no stream is running.
 
+### Get the current stream url
+```c++
+const char* lastUrl()
+```
+The current stream url might differ from the request url if the request url points to a playlist.
+
 ### Get the filesize
 ```c++
 size_t size()
@@ -159,12 +165,6 @@ Returns `0` if the stream is a radio stream.
 size_t position()
 ```
 Returns `0` if the stream is a radio stream.
-
-### Get the current stream url
-```c++
-char* lastUrl()
-```
-The current stream url might differ from the request url if the request url points to a playlist.
 
 ## Event callbacks
 ```c++
