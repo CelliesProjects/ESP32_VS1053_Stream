@@ -142,11 +142,17 @@ tonela       = <0..15>        // Setting bass gain (0 = off, 1dB steps)
 tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 ```
 
-### Get the currently used codec
+### Get the current used codec
 ```c++
 const char* currentCodec()
 ```
 Returns `STOPPED` if no stream is running.
+
+### Get the current stream url
+```c++
+const char* lastUrl()
+```
+The current stream url might differ from the request url if the request url points to a playlist.
 
 ### Get the filesize
 ```c++
@@ -159,12 +165,6 @@ Returns `0` if the stream is a radio stream.
 size_t position()
 ```
 Returns `0` if the stream is a radio stream.
-
-### Get the current stream url
-```c++
-char* lastUrl()
-```
-The current stream url might differ from the request url if the request url points to a playlist.
 
 ## Event callbacks
 ```c++
