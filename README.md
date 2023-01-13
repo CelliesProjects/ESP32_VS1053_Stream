@@ -142,7 +142,7 @@ tonela       = <0..15>        // Setting bass gain (0 = off, 1dB steps)
 tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 ```
 
-### Get the currently used codec
+### Get the current used codec
 ```c++
 const char* currentCodec()
 ```
