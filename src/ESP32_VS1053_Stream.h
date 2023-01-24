@@ -6,15 +6,15 @@
 #include <VS1053.h>  /* https://github.com/baldram/ESP_VS1053_Library */
 
 #define VS1053_INITIALVOLUME          95
-#define VS1053_MAXVOLUME              100
 #define VS1053_ICY_METADATA           true
-#define VS1053_MAX_PLAYLIST_READ      512
+#define VS1053_MAX_PLAYLIST_READ      1024
 #define VS1053_MAX_URL_LENGTH         512
+#define VS1053_CONNECT_TIMEOUT_MS     250
+#define VS1053_CONNECT_TIMEOUT_MS_SSL 2500
+#define VS1053_MAX_BYTES_PER_LOOP     16384
 
-#define CONNECT_TIMEOUT_MS            250
-#define CONNECT_TIMEOUT_MS_SSL        2500
-
-const size_t VS1053_PACKETSIZE = 32;
+#define VS1053_MAXVOLUME 100          /* do not change */
+#define VS1053_PACKETSIZE size_t(32)  /* do not change */
 
 extern void audio_showstation(const char*) __attribute__((weak));
 extern void audio_eof_stream(const char*) __attribute__((weak));
@@ -52,6 +52,37 @@ class ESP32_VS1053_Stream {
         size_t size();
         size_t position();
         uint32_t bitrate();
+
+    private:
+        VS1053* _vs1053 = NULL;
+        HTTPClient* _http = NULL;
+        uint8_t _vs1053Buffer[VS1053_PACKETSIZE];
+
+        void _handleStream(WiFiClient* const stream);
+        void _handleChunkedStream(WiFiClient* const stream);
+
+        char _url[VS1053_MAX_URL_LENGTH];
+        char _user[50];
+        char _pwd[50];
+        unsigned long _startMute = 0;
+        size_t _offset = 0;
+        size_t _remainingBytes = 0;
+        size_t _bytesLeftInChunk = 0;
+        int32_t _metaDataStart = 0;
+        int32_t _musicDataPosition = 0;
+        uint8_t _volume = VS1053_INITIALVOLUME;
+        int _bitrate = 0;
+        bool _chunkedResponse = false;
+        bool _bufferFilled = false;
+        bool _dataSeen = false;
+
+        enum mimetype_t {
+            MP3,
+            OGG,
+            AAC,
+            AACP,
+            STOPPED
+        } _currentMimetype = STOPPED;
 };
 
 #endif

@@ -1,34 +1,37 @@
 #include "ESP32_VS1053_Stream.h"
 
-static VS1053* _vs1053 = NULL;
-static HTTPClient* _http = NULL;
-static char _url[VS1053_MAX_URL_LENGTH];
-static char _user[50];
-static char _pwd[50];
-static unsigned long _startMute = 0;
-static size_t _offset = 0;
-static size_t _remainingBytes = 0;
-static size_t _bytesLeftInChunk = 0;
-static int32_t _metaDataStart = 0;
-static int32_t _musicDataPosition = 0;
-static uint8_t _volume = VS1053_INITIALVOLUME;
-static int _bitrate = 0;
-static bool _chunkedResponse = false;
-static bool _bufferFilled = false;
-static bool _dataSeen = false;
+static size_t nextChunkSize(WiFiClient* const stream) {
+    constexpr const auto BUFFER_SIZE = 8;
+    char buffer[BUFFER_SIZE];
+    auto cnt = 0;
+    char currentChar = (char)stream->read();
+    while (currentChar != '\n' && cnt < BUFFER_SIZE) {
+        buffer[cnt++] = currentChar;
+        currentChar = (char)stream->read();
+    }
+    return strtol(buffer, NULL, 16);
+}
 
-static uint8_t _vs1053Buffer[VS1053_PACKETSIZE];
-static const auto MAX_BYTES_PER_LOOP = 16 * 1024;
+static bool checkSync(WiFiClient* const stream) {
+    if ((char)stream->read() != '\r' || (char)stream->read() != '\n') {
+        log_e("Lost sync!");
+        return false;
+    }
+    return true;
+}
 
-static enum mimetype_t {
-    MP3,
-    OGG,
-    AAC,
-    AACP,
-    STOPPED
-} _currentMimetype = STOPPED;
-
-static const char* _mimestr[] = {"MP3", "OGG", "AAC", "AAC+", "STOPPED"};
+static void handleMetadata(char* data, const size_t len) {
+    log_d("parsing metadata: %s", data);
+    char* pch = strstr(data, "StreamTitle");
+    if (!pch) return;
+    pch = strstr(pch, "'");
+    if (!pch) return;
+    char* index = ++pch;
+    while (index[0] != '\'' || index[1] != ';')
+        if (index++ == data + len) return;
+    index[0] = 0;
+    audio_showstreamtitle(pch);
+}
 
 inline __attribute__((always_inline))
 static bool networkIsActive() {
@@ -41,10 +44,7 @@ ESP32_VS1053_Stream::ESP32_VS1053_Stream() {}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream() {
     stopSong();
-    if (_vs1053) {
-        delete _vs1053;
-        _vs1053 = NULL;
-    }
+    delete _vs1053;
 }
 
 bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, const uint8_t DREQ) {
@@ -237,20 +237,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* user, const
     return connecttohost(url);
 }
 
-static void handleMetadata(char* data, const size_t len) {
-    log_d("parsing metadata: %s", data);
-    char* pch = strstr(data, "StreamTitle");
-    if (!pch) return;
-    pch = strstr(pch, "'");
-    if (!pch) return;
-    char* index = ++pch;
-    while (index[0] != '\'' || index[1] != ';')
-        if (index++ == data + len) return;
-    index[0] = 0;
-    audio_showstreamtitle(pch);
-}
-
-static void _handleStream(WiFiClient* const stream) {
+void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
     if (!_dataSeen) {
         log_d("first data bytes are seen - %i bytes", stream->available());
         _dataSeen = true;
@@ -261,7 +248,7 @@ static void _handleStream(WiFiClient* const stream) {
     }
 
     size_t bytesToDecoder = 0;
-    while (stream->available() && _vs1053->data_request() && _remainingBytes && _musicDataPosition < _metaDataStart && bytesToDecoder < MAX_BYTES_PER_LOOP) {
+    while (stream->available() && _vs1053->data_request() && _remainingBytes && _musicDataPosition < _metaDataStart && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP) {
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
         const int BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, min(BYTES_AVAILABLE, VS1053_PACKETSIZE));
         _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
@@ -282,28 +269,7 @@ static void _handleStream(WiFiClient* const stream) {
     }
 }
 
-static size_t nextChunkSize(WiFiClient* const stream) {
-    constexpr const auto BUFFER_SIZE = 8;
-    char buffer[BUFFER_SIZE];
-    auto cnt = 0;
-    char currentChar = (char)stream->read();
-    while (currentChar != '\n' && cnt < BUFFER_SIZE) {
-        buffer[cnt++] = currentChar;
-        currentChar = (char)stream->read();
-    }
-    return strtol(buffer, NULL, 16);
-}
-
-static bool checkSync(WiFiClient* const stream) {
-    if ((char)stream->read() != '\r' || (char)stream->read() != '\n') {
-        log_e("Lost sync!");
-        return false;
-    }
-    return true;
-}
-
-
-static void _handleChunkedStream(WiFiClient* const stream) {
+void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
     if (!_bytesLeftInChunk) {
         _bytesLeftInChunk = nextChunkSize(stream);
 
@@ -323,7 +289,7 @@ static void _handleChunkedStream(WiFiClient* const stream) {
     }
 
     size_t bytesToDecoder = 0;
-    while (_bytesLeftInChunk && _vs1053->data_request() && _musicDataPosition < _metaDataStart && bytesToDecoder < MAX_BYTES_PER_LOOP) {
+    while (_bytesLeftInChunk && _vs1053->data_request() && _musicDataPosition < _metaDataStart && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP) {
         const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
         const int BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, min(BYTES_AVAILABLE, VS1053_PACKETSIZE));
         _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
@@ -358,12 +324,8 @@ static void _handleChunkedStream(WiFiClient* const stream) {
 
 void ESP32_VS1053_Stream::loop() {
     if (!_http || !_http->connected()) return;
-
     WiFiClient* const stream = _http->getStreamPtr();
-    if (!stream->available()) {
-        log_d("No data in HTTP buffer");
-        return;
-    }
+    if (!stream->available()) return;
 
     if (_startMute) {
         const auto WAIT_TIME_MS = ((!_bitrate && _remainingBytes == -1) || _currentMimetype == AAC || _currentMimetype == AACP) ? 380 : 80;
@@ -433,6 +395,7 @@ void ESP32_VS1053_Stream::setTone(uint8_t *rtone) {
 }
 
 const char* ESP32_VS1053_Stream::currentCodec() {
+	const char* _mimestr[] = {"MP3", "OGG", "AAC", "AAC+", "STOPPED"};
     return _mimestr[_currentMimetype];
 }
 
