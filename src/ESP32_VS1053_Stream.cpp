@@ -69,7 +69,7 @@ bool ESP32_VS1053_Stream::isChipConnected() {
     return _vs1053 ? _vs1053->isChipConnected() : false;
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const char* url) {
+bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, const char* pwd, size_t offset) {
     if (!_vs1053 || _http || !networkIsActive() ||
         tolower(url[0]) != 'h' ||
         tolower(url[1]) != 't' ||
@@ -118,7 +118,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url) {
     snprintf(buffer, sizeof(buffer), "bytes=%zu-", _offset);
     _http->addHeader("Range", buffer);
     _http->addHeader("Icy-MetaData", VS1053_ICY_METADATA ? "1" : "0");
-    _http->setAuthorization(_user, _pwd);
+    _http->setAuthorization(username, pwd);
 
     //prepare for response headers
     const char* CONTENT_TYPE = "Content-Type";
@@ -151,7 +151,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url) {
                         _http->header(CONTENT_TYPE).equals("application/x-mpegurl") ||
                         _http->header(CONTENT_TYPE).equals("application/pls+xml") ||
                         _http->header(CONTENT_TYPE).equals("application/vnd.apple.mpegurl")) {
-                    log_d("url %s is a playlist", url.c_str());
+                    log_d("url %s is a playlist", url);
 
                     WiFiClient* stream = _http->getStreamPtr();
                     const auto BYTES_TO_READ = min(stream->available(), VS1053_MAX_PLAYLIST_READ);
@@ -172,7 +172,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url) {
                     strtok(newurl, "\r\n;?");
                     log_d("playlist reconnects to: %s", newurl);
                     stopSong();
-                    return connecttohost(newurl);
+                    return connecttohost(newurl, username, pwd, offset);
                 }
 
                 else if (_http->header(CONTENT_TYPE).equals("audio/mpeg"))
@@ -206,7 +206,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url) {
                 log_d("metadata interval is %i", _metaDataStart);
                 _bitrate = _http->header(BITRATE).toInt();
                 log_d("bitrate is %i", _bitrate);
-                snprintf(_url, sizeof(url), "%s", url);
+                snprintf(_url, sizeof(_url), "%s", url);
                 return true;
             }
         default :
@@ -218,22 +218,16 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url) {
     }
 }
 
+bool ESP32_VS1053_Stream::connecttohost(const char* url) {
+    return connecttohost(url, "", "", 0);
+}
+
 bool ESP32_VS1053_Stream::connecttohost(const char* url, const size_t offset) {
-    _offset = offset;
-    return connecttohost(url);
+    return connecttohost(url, "", "", offset);
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* user, const char* pwd) {
-    snprintf(_user, sizeof(_user), user);
-    snprintf(_pwd, sizeof(_pwd), pwd);
-    return connecttohost(url);
-}
-
-bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* user, const char* pwd, const size_t offset) {
-    snprintf(_user, sizeof(_user), user);
-    snprintf(_pwd, sizeof(_pwd), pwd);
-    _offset = offset;
-    return connecttohost(url);
+bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, const char* pwd) {
+    return connecttohost(url, username, pwd, 0);
 }
 
 void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
@@ -374,8 +368,6 @@ void ESP32_VS1053_Stream::stopSong() {
 	_bytesLeftInChunk = 0;
 	_currentMimetype = STOPPED;
 	_url[0] = 0;
-	_user[0] = 0;
-	_pwd[0] = 0;
 	_bitrate = 0;
 	_offset = 0;
 }

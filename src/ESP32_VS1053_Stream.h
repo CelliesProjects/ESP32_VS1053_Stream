@@ -31,8 +31,8 @@ class ESP32_VS1053_Stream {
 
         bool connecttohost(const char* url);
         bool connecttohost(const char* url, const size_t offset);
-        bool connecttohost(const char* url, const char* user, const char* pwd);
-        bool connecttohost(const char* url, const char* user, const char* pwd, const size_t offset);
+        bool connecttohost(const char* url, const char* username, const char* pwd);
+        bool connecttohost(const char* url, const char* username, const char* pwd, const size_t offset);
 
         void loop();
         bool isRunning();
@@ -62,8 +62,6 @@ class ESP32_VS1053_Stream {
         void _handleChunkedStream(WiFiClient* const stream);
 
         char _url[VS1053_MAX_URL_LENGTH];
-        char _user[50];
-        char _pwd[50];
         unsigned long _startMute = 0;
         size_t _offset = 0;
         size_t _remainingBytes = 0;
