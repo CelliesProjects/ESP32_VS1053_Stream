@@ -358,18 +358,18 @@ void ESP32_VS1053_Stream::stopSong() {
 		WiFiClient* const stream = _http->getStreamPtr();
 		stream->stop();
 	}
-	_http->end();
-	delete _http;
-	_http = NULL;
-	_vs1053->stopSong();
-	_dataSeen = false;
-	_bufferFilled = false;
-	_remainingBytes = 0;
-	_bytesLeftInChunk = 0;
-	_currentMimetype = STOPPED;
-	_url[0] = 0;
-	_bitrate = 0;
-	_offset = 0;
+    _http->end();
+    delete _http;
+    _http = NULL;
+    _vs1053->stopSong();
+    _dataSeen = false;
+    _bufferFilled = false;
+    _remainingBytes = 0;
+    _bytesLeftInChunk = 0;
+    _currentMimetype = STOPPED;
+    _url[0] = 0;
+    _bitrate = 0;
+    _offset = 0;
 }
 
 uint8_t ESP32_VS1053_Stream::getVolume() {
