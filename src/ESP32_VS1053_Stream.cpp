@@ -354,10 +354,10 @@ bool ESP32_VS1053_Stream::isRunning() {
 void ESP32_VS1053_Stream::stopSong() {
     if (!_http) return;
 
-	if (_http->connected()) {
-		WiFiClient* const stream = _http->getStreamPtr();
-		stream->stop();
-	}
+    if (_http->connected()) {
+        WiFiClient* const stream = _http->getStreamPtr();
+        stream->stop();
+    }
     _http->end();
     delete _http;
     _http = NULL;
