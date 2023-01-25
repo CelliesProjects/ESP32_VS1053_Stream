@@ -7,10 +7,10 @@
 
 #define VS1053_INITIALVOLUME          95
 #define VS1053_ICY_METADATA           true
-#define VS1053_MAX_PLAYLIST_READ      1024
-#define VS1053_MAX_URL_LENGTH         512
 #define VS1053_CONNECT_TIMEOUT_MS     250
 #define VS1053_CONNECT_TIMEOUT_MS_SSL 2500
+#define VS1053_MAX_PLAYLIST_READ      1024
+#define VS1053_MAX_URL_LENGTH         512
 #define VS1053_MAX_BYTES_PER_LOOP     16384
 
 #define VS1053_MAXVOLUME 100          /* do not change */

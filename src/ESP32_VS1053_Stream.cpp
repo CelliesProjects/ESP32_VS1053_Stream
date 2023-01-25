@@ -70,10 +70,8 @@ bool ESP32_VS1053_Stream::isChipConnected() {
 }
 
 bool ESP32_VS1053_Stream::connecttohost(const char* url) {
-    if (!_vs1053 || _http || !networkIsActive())
-        return false;
-
-    if (tolower(url[0]) != 'h' ||
+    if (!_vs1053 || _http || !networkIsActive() ||
+        tolower(url[0]) != 'h' ||
         tolower(url[1]) != 't' ||
         tolower(url[2]) != 't' ||
         tolower(url[3]) != 'p' )
@@ -162,18 +160,19 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url) {
                         stopSong();
                         return false;
                     }
-                    char file[BYTES_TO_READ];
+                    char file[BYTES_TO_READ + 1];
                     stream->readBytes(file, BYTES_TO_READ);
-                    char* url = strstr(file, "http");
-                    if (!url) {
-                        log_e("playlist contains no 'http'");
+                    file[BYTES_TO_READ] = 0;
+                    char* newurl = strstr(file, "http");
+                    if (!newurl) {
+                        log_e("playlist contains no url");
                         stopSong();
                         return false;
                     }
-                    strtok(url, "\n;?");
-                    log_d("playlist reconnects to: %s", url);
+                    strtok(newurl, "\r\n;?");
+                    log_d("playlist reconnects to: %s", newurl);
                     stopSong();
-                    return connecttohost(url);
+                    return connecttohost(newurl);
                 }
 
                 else if (_http->header(CONTENT_TYPE).equals("audio/mpeg"))
@@ -359,26 +358,26 @@ bool ESP32_VS1053_Stream::isRunning() {
 }
 
 void ESP32_VS1053_Stream::stopSong() {
-    if (_http) {
-        if (_http->connected()) {
-            WiFiClient* const stream = _http->getStreamPtr();
-            stream->stop();
-        }
-        _http->end();
-        delete _http;
-        _http = NULL;
-        _vs1053->stopSong();
-        _dataSeen = false;
-        _bufferFilled = false;
-        _remainingBytes = 0;
-        _bytesLeftInChunk = 0;
-        _currentMimetype = STOPPED;
-        _url[0] = 0;
-        _user[0] = 0;
-        _pwd[0] = 0;
-        _bitrate = 0;
-        _offset = 0;
-    }
+    if (!_http) return;
+
+	if (_http->connected()) {
+		WiFiClient* const stream = _http->getStreamPtr();
+		stream->stop();
+	}
+	_http->end();
+	delete _http;
+	_http = NULL;
+	_vs1053->stopSong();
+	_dataSeen = false;
+	_bufferFilled = false;
+	_remainingBytes = 0;
+	_bytesLeftInChunk = 0;
+	_currentMimetype = STOPPED;
+	_url[0] = 0;
+	_user[0] = 0;
+	_pwd[0] = 0;
+	_bitrate = 0;
+	_offset = 0;
 }
 
 uint8_t ESP32_VS1053_Stream::getVolume() {
