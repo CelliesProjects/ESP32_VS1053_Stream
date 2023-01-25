@@ -386,7 +386,7 @@ void ESP32_VS1053_Stream::setTone(uint8_t *rtone) {
 }
 
 const char* ESP32_VS1053_Stream::currentCodec() {
-	const char* _mimestr[] = {"MP3", "OGG", "AAC", "AAC+", "STOPPED"};
+    const char* _mimestr[] = {"MP3", "OGG", "AAC", "AAC+", "STOPPED"};
     return _mimestr[_currentMimetype];
 }
 
