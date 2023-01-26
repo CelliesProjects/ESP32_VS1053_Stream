@@ -21,7 +21,6 @@ static bool checkSync(WiFiClient* const stream) {
 }
 
 static void handleMetadata(char* data, const size_t len) {
-    log_d("parsing metadata: %s", data);
     char* pch = strstr(data, "StreamTitle");
     if (!pch) return;
     pch = strstr(pch, "'");
@@ -125,8 +124,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
         case 206 : log_d("server can resume");
         case 200 :
             {
-                log_d("connected to %s", _url);
-
                 if (_http->header(CONTENT_TYPE).startsWith("audio/x-scpls") ||
                         _http->header(CONTENT_TYPE).equals("audio/x-mpegurl") ||
                         _http->header(CONTENT_TYPE).equals("application/x-mpegurl") ||
@@ -174,8 +171,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
                     return false;
                 }
 
-                log_d("codec %s", currentCodec());
-
                 if (audio_showstation && !_http->header(ICY_NAME).equals(""))
                     audio_showstation(_http->header(ICY_NAME).c_str());
 
@@ -184,9 +179,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
                 _chunkedResponse = _http->header(ENCODING).equals("chunked") ? true : false;
                 _metaDataStart = _http->header(ICY_METAINT).toInt();
                 _musicDataPosition = _metaDataStart ? 0 : -100;
-                log_d("metadata interval is %i", _metaDataStart);
                 _bitrate = _http->header(BITRATE).toInt();
-                log_d("bitrate is %i", _bitrate);
                 snprintf(_url, sizeof(_url), "%s", url);
                 return true;
             }
@@ -213,7 +206,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
 
 void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
     if (!_dataSeen) {
-        log_d("first data bytes are seen - %i bytes", stream->available());
         _dataSeen = true;
         _startMute = millis();
         _startMute += _startMute ? 0 : 1;
@@ -230,7 +222,6 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
         _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
         bytesToDecoder += BYTES_IN_BUFFER;
     }
-    log_d("%5lu bytes to decoder", bytesToDecoder);
 
     if (_metaDataStart && _musicDataPosition == _metaDataStart && stream->available()) {
         const auto METALENGTH = stream->read() * 16;
@@ -253,7 +244,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
         }
 
         if (!_dataSeen) {
-            log_d("first data chunk: %i bytes", _bytesLeftInChunk);
             _dataSeen = true;
             _startMute = millis();
             _startMute += _startMute ? 0 : 1;
@@ -271,7 +261,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
         _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
         bytesToDecoder += BYTES_IN_BUFFER;
     }
-    log_d("%5lu bytes to decoder", bytesToDecoder);
 
     if (_metaDataStart && _musicDataPosition == _metaDataStart && _bytesLeftInChunk) {
         const auto METALENGTH = stream->read() * 16;
@@ -305,7 +294,7 @@ void ESP32_VS1053_Stream::loop() {
         const auto WAIT_TIME_MS = ((!_bitrate && _remainingBytes == -1) || _currentMimetype == AAC || _currentMimetype == AACP) ? 380 : 80;
         if ((unsigned long)millis() - _startMute > WAIT_TIME_MS) {
             _vs1053->setVolume(_volume);
-            log_d("startmute ms: %i", WAIT_TIME_MS);
+            log_d("startmute is %i milliseconds", WAIT_TIME_MS);
             _startMute = 0;
         }
     }
@@ -316,7 +305,6 @@ void ESP32_VS1053_Stream::loop() {
     }
 
     if (!_remainingBytes) {
-        log_d("All data read - closing stream");
         if (audio_eof_stream) {
             char tmp[strlen(_url) + 1];
             snprintf(tmp, sizeof(tmp), "%s", _url);
@@ -334,7 +322,6 @@ bool ESP32_VS1053_Stream::isRunning() {
 
 void ESP32_VS1053_Stream::stopSong() {
     if (!_http) return;
-
     if (_http->connected()) {
         WiFiClient* const stream = _http->getStreamPtr();
         stream->stop();
