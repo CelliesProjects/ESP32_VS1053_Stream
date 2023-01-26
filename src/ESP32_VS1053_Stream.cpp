@@ -48,15 +48,9 @@ ESP32_VS1053_Stream::~ESP32_VS1053_Stream() {
 }
 
 bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, const uint8_t DREQ) {
-    if (_vs1053) {
-        log_e("vs1053 is already initialized");
-        return false;
-    }
+    if (_vs1053) return false;
     _vs1053 = new VS1053(CS, DCS, DREQ);
-    if (!_vs1053) {
-        log_e("could not initialize vs1053");
-        return false;
-    }
+    if (!_vs1053) return false;
     _vs1053->begin();
     _vs1053->switchToMp3Mode();
     if (_vs1053->getChipVersion() == 4)
@@ -79,10 +73,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
 
     _http = new HTTPClient;
 
-    if (!_http) {
-        log_e("client could not be created");
-        return false;
-    }
+    if (!_http) return false;
 
     {
         auto cnt = 0;
@@ -107,20 +98,17 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
         }
 
         if (!_http->begin(cnt ? escapedUrl : url)) {
-            log_e("could not connect to %s", url);
             stopSong();
             return false;
         }
     }
 
-    // add request headers
     char buffer[30];
     snprintf(buffer, sizeof(buffer), "bytes=%zu-", _offset);
     _http->addHeader("Range", buffer);
     _http->addHeader("Icy-MetaData", VS1053_ICY_METADATA ? "1" : "0");
     _http->setAuthorization(username, pwd);
 
-    //prepare for response headers
     const char* CONTENT_TYPE = "Content-Type";
     const char* ICY_NAME = "icy-name";
     const char* ICY_METAINT = "icy-metaint";
@@ -129,15 +117,9 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
 
     const char* header[] = {CONTENT_TYPE, ICY_NAME, ICY_METAINT, ENCODING, BITRATE};
     _http->collectHeaders(header, sizeof(header) / sizeof(char*));
-
-    //_http->setConnectTimeout(url.startsWith("https") ? CONNECT_TIMEOUT_MS_SSL : CONNECT_TIMEOUT_MS); //temporary(?) hacky solution for the post 2.0.0 issue
     _http->setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 
-    //const unsigned long START_TIME_MS {millis()}; //only used for debug
-
     const int result = _http->GET();
-
-    log_d("connection made in %lu ms", (unsigned long)millis() - START_TIME_MS);
 
     switch (result) {
         case 206 : log_d("server can resume");
@@ -145,7 +127,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
             {
                 log_d("connected to %s", _url);
 
-                /* check if we opened a playlist and try to parse it */
                 if (_http->header(CONTENT_TYPE).startsWith("audio/x-scpls") ||
                         _http->header(CONTENT_TYPE).equals("audio/x-mpegurl") ||
                         _http->header(CONTENT_TYPE).equals("application/x-mpegurl") ||
@@ -363,7 +344,6 @@ void ESP32_VS1053_Stream::stopSong() {
     _http = NULL;
     _vs1053->stopSong();
     _dataSeen = false;
-    _bufferFilled = false;
     _remainingBytes = 0;
     _bytesLeftInChunk = 0;
     _currentMimetype = STOPPED;

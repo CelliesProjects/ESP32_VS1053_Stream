@@ -71,7 +71,6 @@ class ESP32_VS1053_Stream {
         uint8_t _volume = VS1053_INITIALVOLUME;
         int _bitrate = 0;
         bool _chunkedResponse = false;
-        bool _bufferFilled = false;
         bool _dataSeen = false;
 
         enum mimetype_t {
