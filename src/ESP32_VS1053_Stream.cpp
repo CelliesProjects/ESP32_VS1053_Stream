@@ -1,6 +1,13 @@
 #include "ESP32_VS1053_Stream.h"
 
-static size_t nextChunkSize(WiFiClient* const stream) {
+ESP32_VS1053_Stream::ESP32_VS1053_Stream() {}
+
+ESP32_VS1053_Stream::~ESP32_VS1053_Stream() {
+    stopSong();
+    delete _vs1053;
+}
+
+size_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient* const stream) {
     constexpr const auto BUFFER_SIZE = 8;
     char buffer[BUFFER_SIZE];
     auto cnt = 0;
@@ -12,7 +19,7 @@ static size_t nextChunkSize(WiFiClient* const stream) {
     return strtol(buffer, NULL, 16);
 }
 
-static bool checkSync(WiFiClient* const stream) {
+bool ESP32_VS1053_Stream::_checkSync(WiFiClient* const stream) {
     if ((char)stream->read() != '\r' || (char)stream->read() != '\n') {
         log_e("Lost sync!");
         return false;
@@ -20,7 +27,7 @@ static bool checkSync(WiFiClient* const stream) {
     return true;
 }
 
-static void handleMetadata(char* data, const size_t len) {
+void ESP32_VS1053_Stream::_handleMetadata(char* data, const size_t len) {
     char* pch = strstr(data, "StreamTitle");
     if (!pch) return;
     pch = strstr(pch, "'");
@@ -33,17 +40,10 @@ static void handleMetadata(char* data, const size_t len) {
 }
 
 inline __attribute__((always_inline))
-static bool networkIsActive() {
+bool ESP32_VS1053_Stream::_networkIsActive() {
     for (int i = TCPIP_ADAPTER_IF_STA; i < TCPIP_ADAPTER_IF_MAX; i++)
         if (tcpip_adapter_is_netif_up((tcpip_adapter_if_t)i)) return true;
     return false;
-}
-
-ESP32_VS1053_Stream::ESP32_VS1053_Stream() {}
-
-ESP32_VS1053_Stream::~ESP32_VS1053_Stream() {
-    stopSong();
-    delete _vs1053;
 }
 
 bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, const uint8_t DREQ) {
@@ -62,8 +62,20 @@ bool ESP32_VS1053_Stream::isChipConnected() {
     return _vs1053 ? _vs1053->isChipConnected() : false;
 }
 
+bool ESP32_VS1053_Stream::connecttohost(const char* url) {
+    return connecttohost(url, "", "", 0);
+}
+
+bool ESP32_VS1053_Stream::connecttohost(const char* url, const size_t offset) {
+    return connecttohost(url, "", "", offset);
+}
+
+bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, const char* pwd) {
+    return connecttohost(url, username, pwd, 0);
+}
+
 bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, const char* pwd, size_t offset) {
-    if (!_vs1053 || _http || !networkIsActive() ||
+    if (!_vs1053 || _http || !_networkIsActive() ||
         tolower(url[0]) != 'h' ||
         tolower(url[1]) != 't' ||
         tolower(url[2]) != 't' ||
@@ -71,7 +83,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
         return false;
 
     _http = new HTTPClient;
-
     if (!_http) return false;
 
     {
@@ -192,18 +203,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
     }
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const char* url) {
-    return connecttohost(url, "", "", 0);
-}
-
-bool ESP32_VS1053_Stream::connecttohost(const char* url, const size_t offset) {
-    return connecttohost(url, "", "", offset);
-}
-
-bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, const char* pwd) {
-    return connecttohost(url, username, pwd, 0);
-}
-
 void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
     if (!_dataSeen) {
         _dataSeen = true;
@@ -228,7 +227,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
         if (METALENGTH) {
             char data[METALENGTH];
             stream->readBytes(data, METALENGTH);
-            if (audio_showstreamtitle) handleMetadata(data, METALENGTH);
+            if (audio_showstreamtitle) _handleMetadata(data, METALENGTH);
         }
         _musicDataPosition = 0;
     }
@@ -236,13 +235,11 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient* const stream) {
 
 void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
     if (!_bytesLeftInChunk) {
-        _bytesLeftInChunk = nextChunkSize(stream);
-
+        _bytesLeftInChunk = _nextChunkSize(stream);
         if (!_bytesLeftInChunk) {
             _remainingBytes = 0;
             return;
         }
-
         if (!_dataSeen) {
             _dataSeen = true;
             _startMute = millis();
@@ -270,19 +267,19 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient* const stream) {
             auto cnt = 0;
             while (cnt < METALENGTH) {
                 if (!_bytesLeftInChunk) {
-                    checkSync(stream);
-                    _bytesLeftInChunk = nextChunkSize(stream);
+                    _checkSync(stream);
+                    _bytesLeftInChunk = _nextChunkSize(stream);
                 }
                 data[cnt++] = stream->read();
                 _bytesLeftInChunk--;
             }
-            if (audio_showstreamtitle) handleMetadata(data, METALENGTH);
+            if (audio_showstreamtitle) _handleMetadata(data, METALENGTH);
         }
         _musicDataPosition = 0;
     }
 
     if (!_bytesLeftInChunk)
-        checkSync(stream);
+        _checkSync(stream);
 }
 
 void ESP32_VS1053_Stream::loop() {

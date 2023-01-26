@@ -58,6 +58,10 @@ class ESP32_VS1053_Stream {
         HTTPClient* _http = NULL;
         uint8_t _vs1053Buffer[VS1053_PACKETSIZE];
 
+        size_t _nextChunkSize(WiFiClient* const stream);
+        bool _checkSync(WiFiClient* const stream);
+        bool _networkIsActive();
+        void _handleMetadata(char* data, const size_t len);
         void _handleStream(WiFiClient* const stream);
         void _handleChunkedStream(WiFiClient* const stream);
 
