@@ -114,7 +114,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
     }
 
     char buffer[30];
-    snprintf(buffer, sizeof(buffer), "bytes=%zu-", _offset);
+    snprintf(buffer, sizeof(buffer), "bytes=%zu-", offset);
     _http->addHeader("Range", buffer);
     _http->addHeader("Icy-MetaData", VS1053_ICY_METADATA ? "1" : "0");
     _http->setAuthorization(username, pwd);
@@ -186,8 +186,8 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
                     audio_showstation(_http->header(ICY_NAME).c_str());
 
                 _remainingBytes = _http->getSize();  // -1 when Server sends no Content-Length header (chunked streams)
-                if (_remainingBytes == -1) _offset = 0;
                 _chunkedResponse = _http->header(ENCODING).equals("chunked") ? true : false;
+                _offset = _chunkedResponse ? 0 : offset;
                 _metaDataStart = _http->header(ICY_METAINT).toInt();
                 _musicDataPosition = _metaDataStart ? 0 : -100;
                 _bitrate = _http->header(BITRATE).toInt();
