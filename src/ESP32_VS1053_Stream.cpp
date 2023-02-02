@@ -187,7 +187,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
 
                 _remainingBytes = _http->getSize();  // -1 when Server sends no Content-Length header (chunked streams)
                 _chunkedResponse = _http->header(ENCODING).equals("chunked") ? true : false;
-                _offset = _chunkedResponse ? 0 : offset;
+                _offset = (_remainingBytes == -1) ? 0 : offset;
                 _metaDataStart = _http->header(ICY_METAINT).toInt();
                 _musicDataPosition = _metaDataStart ? 0 : -100;
                 _bitrate = _http->header(BITRATE).toInt();
