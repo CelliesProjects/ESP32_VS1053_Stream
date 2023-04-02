@@ -77,13 +77,13 @@ class ESP32_VS1053_Stream {
         bool _chunkedResponse = false;
         bool _dataSeen = false;
 
-        enum mimetype_t {
+        enum codec_t {
+            STOPPED,
             MP3,
             OGG,
             AAC,
-            AACP,
-            STOPPED
-        } _currentMimetype = STOPPED;
+            AACP
+        } _currentCodec = STOPPED;
 };
 
 #endif

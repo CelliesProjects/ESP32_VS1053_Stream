@@ -135,11 +135,11 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
         case 206 : log_d("server can resume");
         case 200 :
             {
-                if (_http->header(CONTENT_TYPE).startsWith("audio/x-scpls") ||
-                        _http->header(CONTENT_TYPE).equals("audio/x-mpegurl") ||
-                        _http->header(CONTENT_TYPE).equals("application/x-mpegurl") ||
-                        _http->header(CONTENT_TYPE).equals("application/pls+xml") ||
-                        _http->header(CONTENT_TYPE).equals("application/vnd.apple.mpegurl")) {
+                if (_http->header(CONTENT_TYPE).indexOf("audio/x-scpls") != -1 ||
+                        _http->header(CONTENT_TYPE).indexOf("audio/x-mpegurl") != -1 ||
+                        _http->header(CONTENT_TYPE).indexOf("application/x-mpegurl") != -1 ||
+                        _http->header(CONTENT_TYPE).indexOf("application/pls+xml") != -1 ||
+                        _http->header(CONTENT_TYPE).indexOf("application/vnd.apple.mpegurl") != -1 ) {
                     log_d("url %s is a playlist", url);
 
                     WiFiClient* stream = _http->getStreamPtr();
@@ -165,16 +165,16 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
                 }
 
                 else if (_http->header(CONTENT_TYPE).equals("audio/mpeg"))
-                    _currentMimetype = MP3;
+                    _currentCodec = MP3;
 
                 else if (_http->header(CONTENT_TYPE).equals("audio/ogg") || _http->header(CONTENT_TYPE).equals("application/ogg"))
-                    _currentMimetype = OGG;
+                    _currentCodec = OGG;
 
                 else if (_http->header(CONTENT_TYPE).equals("audio/aac"))
-                    _currentMimetype = AAC;
+                    _currentCodec = AAC;
 
                 else if (_http->header(CONTENT_TYPE).equals("audio/aacp"))
-                    _currentMimetype = AACP;
+                    _currentCodec = AACP;
 
                 else {
                     log_e("closing - unsupported mimetype: '%s'", _http->header(CONTENT_TYPE).c_str());
@@ -288,7 +288,7 @@ void ESP32_VS1053_Stream::loop() {
     if (!stream->available()) return;
 
     if (_startMute) {
-        const auto WAIT_TIME_MS = ((!_bitrate && _remainingBytes == -1) || _currentMimetype == AAC || _currentMimetype == AACP) ? 380 : 80;
+        const auto WAIT_TIME_MS = ((!_bitrate && _remainingBytes == -1) || _currentCodec == AAC || _currentCodec == AACP) ? 380 : 80;
         if ((unsigned long)millis() - _startMute > WAIT_TIME_MS) {
             _vs1053->setVolume(_volume);
             log_d("startmute is %i milliseconds", WAIT_TIME_MS);
@@ -330,7 +330,7 @@ void ESP32_VS1053_Stream::stopSong() {
     _dataSeen = false;
     _remainingBytes = 0;
     _bytesLeftInChunk = 0;
-    _currentMimetype = STOPPED;
+    _currentCodec = STOPPED;
     _url[0] = 0;
     _bitrate = 0;
     _offset = 0;
@@ -350,8 +350,8 @@ void ESP32_VS1053_Stream::setTone(uint8_t *rtone) {
 }
 
 const char* ESP32_VS1053_Stream::currentCodec() {
-    const char* _mimestr[] = {"MP3", "OGG", "AAC", "AAC+", "STOPPED"};
-    return _mimestr[_currentMimetype];
+    static const char* name[] = {"STOPPED", "MP3", "OGG", "AAC", "AAC+"};
+    return name[_currentCodec];
 }
 
 const char* ESP32_VS1053_Stream::lastUrl() {
