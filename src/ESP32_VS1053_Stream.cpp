@@ -128,6 +128,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char* url, const char* username, c
     const char* header[] = {CONTENT_TYPE, ICY_NAME, ICY_METAINT, ENCODING, BITRATE};
     _http->collectHeaders(header, sizeof(header) / sizeof(char*));
     _http->setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    _http->setConnectTimeout(strstr(url, "https") == 0 ? 2500 : 250);
 
     const int result = _http->GET();
 
