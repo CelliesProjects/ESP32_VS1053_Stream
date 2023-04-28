@@ -87,7 +87,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
     if (!_http)
         return false;
 
-    const auto startTime = millis();
+    [[maybe_unused]] const auto startTime = millis();
 
     {
         auto cnt = 0;
@@ -135,7 +135,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
     _http->setConnectTimeout(url[4] == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL : VS1053_CONNECT_TIMEOUT_MS);
 
     const int result = _http->GET();
-    log_i("Time elapsed during connect: %i", millis() - startTime);
+    log_d("Time elapsed during connect: %i", millis() - startTime);
 
     switch (result) {
         case 206:
@@ -143,7 +143,9 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
             [[fallthrough]];
         case 200:
             {
-                if (_http->header(CONTENT_TYPE).indexOf("audio/x-scpls") != -1 || _http->header(CONTENT_TYPE).indexOf("audio/mpegurl") != -1 || _http->header(CONTENT_TYPE).indexOf("audio/x-mpegurl") != -1 || _http->header(CONTENT_TYPE).indexOf("application/x-mpegurl") != -1 || _http->header(CONTENT_TYPE).indexOf("application/pls+xml") != -1 || _http->header(CONTENT_TYPE).indexOf("application/vnd.apple.mpegurl") != -1) {
+                String CONTENT = _http->header(CONTENT_TYPE);
+                CONTENT.toLowerCase();
+                if (CONTENT.indexOf("audio/x-scpls") != -1 || CONTENT.indexOf("audio/mpegurl") != -1 || CONTENT.indexOf("audio/x-mpegurl") != -1 || CONTENT.indexOf("application/x-mpegurl") != -1 || CONTENT.indexOf("application/pls+xml") != -1 || CONTENT.indexOf("application/vnd.apple.mpegurl") != -1) {
                     log_d("url %s is a playlist", url);
 
                     WiFiClient *stream = _http->getStreamPtr();
@@ -163,30 +165,30 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
                         return false;
                     }
                     strtok(newurl, "\r\n;?");
-                    log_i("playlist reconnects to: %s", newurl);
+                    log_d("playlist reconnects to: %s", newurl);
                     stopSong();
                     return connecttohost(newurl, username, pwd, offset);
                 }
 
-                else if (_http->header(CONTENT_TYPE).equals("audio/mpeg"))
+                else if (CONTENT.equals("audio/mpeg"))
                     _currentCodec = MP3;
 
-                else if (_http->header(CONTENT_TYPE).equals("audio/ogg") || _http->header(CONTENT_TYPE).equals("application/ogg"))
+                else if (CONTENT.equals("audio/ogg") || _http->header(CONTENT_TYPE).equals("application/ogg"))
                     _currentCodec = OGG;
 
-                else if (_http->header(CONTENT_TYPE).equals("audio/aac"))
+                else if (CONTENT.equals("audio/aac"))
                     _currentCodec = AAC;
 
-                else if (_http->header(CONTENT_TYPE).equals("audio/aacp"))
+                else if (CONTENT.equals("audio/aacp"))
                     _currentCodec = AACP;
 
                 else {
-                    log_e("closing - unsupported mimetype: '%s'", _http->header(CONTENT_TYPE).c_str());
+                    log_e("closing - unsupported mimetype: '%s'", CONTENT.c_str());
                     stopSong();
                     return false;
                 }
 
-                log_i("content type : %s", _http->header(CONTENT_TYPE));
+                log_d("content type : %s", CONTENT.c_str());
 
                 if (audio_showstation && !_http->header(ICY_NAME).equals(""))
                     audio_showstation(_http->header(ICY_NAME).c_str());
@@ -204,7 +206,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
         case 301:
             [[fallthrough]];
         case 302:
-            log_i("%i redirection to: %s", result, _http->header(LOCATION).c_str());
+            log_d("%i redirection to: %s", result, _http->header(LOCATION).c_str());
             if (_http->hasHeader(LOCATION) && _http->header(LOCATION).indexOf("./") == -1)  // some items on radio-browser.info has non resolving names that contain './' in their hostname
             {
                 char newurl[_http->header(LOCATION).length() + 1];
