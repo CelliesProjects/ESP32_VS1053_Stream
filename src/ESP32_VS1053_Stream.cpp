@@ -273,8 +273,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream) {
         }
     }
 
-    esp_log_level_set("*", ESP_LOG_INFO);
-
     size_t bytesToDecoder = 0;
     while (_bytesLeftInChunk && _vs1053->data_request() && _musicDataPosition < _metaDataStart && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP) {
         const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
