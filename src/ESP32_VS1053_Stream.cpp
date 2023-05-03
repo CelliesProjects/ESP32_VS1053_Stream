@@ -42,6 +42,16 @@ void ESP32_VS1053_Stream::_handleMetadata(char *data, const size_t len) {
     audio_showstreamtitle(pch);
 }
 
+void ESP32_VS1053_Stream::_closeStream() {
+    if (audio_eof_stream) {
+        char tmp[strlen(_url) + 1];
+        snprintf(tmp, sizeof(tmp), "%s", _url);
+        stopSong();
+        audio_eof_stream(tmp);
+    } else
+        stopSong();
+}
+
 inline __attribute__((always_inline)) bool ESP32_VS1053_Stream::_networkIsActive() {
     for (int i = TCPIP_ADAPTER_IF_STA; i < TCPIP_ADAPTER_IF_MAX; i++)
         if (tcpip_adapter_is_netif_up((tcpip_adapter_if_t)i))
@@ -308,8 +318,15 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream) {
 }
 
 void ESP32_VS1053_Stream::loop() {
-    if (!_http || !_http->connected())
+    if (!_http)
         return;
+
+    if (!_http->connected()) {
+        log_e("Unexpected stream disconnect: %s", _url);
+        _closeStream();
+        return;
+    }
+    
     WiFiClient *const stream = _http->getStreamPtr();
     if (!stream->available())
         return;
@@ -318,7 +335,7 @@ void ESP32_VS1053_Stream::loop() {
         const auto WAIT_TIME_MS = ((!_bitrate && _remainingBytes == -1) || _currentCodec == AAC || _currentCodec == AACP) ? 380 : 80;
         if ((unsigned long)millis() - _startMute > WAIT_TIME_MS) {
             _vs1053->setVolume(_volume);
-            log_d("startmute is %i milliseconds", WAIT_TIME_MS);
+            log_d("startmute is %lu milliseconds", WAIT_TIME_MS);
             _startMute = 0;
         }
     }
@@ -331,13 +348,7 @@ void ESP32_VS1053_Stream::loop() {
     }
 
     if (!_remainingBytes) {
-        if (audio_eof_stream) {
-            char tmp[strlen(_url) + 1];
-            snprintf(tmp, sizeof(tmp), "%s", _url);
-            stopSong();
-            audio_eof_stream(tmp);
-        } else
-            stopSong();
+        _closeStream();
     }
 }
 
