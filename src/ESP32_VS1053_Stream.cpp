@@ -155,7 +155,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
             {
                 String CONTENT = _http->header(CONTENT_TYPE);
                 CONTENT.toLowerCase();
-                if (CONTENT.indexOf("audio/x-scpls") != -1 || CONTENT.indexOf("audio/mpegurl") != -1 || CONTENT.indexOf("audio/x-mpegurl") != -1 || CONTENT.indexOf("application/x-mpegurl") != -1 || CONTENT.indexOf("application/pls+xml") != -1 || CONTENT.indexOf("application/vnd.apple.mpegurl") != -1) {
+                if (CONTENT.indexOf("audio/scpls") != -1 || CONTENT.indexOf("audio/x-scpls") != -1 || CONTENT.indexOf("audio/mpegurl") != -1 || CONTENT.indexOf("audio/x-mpegurl") != -1 || CONTENT.indexOf("application/x-mpegurl") != -1 || CONTENT.indexOf("application/pls+xml") != -1 || CONTENT.indexOf("application/vnd.apple.mpegurl") != -1) {
                     log_d("url %s is a playlist", url);
 
                     WiFiClient *stream = _http->getStreamPtr();
@@ -210,6 +210,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
                 _musicDataPosition = _metaDataStart ? 0 : -100;
                 _bitrate = _http->header(BITRATE).toInt();
                 snprintf(_url, sizeof(_url), "%s", url);
+                _emptyBufferStartTime = 0;
                 return true;
             }
 
@@ -322,14 +323,35 @@ void ESP32_VS1053_Stream::loop() {
         return;
 
     if (!_http->connected()) {
-        log_e("Unexpected stream disconnect: %s", _url);
+        log_e("Stream disconnect");
         _closeStream();
         return;
     }
-    
+
     WiFiClient *const stream = _http->getStreamPtr();
-    if (!stream->available())
+    if (!stream) {
+        log_e("Stream connection lost");
+        _closeStream();
         return;
+    }
+
+
+    if (!stream->available()) {
+        if (!_emptyBufferStartTime) {
+            _emptyBufferStartTime = millis();
+            _emptyBufferStartTime += _emptyBufferStartTime ? 0 : 1;
+        }
+        const auto NODATA_TIMEOUT_MS = 2500;
+        if (millis() - _emptyBufferStartTime > NODATA_TIMEOUT_MS) {
+            log_e("Empty buffer timeout %lu ms", NODATA_TIMEOUT_MS);
+            _closeStream();
+        }
+        return;
+    }
+    if (_emptyBufferStartTime) {
+        log_w("Empty buffer lasted %lu ms", millis() - _emptyBufferStartTime);
+        _emptyBufferStartTime = 0;
+    }
 
     if (_startMute) {
         const auto WAIT_TIME_MS = ((!_bitrate && _remainingBytes == -1) || _currentCodec == AAC || _currentCodec == AACP) ? 380 : 80;
@@ -361,7 +383,7 @@ void ESP32_VS1053_Stream::stopSong() {
         return;
     if (_http->connected()) {
         WiFiClient *const stream = _http->getStreamPtr();
-        stream->stop();
+        if (stream) stream->stop();
     }
     _http->end();
     delete _http;
@@ -392,7 +414,7 @@ void ESP32_VS1053_Stream::setTone(uint8_t *rtone) {
 }
 
 const char *ESP32_VS1053_Stream::currentCodec() {
-    static const char *name[] = { "STOPPED", "MP3", "OGG", "AAC", "AAC+" };
+    const char *name[] = { "STOPPED", "MP3", "OGG", "AAC", "AAC+" };
     return name[_currentCodec];
 }
 

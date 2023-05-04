@@ -78,6 +78,7 @@ class ESP32_VS1053_Stream {
     int _bitrate = 0;
     bool _chunkedResponse = false;
     bool _dataSeen = false;
+    unsigned long _emptyBufferStartTime = 0;
 
     enum codec_t {
         STOPPED,
