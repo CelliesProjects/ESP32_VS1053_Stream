@@ -12,6 +12,7 @@
 #define VS1053_MAX_PLAYLIST_READ 1024
 #define VS1053_MAX_URL_LENGTH 512
 #define VS1053_MAX_BYTES_PER_LOOP 16384
+#define VS1053_MAX_REDIRECT_COUNT 4
 
 #define VS1053_MAXVOLUME 100         /* do not change */
 #define VS1053_PACKETSIZE size_t(32) /* do not change */
@@ -59,12 +60,13 @@ class ESP32_VS1053_Stream {
     uint8_t _vs1053Buffer[VS1053_PACKETSIZE];
 
     size_t _nextChunkSize(WiFiClient *const stream);
-    bool _networkIsActive();
     bool _checkSync(WiFiClient *const stream);
     void _handleMetadata(char *data, const size_t len);
+    void _eofStream();
+    bool _networkIsActive();
+    bool _canRedirect(); 
     void _handleStream(WiFiClient *const stream);
     void _handleChunkedStream(WiFiClient *const stream);
-    void _closeStream();
 
 
     char _url[VS1053_MAX_URL_LENGTH];
@@ -79,7 +81,8 @@ class ESP32_VS1053_Stream {
     bool _chunkedResponse = false;
     bool _dataSeen = false;
     unsigned long _emptyBufferStartTime = 0;
-
+    uint8_t _redirectCount = 0;
+    
     enum codec_t {
         STOPPED,
         MP3,

@@ -42,7 +42,7 @@ void ESP32_VS1053_Stream::_handleMetadata(char *data, const size_t len) {
     audio_showstreamtitle(pch);
 }
 
-void ESP32_VS1053_Stream::_closeStream() {
+void ESP32_VS1053_Stream::_eofStream() {
     if (audio_eof_stream) {
         char tmp[strlen(_url) + 1];
         snprintf(tmp, sizeof(tmp), "%s", _url);
@@ -56,6 +56,16 @@ inline __attribute__((always_inline)) bool ESP32_VS1053_Stream::_networkIsActive
     for (int i = TCPIP_ADAPTER_IF_STA; i < TCPIP_ADAPTER_IF_MAX; i++)
         if (tcpip_adapter_is_netif_up((tcpip_adapter_if_t)i))
             return true;
+    return false;
+}
+
+bool ESP32_VS1053_Stream::_canRedirect() {
+    if (_redirectCount < VS1053_MAX_REDIRECT_COUNT) {
+        log_d("redirection %i", _redirectCount + 1);
+        _redirectCount++;
+        return true;
+    }
+    log_w("Max redirect count reached, aborting");
     return false;
 }
 
@@ -157,6 +167,10 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
                 CONTENT.toLowerCase();
                 if (CONTENT.indexOf("audio/scpls") != -1 || CONTENT.indexOf("audio/x-scpls") != -1 || CONTENT.indexOf("audio/mpegurl") != -1 || CONTENT.indexOf("audio/x-mpegurl") != -1 || CONTENT.indexOf("application/x-mpegurl") != -1 || CONTENT.indexOf("application/pls+xml") != -1 || CONTENT.indexOf("application/vnd.apple.mpegurl") != -1) {
                     log_d("url %s is a playlist", url);
+                    if (!_canRedirect()) {
+                        stopSong();
+                        return false;
+                    }
 
                     WiFiClient *stream = _http->getStreamPtr();
                     const auto BYTES_TO_READ = min(stream->available(), VS1053_MAX_PLAYLIST_READ);
@@ -175,8 +189,8 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
                         return false;
                     }
                     strtok(newurl, "\r\n;?");
-                    log_d("playlist reconnects to: %s", newurl);
                     stopSong();
+                    log_d("playlist reconnects to: %s", newurl);
                     return connecttohost(newurl, username, pwd, offset);
                 }
 
@@ -198,10 +212,11 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
                     return false;
                 }
 
-                log_d("content type : %s", CONTENT.c_str());
-
                 if (audio_showstation && !_http->header(ICY_NAME).equals(""))
                     audio_showstation(_http->header(ICY_NAME).c_str());
+
+                log_i("redirected %i times", _redirectCount);
+                log_i("content type '%s'", CONTENT.c_str());
 
                 _remainingBytes = _http->getSize();  // -1 when Server sends no Content-Length header (chunked streams)
                 _chunkedResponse = _http->header(ENCODING).equals("chunked") ? true : false;
@@ -211,22 +226,26 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
                 _bitrate = _http->header(BITRATE).toInt();
                 snprintf(_url, sizeof(_url), "%s", url);
                 _emptyBufferStartTime = 0;
+                _redirectCount = 0;
                 return true;
             }
 
         case 301:
             [[fallthrough]];
         case 302:
+            if (!_canRedirect()) {
+                stopSong();
+                return false;
+            }
             log_d("%i redirection to: %s", result, _http->header(LOCATION).c_str());
-            if (_http->hasHeader(LOCATION) && _http->header(LOCATION).indexOf("./") == -1)  // some items on radio-browser.info has non resolving names that contain './' in their hostname
-            {
+            if (_http->hasHeader(LOCATION) && _http->header(LOCATION).indexOf("./") == -1) {  // some items on radio-browser.info has non resolving names that contain './' in their hostname
                 char newurl[_http->header(LOCATION).length() + 1];
                 snprintf(newurl, sizeof(newurl), "%s", _http->header(LOCATION).c_str());
                 stopSong();
                 return connecttohost(newurl, username, pwd, 0);
             }
-
             log_e("Something went wrong redirecting to %s", _http->header(LOCATION).c_str());
+            _redirectCount = 0;
             stopSong();
             return false;
 
@@ -324,30 +343,30 @@ void ESP32_VS1053_Stream::loop() {
 
     if (!_http->connected()) {
         log_e("Stream disconnect");
-        _closeStream();
+        _eofStream();
         return;
     }
 
     WiFiClient *const stream = _http->getStreamPtr();
     if (!stream) {
         log_e("Stream connection lost");
-        _closeStream();
+        _eofStream();
         return;
     }
-
 
     if (!stream->available()) {
         if (!_emptyBufferStartTime) {
             _emptyBufferStartTime = millis();
             _emptyBufferStartTime += _emptyBufferStartTime ? 0 : 1;
         }
-        const auto NODATA_TIMEOUT_MS = 2500;
+        const auto NODATA_TIMEOUT_MS = 1500;
         if (millis() - _emptyBufferStartTime > NODATA_TIMEOUT_MS) {
             log_e("Empty buffer timeout %lu ms", NODATA_TIMEOUT_MS);
-            _closeStream();
+            _eofStream();
         }
         return;
     }
+
     if (_emptyBufferStartTime) {
         log_w("Empty buffer lasted %lu ms", millis() - _emptyBufferStartTime);
         _emptyBufferStartTime = 0;
@@ -370,7 +389,7 @@ void ESP32_VS1053_Stream::loop() {
     }
 
     if (!_remainingBytes) {
-        _closeStream();
+        _eofStream();
     }
 }
 
