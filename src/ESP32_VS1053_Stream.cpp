@@ -171,8 +171,12 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
                         stopSong();
                         return false;
                     }
-
                     WiFiClient *stream = _http->getStreamPtr();
+                    if (!stream) {
+                        log_e("No stream handle");
+                        stopSong();
+                        return false;
+                    }
                     const auto BYTES_TO_READ = min(stream->available(), VS1053_MAX_PLAYLIST_READ);
                     if (!BYTES_TO_READ) {
                         log_e("playlist contains no data");
@@ -238,7 +242,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
                 return false;
             }
             log_d("%i redirection to: %s", result, _http->header(LOCATION).c_str());
-            if (_http->hasHeader(LOCATION) && _http->header(LOCATION).indexOf("./") == -1) {  // some items on radio-browser.info has non resolving names that contain './' in their hostname
+            if (_http->hasHeader(LOCATION) && _http->header(LOCATION).indexOf("./") == -1) {  // hacky solution: some items on radio-browser.info has non resolving names that contain './' in their hostname
                 char newurl[_http->header(LOCATION).length() + 1];
                 snprintf(newurl, sizeof(newurl), "%s", _http->header(LOCATION).c_str());
                 stopSong();

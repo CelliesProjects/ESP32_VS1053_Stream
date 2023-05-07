@@ -64,10 +64,9 @@ class ESP32_VS1053_Stream {
     void _handleMetadata(char *data, const size_t len);
     void _eofStream();
     bool _networkIsActive();
-    bool _canRedirect(); 
+    bool _canRedirect();
     void _handleStream(WiFiClient *const stream);
     void _handleChunkedStream(WiFiClient *const stream);
-
 
     char _url[VS1053_MAX_URL_LENGTH];
     unsigned long _startMute = 0;
@@ -82,7 +81,7 @@ class ESP32_VS1053_Stream {
     bool _dataSeen = false;
     unsigned long _emptyBufferStartTime = 0;
     uint8_t _redirectCount = 0;
-    
+
     enum codec_t {
         STOPPED,
         MP3,
