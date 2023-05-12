@@ -219,9 +219,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
                 if (audio_showstation && !_http->header(ICY_NAME).equals(""))
                     audio_showstation(_http->header(ICY_NAME).c_str());
 
-                log_i("redirected %i times", _redirectCount);
-                log_i("content type '%s'", CONTENT.c_str());
-
                 _remainingBytes = _http->getSize();  // -1 when Server sends no Content-Length header (chunked streams)
                 _chunkedResponse = _http->header(ENCODING).equals("chunked") ? true : false;
                 _offset = (_remainingBytes == -1) ? 0 : offset;
@@ -230,6 +227,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
                 _bitrate = _http->header(BITRATE).toInt();
                 snprintf(_url, sizeof(_url), "%s", url);
                 _emptyBufferStartTime = 0;
+                log_d("redirected %i times", _redirectCount);
                 _redirectCount = 0;
                 return true;
             }
@@ -240,12 +238,12 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
             if (!_canRedirect()) {
                 stopSong();
                 return false;
-            }
-            log_d("%i redirection to: %s", result, _http->header(LOCATION).c_str());
+            }            
             if (_http->hasHeader(LOCATION) && _http->header(LOCATION).indexOf("./") == -1) {  // hacky solution: some items on radio-browser.info has non resolving names that contain './' in their hostname
                 char newurl[_http->header(LOCATION).length() + 1];
                 snprintf(newurl, sizeof(newurl), "%s", _http->header(LOCATION).c_str());
                 stopSong();
+                log_d("%i redirection to: %s", result, newurl);
                 return connecttohost(newurl, username, pwd, 0);
             }
             log_e("Something went wrong redirecting to %s", _http->header(LOCATION).c_str());
@@ -372,7 +370,7 @@ void ESP32_VS1053_Stream::loop() {
     }
 
     if (_emptyBufferStartTime) {
-        log_w("Empty buffer lasted %lu ms", millis() - _emptyBufferStartTime);
+        log_d("Empty buffer lasted %lu ms", millis() - _emptyBufferStartTime);
         _emptyBufferStartTime = 0;
     }
 
