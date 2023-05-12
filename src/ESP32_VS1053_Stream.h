@@ -12,7 +12,7 @@
 #define VS1053_MAX_PLAYLIST_READ 1024
 #define VS1053_MAX_URL_LENGTH 512
 #define VS1053_MAX_BYTES_PER_LOOP 16384
-#define VS1053_MAX_REDIRECT_COUNT 4
+#define VS1053_MAX_REDIRECT_COUNT 3
 
 #define VS1053_MAXVOLUME 100         /* do not change */
 #define VS1053_PACKETSIZE size_t(32) /* do not change */

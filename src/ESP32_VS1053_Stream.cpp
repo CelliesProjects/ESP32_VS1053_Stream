@@ -60,12 +60,12 @@ inline __attribute__((always_inline)) bool ESP32_VS1053_Stream::_networkIsActive
 }
 
 bool ESP32_VS1053_Stream::_canRedirect() {
-    if (_redirectCount < VS1053_MAX_REDIRECT_COUNT) {
-        log_d("redirection %i", _redirectCount + 1);
+    if (_redirectCount <= VS1053_MAX_REDIRECT_COUNT) {
         _redirectCount++;
+        log_d("redirection %i", _redirectCount);
         return true;
     }
-    log_w("Max redirect count reached, aborting");
+    log_w("Max redirect count reached");
     return false;
 }
 
