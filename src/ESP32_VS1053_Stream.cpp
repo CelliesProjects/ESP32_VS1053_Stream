@@ -153,6 +153,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
     _http->collectHeaders(header, sizeof(header) / sizeof(char *));
     _http->setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
     _http->setConnectTimeout(url[4] == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL : VS1053_CONNECT_TIMEOUT_MS);
+    _http->setTimeout(VS1053_DATA_TIMEOUT_MS);
 
     const int result = _http->GET();
     log_d("Time elapsed during connect: %i", millis() - startTime);
@@ -246,7 +247,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
                 log_d("%i redirection to: %s", result, newurl);
                 return connecttohost(newurl, username, pwd, 0);
             }
-            log_e("Something went wrong redirecting to %s", _http->header(LOCATION).c_str());
+            log_e("Something went wrong redirecting from %s", url);
             _redirectCount = 0;
             stopSong();
             return false;
