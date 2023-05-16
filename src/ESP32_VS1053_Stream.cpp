@@ -60,12 +60,12 @@ inline __attribute__((always_inline)) bool ESP32_VS1053_Stream::_networkIsActive
 }
 
 bool ESP32_VS1053_Stream::_canRedirect() {
-    if (_redirectCount <= VS1053_MAX_REDIRECT_COUNT) {
+    if (_redirectCount < VS1053_MAX_REDIRECT_COUNT) {
         _redirectCount++;
         log_d("redirection %i", _redirectCount);
         return true;
     }
-    log_w("Max redirect count reached");
+    log_w("Max redirect count (%i) reached", _redirectCount);
     return false;
 }
 
@@ -131,6 +131,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
         }
 
         if (!_http->begin(cnt ? escapedUrl : url)) {
+            log_w("Could not connect to %s", url);
             stopSong();
             return false;
         }
@@ -153,7 +154,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
     _http->collectHeaders(header, sizeof(header) / sizeof(char *));
     _http->setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
     _http->setConnectTimeout(url[4] == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL : VS1053_CONNECT_TIMEOUT_MS);
-    _http->setTimeout(VS1053_DATA_TIMEOUT_MS);
 
     const int result = _http->GET();
     log_d("Time elapsed during connect: %i", millis() - startTime);
@@ -277,6 +277,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream) {
         _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
         bytesToDecoder += BYTES_IN_BUFFER;
     }
+    log_d("bytes to decoder: %i", bytesToDecoder);
 
     if (_metaDataStart && _musicDataPosition == _metaDataStart && stream->available()) {
         const auto METALENGTH = stream->read() * 16;
@@ -315,6 +316,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream) {
         _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
         bytesToDecoder += BYTES_IN_BUFFER;
     }
+    log_d("bytes to decoder: %i", bytesToDecoder);
 
     if (_metaDataStart && _musicDataPosition == _metaDataStart && _bytesLeftInChunk) {
         const auto METALENGTH = stream->read() * 16;
@@ -362,16 +364,15 @@ void ESP32_VS1053_Stream::loop() {
             _emptyBufferStartTime = millis();
             _emptyBufferStartTime += _emptyBufferStartTime ? 0 : 1;
         }
-        const auto NODATA_TIMEOUT_MS = 1500;
-        if (millis() - _emptyBufferStartTime > NODATA_TIMEOUT_MS) {
-            log_e("Empty buffer timeout %lu ms", NODATA_TIMEOUT_MS);
+        if (millis() - _emptyBufferStartTime > VS1053_DATA_TIMEOUT_MS) {
+            log_e("Empty buffer timeout %lu ms", VS1053_DATA_TIMEOUT_MS);
             _eofStream();
         }
         return;
     }
 
     if (_emptyBufferStartTime) {
-        log_d("Empty buffer lasted %lu ms", millis() - _emptyBufferStartTime);
+        log_i("Empty buffer lasted %lu ms", millis() - _emptyBufferStartTime);
         _emptyBufferStartTime = 0;
     }
 
