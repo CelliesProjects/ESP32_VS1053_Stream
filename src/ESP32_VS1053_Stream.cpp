@@ -103,6 +103,11 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username, c
     if (!_vs1053 || _http || !_networkIsActive() || tolower(url[0]) != 'h' || tolower(url[1]) != 't' || tolower(url[2]) != 't' || tolower(url[3]) != 'p')
         return false;
 
+    if (strstr(url, "./")) {  // hacky solution: some items on radio-browser.info has non resolving names that contain './' in their hostname
+        log_e("Invalid url not started");
+        return false;
+    }
+
     _http = new HTTPClient;
     if (!_http)
         return false;
