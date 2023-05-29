@@ -16,15 +16,16 @@
 #define VS1053_MAX_REDIRECT_COUNT 3
 
 #define VS1053_MAXVOLUME 100         /* do not change */
-#define VS1053_PACKETSIZE size_t(32) /* do not change */
+#define VS1053_BUFFERSIZE size_t(32) /* do not change */
 
 extern void audio_showstation(const char *) __attribute__((weak));
 extern void audio_eof_stream(const char *) __attribute__((weak));
 extern void audio_showstreamtitle(const char *) __attribute__((weak));
 
-class ESP32_VS1053_Stream {
+class ESP32_VS1053_Stream
+{
 
-  public:
+public:
     ESP32_VS1053_Stream();
     ~ESP32_VS1053_Stream();
 
@@ -55,10 +56,10 @@ class ESP32_VS1053_Stream {
     size_t position();
     uint32_t bitrate();
 
-  private:
-    VS1053 *_vs1053 = NULL;
-    HTTPClient *_http = NULL;
-    uint8_t _vs1053Buffer[VS1053_PACKETSIZE];
+private:
+    VS1053 *_vs1053;
+    HTTPClient *_http;
+    uint8_t _vs1053Buffer[VS1053_BUFFERSIZE];
 
     size_t _nextChunkSize(WiFiClient *const stream);
     bool _checkSync(WiFiClient *const stream);
@@ -83,7 +84,8 @@ class ESP32_VS1053_Stream {
     unsigned long _emptyBufferStartTime = 0;
     uint8_t _redirectCount = 0;
 
-    enum codec_t {
+    enum codec_t
+    {
         STOPPED,
         MP3,
         OGG,
