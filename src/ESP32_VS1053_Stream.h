@@ -3,6 +3,9 @@
 
 #include <Arduino.h>
 #include <HTTPClient.h>
+#include <freertos/ringbuf.h>
+#include <freertos/semphr.h>
+#include <esp_heap_caps.h>
 #include <VS1053.h> /* https://github.com/baldram/ESP_VS1053_Library */
 
 #define VS1053_INITIALVOLUME 95
@@ -17,6 +20,9 @@
 
 #define VS1053_MAXVOLUME 100         /* do not change */
 #define VS1053_BUFFERSIZE size_t(32) /* do not change */
+
+#define VS1053_PSRAM_BUFFER_SIZE 400000 // 32-bit aligned size
+#define VS1053_BUFFER_TYPE RINGBUF_TYPE_NOSPLIT
 
 extern void audio_showstation(const char *) __attribute__((weak));
 extern void audio_eof_stream(const char *) __attribute__((weak));
@@ -60,6 +66,10 @@ private:
     VS1053 *_vs1053;
     HTTPClient *_http;
     uint8_t _vs1053Buffer[VS1053_BUFFERSIZE];
+
+    RingbufHandle_t _ringbuffer_handle;
+    StaticRingbuffer_t *_buffer_struct;
+    uint8_t *_buffer_storage;
 
     size_t _nextChunkSize(WiFiClient *const stream);
     bool _checkSync(WiFiClient *const stream);

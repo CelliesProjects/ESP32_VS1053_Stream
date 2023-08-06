@@ -1,6 +1,39 @@
 #include "ESP32_VS1053_Stream.h"
 
-ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr) {}
+ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr), _ringbuffer_handle(nullptr)
+{
+    psramInit();
+    if (!psramFound())
+    {
+        log_i("No PSRAM");
+        return;
+    }
+
+    // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/freertos_additions.html#ring-buffers-with-static-allocation
+
+    // Allocate ring buffer data structure and storage area into external RAM
+    _buffer_struct = (StaticRingbuffer_t *)heap_caps_malloc(sizeof(StaticRingbuffer_t), MALLOC_CAP_SPIRAM);
+    if (!_buffer_struct)
+    {
+        log_e("Could not allocate ringbuffer struct");
+        return;
+    }
+
+    _buffer_storage = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * VS1053_PSRAM_BUFFER_SIZE, MALLOC_CAP_SPIRAM);
+    if (!_buffer_struct)
+    {
+        log_e("Could not allocate ringbuffer storage");
+        return;
+    }
+    // Create a ring buffer with manually allocated memory
+    _ringbuffer_handle = xRingbufferCreateStatic(VS1053_PSRAM_BUFFER_SIZE, VS1053_BUFFER_TYPE, _buffer_storage, _buffer_struct);
+    if (!_ringbuffer_handle)
+    {
+        log_e("Could not create ringbuffer handle");
+        return;
+    }
+    log_i("PSRAM found, allocated %i bytes ringbuffer", VS1053_PSRAM_BUFFER_SIZE);
+}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
@@ -223,7 +256,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             WiFiClient *stream = _http->getStreamPtr();
             if (!stream)
             {
-                log_e("No stream handle");
+                log_e("No stream _ringbuffer_handle");
                 stopSong();
                 return false;
             }
