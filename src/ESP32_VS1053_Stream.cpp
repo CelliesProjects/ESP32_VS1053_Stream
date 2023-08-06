@@ -1,9 +1,10 @@
 #include "ESP32_VS1053_Stream.h"
 
-ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr), _ringbuffer_handle(nullptr)
+ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _buffer_struct(nullptr),
+                                             _buffer_storage(nullptr), _ringbuffer_handle(nullptr)
 {
-    psramInit();
-    if (!psramFound())
+    ;
+    if (!psramInit())
     {
         log_i("No PSRAM");
         return;
@@ -314,7 +315,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         _musicDataPosition = _metaDataStart ? 0 : -100;
         _bitrate = _http->header(BITRATE).toInt();
         snprintf(_url, sizeof(_url), "%s", url);
-        _emptyBufferStartTime = 0;
         log_d("redirected %i times", _redirectCount);
         _redirectCount = 0;
         return true;
@@ -469,27 +469,6 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    if (!stream->available())
-    {
-        if (!_emptyBufferStartTime)
-        {
-            _emptyBufferStartTime = millis();
-            _emptyBufferStartTime += _emptyBufferStartTime ? 0 : 1;
-        }
-        if (millis() - _emptyBufferStartTime > VS1053_DATA_TIMEOUT_MS)
-        {
-            log_e("Empty buffer timeout %lu ms", VS1053_DATA_TIMEOUT_MS);
-            _eofStream();
-        }
-        return;
-    }
-
-    if (_emptyBufferStartTime)
-    {
-        log_i("Empty buffer lasted %lu ms", millis() - _emptyBufferStartTime);
-        _emptyBufferStartTime = 0;
-    }
-
     if (_startMute)
     {
         const auto WAIT_TIME_MS = ((!_bitrate && _remainingBytes == -1) || _currentCodec == AAC || _currentCodec == AACP)
@@ -522,6 +501,8 @@ bool ESP32_VS1053_Stream::isRunning()
 
 void ESP32_VS1053_Stream::stopSong()
 {
+    // if there is a psram ringbuffer, reset it (except when paused)
+
     if (!_http)
         return;
     if (_http->connected())

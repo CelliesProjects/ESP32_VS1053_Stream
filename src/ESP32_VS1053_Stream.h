@@ -91,7 +91,6 @@ private:
     int _bitrate = 0;
     bool _chunkedResponse = false;
     bool _dataSeen = false;
-    unsigned long _emptyBufferStartTime = 0;
     uint8_t _redirectCount = 0;
 
     enum codec_t
