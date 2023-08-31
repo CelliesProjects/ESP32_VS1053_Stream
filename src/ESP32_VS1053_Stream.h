@@ -15,8 +15,8 @@
 #define VS1053_MAX_BYTES_PER_LOOP 16384
 #define VS1053_MAX_REDIRECT_COUNT 3
 
-#define VS1053_MAXVOLUME 100         /* do not change */
-#define VS1053_BUFFERSIZE size_t(32) /* do not change */
+#define VS1053_MAXVOLUME uint8_t(100)   /* do not change */
+#define VS1053_BUFFERSIZE size_t(32)    /* do not change */
 
 extern void audio_showstation(const char *) __attribute__((weak));
 extern void audio_eof_stream(const char *) __attribute__((weak));
@@ -41,7 +41,7 @@ public:
     bool isRunning();
     void stopSong();
     uint8_t getVolume();
-    void setVolume(const uint8_t vol); /* 0-100 */
+    void setVolume(const uint8_t newVolume); /* 0-100 */
     void setTone(uint8_t *rtone);
     /*  Bass/Treble: void setTone(uint8_t *rtone);
         toneha       = <0..15>        // Setting treble gain (0 off, 1.5dB steps)

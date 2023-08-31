@@ -515,9 +515,9 @@ uint8_t ESP32_VS1053_Stream::getVolume()
     return _volume;
 }
 
-void ESP32_VS1053_Stream::setVolume(const uint8_t vol)
+void ESP32_VS1053_Stream::setVolume(const uint8_t newVolume)
 {
-    _volume = vol;
+    _volume = newVolume > VS1053_MAXVOLUME ? VS1053_MAXVOLUME : newVolume;
     if (_vs1053 && !_startMute)
         _vs1053->setVolume(_volume);
 }
