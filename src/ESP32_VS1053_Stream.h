@@ -15,14 +15,14 @@
 #define VS1053_DATA_TIMEOUT_MS 900
 #define VS1053_MAX_PLAYLIST_READ 1024
 #define VS1053_MAX_URL_LENGTH 512
-#define VS1053_MAX_BYTES_PER_LOOP 16384
+#define VS1053_MAX_BYTES_PER_LOOP 8192
 #define VS1053_MAX_REDIRECT_COUNT 3
 
 #define VS1053_MAXVOLUME 100         /* do not change */
 #define VS1053_BUFFERSIZE size_t(32) /* do not change */
 
-#define VS1053_PSRAM_BUFFER_SIZE 400000 // 32-bit aligned size
-#define VS1053_BUFFER_TYPE RINGBUF_TYPE_NOSPLIT
+#define VS1053_PSRAM_BUFFER_SIZE 262144 // 32-bit aligned size
+#define VS1053_BUFFER_TYPE RINGBUF_TYPE_BYTEBUF
 
 extern void audio_showstation(const char *) __attribute__((weak));
 extern void audio_eof_stream(const char *) __attribute__((weak));
@@ -91,6 +91,7 @@ private:
     int _bitrate = 0;
     bool _chunkedResponse = false;
     bool _dataSeen = false;
+    unsigned long _noStreamStartTime = 0;
     uint8_t _redirectCount = 0;
 
     enum codec_t
