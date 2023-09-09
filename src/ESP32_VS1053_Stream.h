@@ -79,6 +79,8 @@ private:
     bool _canRedirect();
     void _handleStream(WiFiClient *const stream);
     void _handleChunkedStream(WiFiClient *const stream);
+    void _playFromRingBuffer();
+    void _streamToRingBuffer(WiFiClient *const stream);
 
     char _url[VS1053_MAX_URL_LENGTH];
     unsigned long _startMute = 0;
