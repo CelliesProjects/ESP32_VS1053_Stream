@@ -378,28 +378,28 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
                bytesToRingBuffer < VS1053_MAX_BYTES_PER_LOOP)
         {
             const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
-            size_t BYTES_TO_READ = min(BYTES_AVAILABLE, xRingbufferGetMaxItemSize(_ringbuffer_handle));
-            BYTES_TO_READ = min(BYTES_TO_READ, (size_t)4096 + 1024); // moving more than 5kB crashes the esp? Stupid!
+            size_t BYTES_TO_READ = min(BYTES_AVAILABLE, size_t(1024 * 5));
 
-            uint8_t localbuffer[BYTES_TO_READ];
             if (xRingbufferGetCurFreeSize(_ringbuffer_handle) < BYTES_TO_READ)
                 break;
 
+            uint8_t localbuffer[BYTES_TO_READ];
             const int BYTES_IN_BUFFER = stream->readBytes(localbuffer, BYTES_TO_READ);
             log_d("%i bytes in buffer", BYTES_IN_BUFFER);
-            BaseType_t result = xRingbufferSend(_ringbuffer_handle, localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
+            const BaseType_t result = xRingbufferSend(_ringbuffer_handle, localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
             if (result == pdFALSE)
             {
-                log_e("ringbuffer full?");
-                break;
+                log_e("ringbuffer full? Aborting...");
+                _remainingBytes = 0;
+                return;
             }
             else
             {
                 bytesToRingBuffer += BYTES_IN_BUFFER;
-                _musicDataPosition += BYTES_IN_BUFFER;
+                _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
             }
         }
-        log_d("%i bytes to ringbuffer", bytesToRingBuffer);
+        log_i("%i bytes to ringbuffer", bytesToRingBuffer);
     }
     else
     {
@@ -416,9 +416,10 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
             _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
             bytesToDecoder += BYTES_IN_BUFFER;
         }
-        log_d("bytes to decoder: %i", bytesToDecoder);
+        log_d("%i bytes from stream to decoder", bytesToDecoder);
     }
 
+    // read the metadata and call 'audio_showstreamtitle()' if it is defined 
     if (_metaDataStart && _musicDataPosition == _metaDataStart && stream->available())
     {
         const auto METALENGTH = stream->read() * 16;
@@ -432,24 +433,26 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
         _musicDataPosition = 0;
     }
 
+
+    // play data from the ringbuffer
     if (_ringbuffer_handle)
     {
         size_t bytesToDecoder = 0;
-        while (xRingbufferGetMaxItemSize(_ringbuffer_handle) && _vs1053->data_request() &&
-               bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
+        while (_vs1053->data_request() && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
         {
             size_t item_size = 0;
             uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &item_size, pdMS_TO_TICKS(0), VS1053_BUFFERSIZE);
             if (!data)
             {
-                log_w("Ringbuffer empty");
+                log_w("No ringbuffer data available");
+                break;
             }
             _vs1053->playChunk(data, item_size);
             vRingbufferReturnItem(_ringbuffer_handle, data);
             bytesToDecoder += item_size;
             _remainingBytes -= _remainingBytes > 0 ? item_size : 0;
         }
-        log_d("%i bytes from ringbuffer to decoder", bytesToDecoder);
+        log_i("%i bytes from ringbuffer to decoder", bytesToDecoder);
     }
 }
 
