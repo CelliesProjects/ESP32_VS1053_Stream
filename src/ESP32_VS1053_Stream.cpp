@@ -2,7 +2,7 @@
 #include <freertos/ringbuf.h>
 
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _buffer_struct(nullptr),
-                                             _buffer_storage(nullptr), _ringbuffer_handle(nullptr), _vs1053Buffer{}
+                                             _buffer_storage(nullptr), _ringbuffer_handle(nullptr), _vs1053Buffer{0}
 {
     ;
     if (!psramInit())
@@ -14,7 +14,6 @@ ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _
     // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/freertos_additions.html#ring-buffers-with-static-allocation
 
     // Allocate ring buffer data structure and storage area into external RAM
-    // TODO: free already allocated stuff if something goes wrong
     _buffer_struct = (StaticRingbuffer_t *)heap_caps_malloc(sizeof(StaticRingbuffer_t), MALLOC_CAP_SPIRAM);
     if (!_buffer_struct)
     {
@@ -26,6 +25,7 @@ ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _
     if (!_buffer_storage)
     {
         log_e("Could not allocate ringbuffer storage");
+        free(_buffer_struct);
         return;
     }
     // Create a ring buffer with manually allocated memory
@@ -33,6 +33,8 @@ ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _
     if (!_ringbuffer_handle)
     {
         log_e("Could not create ringbuffer handle");
+        free(_buffer_storage);
+        free(_buffer_struct);
         return;
     }
     else
@@ -44,8 +46,9 @@ ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
     stopSong();
     delete _vs1053;
     vRingbufferDelete(_ringbuffer_handle);
-    free(_buffer_struct);
+    free(_ringbuffer_handle);
     free(_buffer_storage);
+    free(_buffer_struct);
 }
 
 size_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient *const stream)
@@ -535,6 +538,7 @@ void ESP32_VS1053_Stream::loop()
         _eofStream();
         return;
     }
+
     if (!stream->available())
     {
         if (!_noStreamStartTime)
