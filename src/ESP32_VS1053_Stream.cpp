@@ -4,16 +4,10 @@
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _ringbuffer_handle(nullptr), _buffer_struct(nullptr),
                                              _buffer_storage(nullptr)
 {
-    ;
     if (!psramInit())
-    {
-        log_i("No PSRAM");
         return;
-    }
 
-    // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/freertos_additions.html#ring-buffers-with-static-allocation
-
-    // Allocate ring buffer data structure and storage area into external RAM
+    // Allocate ring buffer data structure, storage and handle into external RAM
     _buffer_struct = (StaticRingbuffer_t *)heap_caps_malloc(sizeof(StaticRingbuffer_t), MALLOC_CAP_SPIRAM);
     if (!_buffer_struct)
     {
@@ -28,7 +22,6 @@ ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _
         free(_buffer_struct);
         return;
     }
-    // Create a ring buffer with manually allocated memory
     _ringbuffer_handle = xRingbufferCreateStatic(VS1053_PSRAM_BUFFER_SIZE, VS1053_BUFFER_TYPE, _buffer_storage, _buffer_struct);
     if (!_ringbuffer_handle)
     {
@@ -547,8 +540,20 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
             {
                 if (!_bytesLeftInChunk)
                 {
-                    _checkSync(stream);
-                    _bytesLeftInChunk = _nextChunkSize(stream);
+                    if (!_checkSync(stream))
+                    {
+                        _remainingBytes = 0;
+                        return;
+                    }
+                    else
+                    {
+                        _bytesLeftInChunk = _nextChunkSize(stream);
+                        if (!_bytesLeftInChunk)
+                        {
+                            _remainingBytes = 0;
+                            return;
+                        }
+                    }
                 }
                 data[cnt++] = stream->read();
                 _bytesLeftInChunk--;
@@ -559,13 +564,23 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         _musicDataPosition = 0;
     }
 
-    if (!_bytesLeftInChunk)
-        _checkSync(stream);
+    if (!_remainingBytes ) {
+        _eofStream();
+        return;
+    }
+
+    if (!_bytesLeftInChunk && !_checkSync(stream))
+    {
+        _remainingBytes = 0;
+        return;
+    }
 }
 
 void ESP32_VS1053_Stream::loop()
 {
-    if (!_http)
+    //log_i("%i",  _remainingBytes);
+
+    if (!_http && !_remainingBytes)
         return;
 
     if (!_http->connected())
@@ -576,12 +591,13 @@ void ESP32_VS1053_Stream::loop()
     }
 
     WiFiClient *const stream = _http->getStreamPtr();
-    if (!stream)
+    if (!_ringbuffer_handle && !stream)
     {
         log_e("Stream connection lost");
         _eofStream();
         return;
     }
+
 
     if (!stream->available())
     {
@@ -589,13 +605,15 @@ void ESP32_VS1053_Stream::loop()
         {
             _noStreamStartTime = millis();
             _noStreamStartTime += _noStreamStartTime ? 0 : 1;
+            return;
         }
-        if (millis() - _noStreamStartTime > VS1053_DATA_TIMEOUT_MS)
+        if (!_ringbuffer_handle && millis() - _noStreamStartTime > VS1053_DATA_TIMEOUT_MS)
         {
-            log_e("Empty buffer timeout %lu ms", VS1053_DATA_TIMEOUT_MS);
+            log_e("Stream blackout  %lu ms", VS1053_DATA_TIMEOUT_MS);
             _eofStream();
+            return;
         }
-        return;
+        
     }
 
     if (_noStreamStartTime)
