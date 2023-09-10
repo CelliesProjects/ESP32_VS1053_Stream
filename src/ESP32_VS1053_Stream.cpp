@@ -1,7 +1,7 @@
 #include "ESP32_VS1053_Stream.h"
 #include <freertos/ringbuf.h>
 
-ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _ringbuffer_handle(nullptr), _buffer_struct(nullptr),
+ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _ringbuffer_handle(nullptr), _buffer_struct(nullptr),
                                              _buffer_storage(nullptr)
 {
     ;
@@ -367,17 +367,17 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     size_t bytesToDecoder = 0;
     while (_vs1053->data_request() && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
     {
-        size_t item_size = 0;
-        uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &item_size, pdMS_TO_TICKS(0), VS1053_BUFFERSIZE);
+        size_t size = 0;
+        uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_BUFFERSIZE);
         if (!data)
         {
             log_w("No ringbuffer data available");
             break;
         }
-        _vs1053->playChunk(data, item_size);
+        _vs1053->playChunk(data, size);
         vRingbufferReturnItem(_ringbuffer_handle, data);
-        bytesToDecoder += item_size;
-        _remainingBytes -= _remainingBytes > 0 ? item_size : 0;
+        bytesToDecoder += size;
+        _remainingBytes -= _remainingBytes > 0 ? size : 0;
     }
     log_d("%i bytes from ringbuffer to decoder", bytesToDecoder);
 }
@@ -390,15 +390,14 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
            bytesToRingBuffer < VS1053_MAX_BYTES_PER_LOOP)
     {
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
-        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, size_t(1024 * 5));
+        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PSRAM_MAX_MOVE);
 
         if (xRingbufferGetCurFreeSize(_ringbuffer_handle) < BYTES_TO_READ)
             break;
 
-        static uint8_t localbuffer[VS1053_PSRAM_MAX_MOVE];
-        const int BYTES_IN_BUFFER = stream->readBytes(localbuffer, BYTES_TO_READ);
+        const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
         log_d("%i bytes in buffer", BYTES_IN_BUFFER);
-        const BaseType_t result = xRingbufferSend(_ringbuffer_handle, localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
+        const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
         if (result == pdFALSE)
         {
             log_e("ringbuffer is unexpected full? Aborting...");
@@ -476,10 +475,9 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
         if (xRingbufferGetCurFreeSize(_ringbuffer_handle) < BYTES_TO_READ)
             break;
 
-        static uint8_t localbuffer[VS1053_PSRAM_MAX_MOVE];
-        const int BYTES_IN_BUFFER = stream->readBytes(localbuffer, BYTES_TO_READ);
+        const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
         log_d("%i bytes in buffer", BYTES_IN_BUFFER);
-        const BaseType_t result = xRingbufferSend(_ringbuffer_handle, localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
+        const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
         if (result == pdFALSE)
         {
             log_e("ringbuffer is unexpected full? Aborting...");

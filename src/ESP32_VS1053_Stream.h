@@ -15,14 +15,14 @@
 #define VS1053_DATA_TIMEOUT_MS 900
 #define VS1053_MAX_PLAYLIST_READ 1024
 #define VS1053_MAX_URL_LENGTH 512
-#define VS1053_MAX_BYTES_PER_LOOP (size_t)8192
+#define VS1053_MAX_BYTES_PER_LOOP (size_t)8192 * 2
 #define VS1053_MAX_REDIRECT_COUNT 3
 
 #define VS1053_MAXVOLUME 100         /* do not change */
 #define VS1053_BUFFERSIZE size_t(32) /* do not change */
 
 #define VS1053_PSRAM_BUFFER_SIZE 1024 * 32 // 32-bit aligned size
-#define VS1053_PSRAM_MAX_MOVE size_t(1024 * 5)
+#define VS1053_PSRAM_MAX_MOVE size_t(1024 * 10)
 #define VS1053_BUFFER_TYPE RINGBUF_TYPE_BYTEBUF
 
 extern void audio_showstation(const char *) __attribute__((weak));
@@ -67,6 +67,7 @@ private:
     VS1053 *_vs1053;
     HTTPClient *_http;
     uint8_t _vs1053Buffer[VS1053_BUFFERSIZE];
+    uint8_t _localbuffer[VS1053_PSRAM_MAX_MOVE];
 
     RingbufHandle_t _ringbuffer_handle;
     StaticRingbuffer_t *_buffer_struct;
