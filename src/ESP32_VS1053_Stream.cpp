@@ -1,8 +1,8 @@
 #include "ESP32_VS1053_Stream.h"
 #include <freertos/ringbuf.h>
 
-ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _buffer_struct(nullptr),
-                                             _buffer_storage(nullptr), _ringbuffer_handle(nullptr), _vs1053Buffer{0}
+ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _ringbuffer_handle(nullptr), _buffer_struct(nullptr),
+                                             _buffer_storage(nullptr)
 {
     ;
     if (!psramInit())
@@ -384,19 +384,18 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
 void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
 {
-    // read available http data into ringbuffer until metadata start
+    // read available non chunked http data into ringbuffer until metadata start
     size_t bytesToRingBuffer = 0;
-    while (stream->available() && _remainingBytes &&
-           _musicDataPosition < _metaDataStart &&
+    while (stream->available() && _musicDataPosition < _metaDataStart &&
            bytesToRingBuffer < VS1053_MAX_BYTES_PER_LOOP)
     {
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
-        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, size_t(1024 * 5)); // This amount goes on the stack!
+        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, size_t(1024 * 5));
 
         if (xRingbufferGetCurFreeSize(_ringbuffer_handle) < BYTES_TO_READ)
             break;
 
-        uint8_t localbuffer[BYTES_TO_READ];
+        static uint8_t localbuffer[VS1053_PSRAM_MAX_MOVE];
         const int BYTES_IN_BUFFER = stream->readBytes(localbuffer, BYTES_TO_READ);
         log_d("%i bytes in buffer", BYTES_IN_BUFFER);
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
@@ -433,7 +432,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
     }
     else
     {
-        // no ringbuffer, play straight from stream buffer until _metaDataStart
+        // play straight from http stream buffer until _metaDataStart
         size_t bytesToDecoder = 0;
         while (stream->available() && _vs1053->data_request() && _remainingBytes &&
                _musicDataPosition < _metaDataStart && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
@@ -464,6 +463,39 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
     }
 }
 
+void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
+{
+    // read available http data into ringbuffer until metadata start OR until end of chunk
+    size_t bytesToRingBuffer = 0;
+    while (_bytesLeftInChunk && _musicDataPosition < _metaDataStart &&
+           bytesToRingBuffer < VS1053_MAX_BYTES_PER_LOOP)
+    {
+        const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
+        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_MAX_BYTES_PER_LOOP);
+
+        if (xRingbufferGetCurFreeSize(_ringbuffer_handle) < BYTES_TO_READ)
+            break;
+
+        static uint8_t localbuffer[VS1053_PSRAM_MAX_MOVE];
+        const int BYTES_IN_BUFFER = stream->readBytes(localbuffer, BYTES_TO_READ);
+        log_d("%i bytes in buffer", BYTES_IN_BUFFER);
+        const BaseType_t result = xRingbufferSend(_ringbuffer_handle, localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
+        if (result == pdFALSE)
+        {
+            log_e("ringbuffer is unexpected full? Aborting...");
+            _remainingBytes = 0;
+            return;
+        }
+        else
+        {
+            _bytesLeftInChunk -= BYTES_IN_BUFFER;
+            bytesToRingBuffer += BYTES_IN_BUFFER;
+            _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
+        }
+    }
+    log_d("%i bytes from chunked stream to decoder", bytesToRingBuffer);
+}
+
 void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 {
     if (!_bytesLeftInChunk)
@@ -484,17 +516,26 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         }
     }
 
-    size_t bytesToDecoder = 0;
-    while (_bytesLeftInChunk && _vs1053->data_request() && _musicDataPosition < _metaDataStart && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
+    if (_ringbuffer_handle)
     {
-        const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
-        const int BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, min(BYTES_AVAILABLE, VS1053_BUFFERSIZE));
-        _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
-        _bytesLeftInChunk -= BYTES_IN_BUFFER;
-        _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
-        bytesToDecoder += BYTES_IN_BUFFER;
+        _chunkedStreamToRingBuffer(stream);
+        _playFromRingBuffer();
     }
-    log_d("bytes to decoder: %i", bytesToDecoder);
+    else
+    {
+        // play straight from the http client buffer
+        size_t bytesToDecoder = 0;
+        while (_bytesLeftInChunk && _vs1053->data_request() && _musicDataPosition < _metaDataStart && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
+        {
+            const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
+            const int BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, min(BYTES_AVAILABLE, VS1053_BUFFERSIZE));
+            _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
+            _bytesLeftInChunk -= BYTES_IN_BUFFER;
+            _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
+            bytesToDecoder += BYTES_IN_BUFFER;
+        }
+        log_d("bytes to decoder: %i", bytesToDecoder);
+    }
 
     if (_metaDataStart && _musicDataPosition == _metaDataStart && _bytesLeftInChunk)
     {
@@ -573,7 +614,7 @@ void ESP32_VS1053_Stream::loop()
         if (millis() - _startMute > WAIT_TIME_MS)
         {
             _vs1053->setVolume(_volume);
-            log_d("startmute is %lu milliseconds", WAIT_TIME_MS);
+            log_i("startmute is %lu milliseconds", WAIT_TIME_MS);
             _startMute = 0;
         }
     }

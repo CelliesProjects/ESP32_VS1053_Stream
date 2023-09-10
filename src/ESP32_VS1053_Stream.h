@@ -15,13 +15,14 @@
 #define VS1053_DATA_TIMEOUT_MS 900
 #define VS1053_MAX_PLAYLIST_READ 1024
 #define VS1053_MAX_URL_LENGTH 512
-#define VS1053_MAX_BYTES_PER_LOOP 8192
+#define VS1053_MAX_BYTES_PER_LOOP (size_t)8192
 #define VS1053_MAX_REDIRECT_COUNT 3
 
 #define VS1053_MAXVOLUME 100         /* do not change */
 #define VS1053_BUFFERSIZE size_t(32) /* do not change */
 
-#define VS1053_PSRAM_BUFFER_SIZE 262144 // 32-bit aligned size
+#define VS1053_PSRAM_BUFFER_SIZE 1024 * 32 // 32-bit aligned size
+#define VS1053_PSRAM_MAX_MOVE size_t(1024 * 5)
 #define VS1053_BUFFER_TYPE RINGBUF_TYPE_BYTEBUF
 
 extern void audio_showstation(const char *) __attribute__((weak));
@@ -81,6 +82,7 @@ private:
     void _handleChunkedStream(WiFiClient *const stream);
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *const stream);
+    void _chunkedStreamToRingBuffer(WiFiClient *const stream);
 
     char _url[VS1053_MAX_URL_LENGTH];
     unsigned long _startMute = 0;
