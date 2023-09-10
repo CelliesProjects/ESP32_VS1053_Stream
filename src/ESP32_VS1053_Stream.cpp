@@ -312,8 +312,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 
         _remainingBytes = _http->getSize(); // -1 when Server sends no Content-Length header (chunked streams)
         _chunkedResponse = _http->header(ENCODING).equals("chunked") ? true : false;
-        if (_chunkedResponse)
-            log_i("Stream is chunked");
         _offset = (_remainingBytes == -1) ? 0 : offset;
         _metaDataStart = _http->header(ICY_METAINT).toInt();
         _musicDataPosition = _metaDataStart ? 0 : -100;
@@ -364,7 +362,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_BUFFERSIZE);
         if (!data)
         {
-            log_w("No ringbuffer data available");
+            log_d("No ringbuffer data available");
             break;
         }
         _vs1053->playChunk(data, size);
@@ -618,7 +616,7 @@ void ESP32_VS1053_Stream::loop()
 
     if (_noStreamStartTime)
     {
-        log_i("Stream blackout lasted %lu ms", millis() - _noStreamStartTime);
+        log_d("Stream blackout lasted %lu ms", millis() - _noStreamStartTime);
         _noStreamStartTime = 0;
     }
 
@@ -630,7 +628,7 @@ void ESP32_VS1053_Stream::loop()
         if (millis() - _startMute > WAIT_TIME_MS)
         {
             _vs1053->setVolume(_volume);
-            log_i("startmute is %lu milliseconds", WAIT_TIME_MS);
+            log_d("startmute is %lu milliseconds", WAIT_TIME_MS);
             _startMute = 0;
         }
     }
