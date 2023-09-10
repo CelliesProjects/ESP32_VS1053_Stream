@@ -562,7 +562,8 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         _musicDataPosition = 0;
     }
 
-    if (!_remainingBytes ) {
+    if (!_remainingBytes)
+    {
         _eofStream();
         return;
     }
@@ -576,7 +577,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 
 void ESP32_VS1053_Stream::loop()
 {
-    //log_i("%i",  _remainingBytes);
+    // log_i("%i",  _remainingBytes);
 
     if (!_http && !_remainingBytes)
         return;
@@ -596,7 +597,6 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-
     if (!stream->available())
     {
         if (!_noStreamStartTime)
@@ -611,7 +611,6 @@ void ESP32_VS1053_Stream::loop()
             _eofStream();
             return;
         }
-        
     }
 
     if (_noStreamStartTime)
@@ -653,6 +652,13 @@ bool ESP32_VS1053_Stream::isRunning()
 void ESP32_VS1053_Stream::stopSong()
 {
     // if there is a psram ringbuffer, reset it (except when paused)
+    size_t item_size;
+    char *item = (char *)xRingbufferReceiveUpTo(_ringbuffer_handle, &item_size, pdMS_TO_TICKS(1000), VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle));
+    // Check received data
+    if (item != NULL)
+    {
+        vRingbufferReturnItem(_ringbuffer_handle, (void *)item);
+    }
 
     if (!_http)
         return;
