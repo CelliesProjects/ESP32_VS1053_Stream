@@ -1,14 +1,12 @@
 #include "ESP32_VS1053_Stream.h"
 #include <freertos/ringbuf.h>
 
-ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _ringbuffer_handle(nullptr), _buffer_struct(nullptr),
-                                             _buffer_storage(nullptr)
-{}
+ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _url{0},
+                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr) {}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
     stopSong();
-    //_deallocateRingbuffer(); // Done by stopSong?
     delete _vs1053;
 }
 
@@ -17,7 +15,7 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
     // Allocate ring buffer structure, storage and handle in external RAM
     if (!psramFound())
         return;
-    
+
     if (_buffer_struct)
     {
         log_e("_buffer_struct not empty");
@@ -49,7 +47,7 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
     {
         log_e("_ringbuffer_handle in use");
         return;
-    }    
+    }
     _ringbuffer_handle = xRingbufferCreateStatic(VS1053_PSRAM_BUFFER_SIZE, VS1053_BUFFER_TYPE, _buffer_storage, _buffer_struct);
     if (!_ringbuffer_handle)
     {
@@ -170,6 +168,8 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     if (_vs1053->getChipVersion() == 4)
         _vs1053->loadDefaultVs1053Patches();
     setVolume(_volume);
+    if (psramFound())
+        log_i("%ikB PSRAM buffer will be used", VS1053_PSRAM_BUFFER_SIZE / 1024);
     return true;
 }
 
