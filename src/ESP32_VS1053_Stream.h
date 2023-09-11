@@ -84,6 +84,8 @@ private:
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *const stream);
     void _chunkedStreamToRingBuffer(WiFiClient *const stream);
+    void _allocateRingbuffer();
+    void _deallocateRingbuffer();
 
     char _url[VS1053_MAX_URL_LENGTH];
     unsigned long _startMute = 0;

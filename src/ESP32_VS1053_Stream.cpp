@@ -3,11 +3,26 @@
 
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _ringbuffer_handle(nullptr), _buffer_struct(nullptr),
                                              _buffer_storage(nullptr)
-{
-    if (!psramInit())
-        return;
+{}
 
-    // Allocate ring buffer data structure, storage and handle into external RAM
+ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
+{
+    stopSong();
+    //_deallocateRingbuffer(); // Done by stopSong?
+    delete _vs1053;
+}
+
+void ESP32_VS1053_Stream::_allocateRingbuffer()
+{
+    // Allocate ring buffer structure, storage and handle in external RAM
+    if (!psramFound())
+        return;
+    
+    if (_buffer_struct)
+    {
+        log_e("_buffer_struct not empty");
+        return;
+    }
     _buffer_struct = (StaticRingbuffer_t *)heap_caps_malloc(sizeof(StaticRingbuffer_t), MALLOC_CAP_SPIRAM);
     if (!_buffer_struct)
     {
@@ -15,33 +30,58 @@ ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _
         return;
     }
 
+    if (_buffer_storage)
+    {
+        log_e("_buffer_storage in use");
+        return;
+    }
     _buffer_storage = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * VS1053_PSRAM_BUFFER_SIZE, MALLOC_CAP_SPIRAM);
     if (!_buffer_storage)
     {
         log_e("Could not allocate ringbuffer storage");
+
         free(_buffer_struct);
+        _buffer_struct = NULL;
         return;
     }
+
+    if (_ringbuffer_handle)
+    {
+        log_e("_ringbuffer_handle in use");
+        return;
+    }    
     _ringbuffer_handle = xRingbufferCreateStatic(VS1053_PSRAM_BUFFER_SIZE, VS1053_BUFFER_TYPE, _buffer_storage, _buffer_struct);
     if (!_ringbuffer_handle)
     {
         log_e("Could not create ringbuffer handle");
+
         free(_buffer_storage);
+        _buffer_storage = NULL;
         free(_buffer_struct);
+        _buffer_struct = NULL;
         return;
     }
     else
-        log_i("Allocated %i bytes ringbuffer in PSRAM", VS1053_PSRAM_BUFFER_SIZE);
+        log_d("Allocated %i bytes ringbuffer in PSRAM", VS1053_PSRAM_BUFFER_SIZE);
 }
 
-ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
+void ESP32_VS1053_Stream::_deallocateRingbuffer()
 {
-    stopSong();
-    delete _vs1053;
-    vRingbufferDelete(_ringbuffer_handle);
-    free(_ringbuffer_handle);
-    free(_buffer_storage);
-    free(_buffer_struct);
+    if (_ringbuffer_handle)
+    {
+        vRingbufferDelete(_ringbuffer_handle);
+        _ringbuffer_handle = NULL;
+    }
+    if (_buffer_storage)
+    {
+        free(_buffer_storage);
+        _buffer_storage = NULL;
+    }
+    if (_buffer_struct)
+    {
+        free(_buffer_struct);
+        _buffer_struct = NULL;
+    }
 }
 
 size_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient *const stream)
@@ -320,6 +360,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         _noStreamStartTime = 0;
         log_d("redirected %i times", _redirectCount);
         _redirectCount = 0;
+        _allocateRingbuffer();
         return true;
     }
 
@@ -651,15 +692,6 @@ bool ESP32_VS1053_Stream::isRunning()
 
 void ESP32_VS1053_Stream::stopSong()
 {
-    // if there is a psram ringbuffer, reset it (except when paused)
-    size_t item_size;
-    char *item = (char *)xRingbufferReceiveUpTo(_ringbuffer_handle, &item_size, pdMS_TO_TICKS(1000), VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle));
-    // Check received data
-    if (item != NULL)
-    {
-        vRingbufferReturnItem(_ringbuffer_handle, (void *)item);
-    }
-
     if (!_http)
         return;
     if (_http->connected())
@@ -672,6 +704,7 @@ void ESP32_VS1053_Stream::stopSong()
     delete _http;
     _http = NULL;
     _vs1053->stopSong();
+    _deallocateRingbuffer();
     _dataSeen = false;
     _remainingBytes = 0;
     _bytesLeftInChunk = 0;
