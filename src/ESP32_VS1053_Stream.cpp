@@ -1,5 +1,4 @@
 #include "ESP32_VS1053_Stream.h"
-#include <freertos/ringbuf.h>
 
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _url{0},
                                              _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr) {}
@@ -39,7 +38,7 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
         log_e("Could not allocate ringbuffer storage");
 
         free(_buffer_struct);
-        _buffer_struct = NULL;
+        _buffer_struct = nullptr;
         return;
     }
 
@@ -54,9 +53,9 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
         log_e("Could not create ringbuffer handle");
 
         free(_buffer_storage);
-        _buffer_storage = NULL;
+        _buffer_storage = nullptr;
         free(_buffer_struct);
-        _buffer_struct = NULL;
+        _buffer_struct = nullptr;
         return;
     }
     else
@@ -68,17 +67,17 @@ void ESP32_VS1053_Stream::_deallocateRingbuffer()
     if (_ringbuffer_handle)
     {
         vRingbufferDelete(_ringbuffer_handle);
-        _ringbuffer_handle = NULL;
+        _ringbuffer_handle = nullptr;
     }
     if (_buffer_storage)
     {
         free(_buffer_storage);
-        _buffer_storage = NULL;
+        _buffer_storage = nullptr;
     }
     if (_buffer_struct)
     {
         free(_buffer_struct);
-        _buffer_struct = NULL;
+        _buffer_struct = nullptr;
     }
 }
 
@@ -169,7 +168,7 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
         _vs1053->loadDefaultVs1053Patches();
     setVolume(_volume);
     if (psramFound())
-        log_i("%ikB PSRAM buffer will be used", VS1053_PSRAM_BUFFER_SIZE / 1024);
+        log_i("PSRAM found - %ikB buffer size set", VS1053_PSRAM_BUFFER_SIZE / 1024);
     return true;
 }
 
@@ -420,7 +419,6 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
 void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
 {
-    // read available non chunked http data into ringbuffer until metadata start
     size_t bytesToRingBuffer = 0;
     while (stream->available() && _musicDataPosition < _metaDataStart &&
            bytesToRingBuffer < VS1053_MAX_BYTES_PER_LOOP)
@@ -471,7 +469,6 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
     }
     else
     {
-        // play straight from http stream buffer until _metaDataStart
         size_t bytesToDecoder = 0;
         while (stream->available() && _vs1053->data_request() && _remainingBytes &&
                _musicDataPosition < _metaDataStart && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
@@ -487,7 +484,6 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
         log_d("%i bytes from stream to decoder", bytesToDecoder);
     }
 
-    // read the metadata and call 'audio_showstreamtitle()' if it is defined
     if (_metaDataStart && _musicDataPosition == _metaDataStart && stream->available())
     {
         const auto METALENGTH = stream->read() * 16;
@@ -504,7 +500,6 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
 
 void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
 {
-    // read available http data into ringbuffer until metadata start OR until end of chunk
     size_t bytesToRingBuffer = 0;
     while (_bytesLeftInChunk && _musicDataPosition < _metaDataStart &&
            bytesToRingBuffer < VS1053_MAX_BYTES_PER_LOOP)
@@ -565,7 +560,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
     }
     else
     {
-        // play straight from the http client buffer
         size_t bytesToDecoder = 0;
         while (_bytesLeftInChunk && _vs1053->data_request() && _musicDataPosition < _metaDataStart && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
         {
@@ -630,8 +624,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 
 void ESP32_VS1053_Stream::loop()
 {
-    // log_i("%i",  _remainingBytes);
-
     if (!_http && !_remainingBytes)
         return;
 
@@ -699,7 +691,7 @@ void ESP32_VS1053_Stream::loop()
 
 bool ESP32_VS1053_Stream::isRunning()
 {
-    return _http != NULL;
+    return _http != nullptr;
 }
 
 void ESP32_VS1053_Stream::stopSong()
@@ -715,7 +707,7 @@ void ESP32_VS1053_Stream::stopSong()
     }
     _http->end();
     delete _http;
-    _http = NULL;
+    _http = nullptr;
     _vs1053->stopSong();
     _deallocateRingbuffer();
     _dataSeen = false;

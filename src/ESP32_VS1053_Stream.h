@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include <HTTPClient.h>
 #include <freertos/ringbuf.h>
-#include <freertos/semphr.h>
 #include <esp_heap_caps.h>
 #include <VS1053.h> /* https://github.com/baldram/ESP_VS1053_Library */
 
