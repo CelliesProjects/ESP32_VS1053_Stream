@@ -11,7 +11,6 @@ ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 
 void ESP32_VS1053_Stream::_allocateRingbuffer()
 {
-    // Allocate ring buffer structure, storage and handle in external RAM
     if (!psramFound())
         return;
 
@@ -356,7 +355,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         _musicDataPosition = _metaDataStart ? 0 : -100;
         _bitrate = _http->header(BITRATE).toInt();
         snprintf(_url, sizeof(_url), "%s", url);
-        _noStreamStartTime = 0;
+        _streamStalledTime = 0;
         log_d("redirected %i times", _redirectCount);
         _redirectCount = 0;
         _allocateRingbuffer();
@@ -609,12 +608,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         _musicDataPosition = 0;
     }
 
-    if (!_remainingBytes)
-    {
-        _eofStream();
-        return;
-    }
-
     if (!_bytesLeftInChunk && !_checkSync(stream))
     {
         _remainingBytes = 0;
@@ -642,26 +635,26 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    if (!stream->available())
+    if (!_ringbuffer_handle && !stream->available())
     {
-        if (!_noStreamStartTime)
+        if (!_streamStalledTime)
         {
-            _noStreamStartTime = millis();
-            _noStreamStartTime += _noStreamStartTime ? 0 : 1;
+            _streamStalledTime = millis();
+            _streamStalledTime += _streamStalledTime ? 0 : 1;
             return;
         }
-        if (!_ringbuffer_handle && millis() - _noStreamStartTime > VS1053_DATA_TIMEOUT_MS)
+        if (millis() - _streamStalledTime > VS1053_DATA_TIMEOUT_MS)
         {
-            log_e("Stream blackout  %lu ms", VS1053_DATA_TIMEOUT_MS);
+            log_e("Stream timeout %lu ms", VS1053_DATA_TIMEOUT_MS);
             _eofStream();
             return;
         }
     }
 
-    if (_noStreamStartTime)
+    if (_streamStalledTime)
     {
-        log_d("Stream blackout lasted %lu ms", millis() - _noStreamStartTime);
-        _noStreamStartTime = 0;
+        log_i("Stream stalled for %lu ms", millis() - _streamStalledTime);
+        _streamStalledTime = 0;
     }
 
     if (_startMute)
