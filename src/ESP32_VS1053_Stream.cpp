@@ -395,7 +395,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 void ESP32_VS1053_Stream::_playFromRingBuffer()
 {
     size_t bytesToDecoder = 0;
-    while (_vs1053->data_request() && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
+    while (_remainingBytes && _vs1053->data_request() && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
     {
         size_t size = 0;
 
@@ -507,7 +507,6 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        log_d("%i bytes in buffer", BYTES_IN_BUFFER);
 
         portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
