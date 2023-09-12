@@ -58,7 +58,7 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
         return;
     }
     else
-        log_d("Allocated %i bytes ringbuffer in PSRAM", VS1053_PSRAM_BUFFER_SIZE);
+        log_i("Allocated %i bytes ringbuffer in PSRAM", VS1053_PSRAM_BUFFER_SIZE);
 }
 
 void ESP32_VS1053_Stream::_deallocateRingbuffer()
@@ -166,8 +166,6 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     if (_vs1053->getChipVersion() == 4)
         _vs1053->loadDefaultVs1053Patches();
     setVolume(_volume);
-    if (!psramFound() || !VS1053_PSRAM_BUFFER)
-        log_i("PSRAM found - %ikB buffer size set", VS1053_PSRAM_BUFFER_SIZE / 1024);
     return true;
 }
 
