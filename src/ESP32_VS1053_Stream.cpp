@@ -522,12 +522,10 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
             _remainingBytes = 0;
             return;
         }
-        else
-        {
-            _bytesLeftInChunk -= BYTES_IN_BUFFER;
-            bytesToRingBuffer += BYTES_IN_BUFFER;
-            _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
-        }
+
+        _bytesLeftInChunk -= BYTES_IN_BUFFER;
+        bytesToRingBuffer += BYTES_IN_BUFFER;
+        _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
     }
     log_d("%i bytes from chunked stream to decoder", bytesToRingBuffer);
 }
