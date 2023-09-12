@@ -429,7 +429,6 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        log_d("%i bytes in buffer", BYTES_IN_BUFFER);
 
         portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
@@ -441,11 +440,9 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
             _remainingBytes = 0;
             return;
         }
-        else
-        {
-            bytesToRingBuffer += BYTES_IN_BUFFER;
-            _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
-        }
+
+        bytesToRingBuffer += BYTES_IN_BUFFER;
+        _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
     }
     log_d("%i bytes to ringbuffer", bytesToRingBuffer);
 }
