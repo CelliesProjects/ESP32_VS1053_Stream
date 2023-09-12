@@ -99,7 +99,6 @@ private:
     bool _dataSeen = false;
     unsigned long _streamStalledTime = 0;
     uint8_t _redirectCount = 0;
-    portMUX_TYPE rb_spinlock = portMUX_INITIALIZER_UNLOCKED;
 
     enum codec_t
     {

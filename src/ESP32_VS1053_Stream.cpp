@@ -399,9 +399,9 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     {
         size_t size = 0;
 
-        taskENTER_CRITICAL(&rb_spinlock);
+        portDISABLE_INTERRUPTS();
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_BUFFERSIZE);
-        taskEXIT_CRITICAL(&rb_spinlock);
+        portENABLE_INTERRUPTS();
 
         if (!data)
         {
@@ -431,9 +431,9 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
         log_d("%i bytes in buffer", BYTES_IN_BUFFER);
 
-        taskENTER_CRITICAL(&rb_spinlock);
+        portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        taskEXIT_CRITICAL(&rb_spinlock);
+        portENABLE_INTERRUPTS();
 
         if (result == pdFALSE)
         {
@@ -512,9 +512,9 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
         log_d("%i bytes in buffer", BYTES_IN_BUFFER);
 
-        taskENTER_CRITICAL(&rb_spinlock);
+        portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        taskEXIT_CRITICAL(&rb_spinlock);
+        portENABLE_INTERRUPTS();
 
         if (result == pdFALSE)
         {
