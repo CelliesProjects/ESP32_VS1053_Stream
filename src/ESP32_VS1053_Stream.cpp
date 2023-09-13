@@ -14,11 +14,13 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
     if (!psramFound() || !VS1053_PSRAM_BUFFER)
         return;
 
-    if (_buffer_struct)
+    if (_buffer_struct || _buffer_storage || _ringbuffer_handle)
     {
-        log_e("_buffer_struct not empty");
-        return;
+        log_e("fatal error! Ringbuffer pointers not NULL on allocate!");
+        while (true)
+            delay(1000);
     }
+
     _buffer_struct = (StaticRingbuffer_t *)heap_caps_malloc(sizeof(StaticRingbuffer_t), MALLOC_CAP_SPIRAM);
     if (!_buffer_struct)
     {
@@ -26,33 +28,22 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
         return;
     }
 
-    if (_buffer_storage)
-    {
-        log_e("_buffer_storage in use");
-        return;
-    }
     _buffer_storage = (uint8_t *)heap_caps_malloc(sizeof(uint8_t) * VS1053_PSRAM_BUFFER_SIZE, MALLOC_CAP_SPIRAM);
     if (!_buffer_storage)
     {
         log_e("Could not allocate ringbuffer storage");
-
         free(_buffer_struct);
         _buffer_struct = nullptr;
         return;
     }
 
-    if (_ringbuffer_handle)
-    {
-        log_e("_ringbuffer_handle in use");
-        return;
-    }
     _ringbuffer_handle = xRingbufferCreateStatic(VS1053_PSRAM_BUFFER_SIZE, VS1053_BUFFER_TYPE, _buffer_storage, _buffer_struct);
     if (!_ringbuffer_handle)
     {
         log_e("Could not create ringbuffer handle");
-
         free(_buffer_storage);
         _buffer_storage = nullptr;
+
         free(_buffer_struct);
         _buffer_struct = nullptr;
         return;
@@ -67,14 +58,10 @@ void ESP32_VS1053_Stream::_deallocateRingbuffer()
     {
         vRingbufferDelete(_ringbuffer_handle);
         _ringbuffer_handle = nullptr;
-    }
-    if (_buffer_storage)
-    {
+
         free(_buffer_storage);
         _buffer_storage = nullptr;
-    }
-    if (_buffer_struct)
-    {
+
         free(_buffer_struct);
         _buffer_struct = nullptr;
     }
