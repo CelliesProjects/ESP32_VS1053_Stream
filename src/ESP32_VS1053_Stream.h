@@ -20,7 +20,7 @@
 #define VS1053_MAXVOLUME 100         /* do not change */
 #define VS1053_BUFFERSIZE size_t(32) /* do not change */
 
-#define VS1053_PSRAM_BUFFER false
+#define VS1053_PSRAM_BUFFER true
 #define VS1053_PSRAM_BUFFER_SIZE 1024 * 32 // 32-bit aligned size
 #define VS1053_PSRAM_MAX_MOVE size_t(1024 * 8)
 #define VS1053_BUFFER_TYPE RINGBUF_TYPE_BYTEBUF

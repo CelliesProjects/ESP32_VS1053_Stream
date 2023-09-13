@@ -58,7 +58,7 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
         return;
     }
     else
-        log_i("Allocated %i bytes ringbuffer in PSRAM", VS1053_PSRAM_BUFFER_SIZE);
+        log_d("Allocated %i bytes ringbuffer in PSRAM", VS1053_PSRAM_BUFFER_SIZE);
 }
 
 void ESP32_VS1053_Stream::_deallocateRingbuffer()
@@ -434,7 +434,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
 
         if (result == pdFALSE)
         {
-            log_e("ringbuffer is unexpected full? Aborting...");
+            log_e("ringbuffer failed to receive %i bytes. Closing stream.");
             _remainingBytes = 0;
             return;
         }
@@ -512,7 +512,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
 
         if (result == pdFALSE)
         {
-            log_e("ringbuffer is unexpected full? Aborting...");
+            log_e("ringbuffer failed to receive %i bytes. Closing stream.");
             _remainingBytes = 0;
             return;
         }
@@ -609,7 +609,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 
 void ESP32_VS1053_Stream::loop()
 {
-    if (!_http && !_remainingBytes)
+    if (!_http)
         return;
 
     if (!_http->connected())
