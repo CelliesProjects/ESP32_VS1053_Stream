@@ -37,7 +37,7 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
         return;
     }
 
-    _ringbuffer_handle = xRingbufferCreateStatic(VS1053_PSRAM_BUFFER_SIZE, VS1053_BUFFER_TYPE, _buffer_storage, _buffer_struct);
+    _ringbuffer_handle = xRingbufferCreateStatic(VS1053_PSRAM_BUFFER_SIZE, RINGBUF_TYPE_BYTEBUF, _buffer_storage, _buffer_struct);
     if (!_ringbuffer_handle)
     {
         log_e("Could not create ringbuffer handle");
