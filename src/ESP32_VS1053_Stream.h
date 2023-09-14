@@ -21,8 +21,8 @@
 #define VS1053_BUFFERSIZE size_t(32)    /* do not change */
 
 #define VS1053_PSRAM_BUFFER true
-#define VS1053_PSRAM_BUFFER_SIZE 1024 * 32 // 32-bit aligned size
-#define VS1053_PSRAM_MAX_MOVE size_t(1024 * 8)
+#define VS1053_PSRAM_BUFFER_SIZE size_t(1024 * 36)
+#define VS1053_PSRAM_MAX_MOVE size_t(1024 * 4)
 
 extern void audio_showstation(const char *) __attribute__((weak));
 extern void audio_eof_stream(const char *) __attribute__((weak));
