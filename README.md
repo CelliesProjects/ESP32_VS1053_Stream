@@ -3,18 +3,17 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7571166c872e4dc8a899382389b73f8e)](https://app.codacy.com/gh/CelliesProjects/ESP32_VS1053_Stream?utm_source=github.com&utm_medium=referral&utm_content=CelliesProjects/ESP32_VS1053_Stream&utm_campaign=Badge_Grade_Settings)
 
 A streaming library for esp32 with a separate VS1053 mp3/ogg/aac/flac/wav decoder.
-This library plays mp3, ogg, aac, aac+ and <strike>flac</strike> files and streams. Supports http, https (insecure mode) and chunked audio streams. 
+This library plays mp3, ogg, aac, aac+ and <strike>flac</strike> files and streams. Supports http, https (insecure mode) and chunked audio streams.
 
-If there is psram found then a 32kB ringbuffer will be allocated and used, otherwise the stream will be played straight from the HTTPClient stream buffer. 
+If there is psram found then a 32kB ringbuffer will be allocated and used, otherwise the stream will be played straight from the HTTPClient stream buffer.
 
 This library needs [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
-Visit [eStreamPlayer32_VS1053](https://github.com/CelliesProjects/eStreamPlayer32_VS1053) to see a project using this library.
+Visit [eStreamPlayer32_VS1053 for PIO](https://github.com/CelliesProjects/eStreamplayer32-vs1053-pio) to see a [PlatformIO](https://platformio.org/platformio) project using this library.
 
 ## How to install and use
 
 Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and this library in your Arduino library folder.
-
 
 Use [the latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest).
 
@@ -81,132 +80,169 @@ void audio_eof_stream(const char* info) {
 # Functions
 
 ### Initialize the VS1053 codec
+
 ```c++
 bool startDecoder(CS, DCS, DREQ)
 ```
+
 <hr>
 
 ### Check if VS1053 is responding
+
 ```c++
 bool isChipConnected()
 ```
+
 <hr>
 
-
 ### Start or resume a stream
+
 ```c++
 bool connecttohost(url)
 ```
+
 ```c++
 bool connecttohost(url, offset)
 ```
+
 ```c++
 bool connecttohost(url, user, pwd)
 ```
+
 ```c++
 bool connecttohost(url, user, pwd, offset)
 ```
+
 <hr>
 
 ### Stop a stream
+
 ```c++
 void stopSong()
 ```
+
 <hr>
 
-
 ### Feed the decoder
+
 ```c++
 void loop()
 ```
+
 This function has to called every couple of ms to feed the decoder with data. For bitrates up to 320kbps once every 25 ms is about right.
+
 <hr>
 
-
 ### Check if stream is running
+
 ```c++
 bool isRunning()
 ```
+
 <hr>
 
-
 ### Get the current volume
+
 ```c++
 uint8_t getVolume()
 ```
+
 <hr>
 
-
 ### Set the volume
+
 ```c++
 void setVolume(uint8_t volume)
 ```
+
 Value should be between 0-100.
+
 <hr>
 
-
 ### Set bass and treble
+
 ```c++
 uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};
 void setTone(rtone)
 ```
 
 Values for `rtone`:
+
 ```c++
 toneha       = <0..15>        // Setting treble gain (0 off, 1.5dB steps)
 tonehf       = <0..15>        // Setting treble frequency lower limit x 1000 Hz
 tonela       = <0..15>        // Setting bass gain (0 = off, 1dB steps)
 tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 ```
+
 <hr>
 
-
 ### Get the current used codec
+
 ```c++
 const char* currentCodec()
 ```
+
 Returns `STOPPED` if no stream is running.
+
 <hr>
 
 ### Get the current stream url
+
 ```c++
 const char* lastUrl()
 ```
+
 The current stream url might differ from the request url if the request url points to a playlist.
+
 <hr>
 
 ### Get the filesize
+
 ```c++
 size_t size()
 ```
+
 Returns `0` if the stream is a radio stream.
+
 <hr>
 
 ### Get the current position in the file
+
 ```c++
 size_t position()
 ```
+
 Returns `0` if the stream is a radio stream.
+
 <hr>
 
 # Event callbacks
+
 ### Station name callback.
+
 ```c++
 void audio_showstation(const char* info)
 ```
+
 <hr>
 
 ### Stream information callback.
+
 ```c++
 void audio_showstreamtitle(const char* info)
 ```
+
 <hr>
 
 ### End of file callback.
+
 ```c++
 void audio_eof_stream(const char* info)
 ```
+
 Returns the current url. Very handy for coding a playlist.
+
 <hr>
 
 ## License
@@ -232,5 +268,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-
