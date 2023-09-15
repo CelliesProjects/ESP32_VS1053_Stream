@@ -11,7 +11,7 @@ ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 
 void ESP32_VS1053_Stream::_allocateRingbuffer()
 {
-    if (!psramFound() || !VS1053_PSRAM_BUFFER)
+    if (!psramFound() || !VS1053_PSRAM_BUFFER_ENABLED)
         return;
 
     if (_buffer_struct || _buffer_storage || _ringbuffer_handle)
@@ -385,7 +385,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         size_t size = 0;
 
         portDISABLE_INTERRUPTS();
-        uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_BUFFERSIZE);
+        uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
         portENABLE_INTERRUPTS();
 
         if (!data)
@@ -456,7 +456,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
         {
             const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition
                                                           : stream->available();
-            const int BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, min(BYTES_AVAILABLE, VS1053_BUFFERSIZE));
+            const int BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, min(BYTES_AVAILABLE, VS1053_PLAYBUFFER_SIZE));
             _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
             _remainingBytes -= _remainingBytes > 0 ? BYTES_IN_BUFFER : 0;
             _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
@@ -542,7 +542,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         while (_bytesLeftInChunk && _vs1053->data_request() && _musicDataPosition < _metaDataStart && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
         {
             const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
-            const int BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, min(BYTES_AVAILABLE, VS1053_BUFFERSIZE));
+            const int BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, min(BYTES_AVAILABLE, VS1053_PLAYBUFFER_SIZE));
             _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
             _bytesLeftInChunk -= BYTES_IN_BUFFER;
             _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;

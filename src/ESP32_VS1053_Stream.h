@@ -17,12 +17,12 @@
 #define VS1053_MAX_BYTES_PER_LOOP size_t(1024 * 16)
 #define VS1053_MAX_REDIRECT_COUNT 3
 
-#define VS1053_MAXVOLUME uint8_t(100)   /* do not change */
-#define VS1053_BUFFERSIZE size_t(32)    /* do not change */
-
-#define VS1053_PSRAM_BUFFER true
+#define VS1053_PSRAM_BUFFER_ENABLED true
 #define VS1053_PSRAM_BUFFER_SIZE size_t(1024 * 36)
 #define VS1053_PSRAM_MAX_MOVE size_t(1024 * 4)
+
+#define VS1053_MAXVOLUME uint8_t(100)   /* do not change */
+#define VS1053_PLAYBUFFER_SIZE size_t(32)    /* do not change */
 
 extern void audio_showstation(const char *) __attribute__((weak));
 extern void audio_eof_stream(const char *) __attribute__((weak));
@@ -65,7 +65,7 @@ public:
 private:
     VS1053 *_vs1053;
     HTTPClient *_http;
-    uint8_t _vs1053Buffer[VS1053_BUFFERSIZE];
+    uint8_t _vs1053Buffer[VS1053_PLAYBUFFER_SIZE];
     uint8_t _localbuffer[VS1053_PSRAM_MAX_MOVE];
     char _url[VS1053_MAX_URL_LENGTH];
 
