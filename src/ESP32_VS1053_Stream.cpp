@@ -408,7 +408,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
            bytesToRingBuffer < VS1053_MAX_BYTES_PER_LOOP)
     {
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
-        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PSRAM_MAX_MOVE);
+        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, sizeof(_localbuffer));
 
         if (xRingbufferGetCurFreeSize(_ringbuffer_handle) < BYTES_TO_READ)
             break;
@@ -486,7 +486,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
            bytesToRingBuffer < VS1053_MAX_BYTES_PER_LOOP)
     {
         const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
-        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_MAX_BYTES_PER_LOOP);
+        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, sizeof(_localbuffer));
 
         if (xRingbufferGetCurFreeSize(_ringbuffer_handle) < BYTES_TO_READ)
             break;
