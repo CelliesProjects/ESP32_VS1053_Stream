@@ -2,10 +2,8 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7571166c872e4dc8a899382389b73f8e)](https://app.codacy.com/gh/CelliesProjects/ESP32_VS1053_Stream?utm_source=github.com&utm_medium=referral&utm_content=CelliesProjects/ESP32_VS1053_Stream&utm_campaign=Badge_Grade_Settings)
 
-A streaming library for esp32 with a separate VS1053 mp3/ogg/aac/flac/wav decoder.
+A streaming library for esp32, esp32-wrover, esp32-s2 and esp32-s3 with a separate VS1053 mp3/ogg/aac/flac/wav decoder.<br>
 This library plays mp3, ogg, aac, aac+ and <strike>flac</strike> files and streams. Supports http, https (insecure mode) and chunked audio streams.
-
-If there is psram found then a 32kB ringbuffer will be allocated and used, otherwise the stream will be played straight from the HTTPClient stream buffer.
 
 This library needs [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
