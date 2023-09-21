@@ -379,11 +379,21 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 
 void ESP32_VS1053_Stream::_playFromRingBuffer()
 {
+    if (!_ringbuffer_filled && !size())
+    {
+        if (!_ringbuffer_filled && xRingbufferGetCurFreeSize(_ringbuffer_handle) > 1024)
+            return;
+        else
+            _ringbuffer_filled = true;
+    }
+
     size_t bytesToDecoder = 0;
     while (_remainingBytes && _vs1053->data_request() && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
     {
         size_t size = 0;
+        portDISABLE_INTERRUPTS();
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
+        portENABLE_INTERRUPTS();
         if (!data)
         {
             log_d("No ringbuffer data available");
@@ -410,7 +420,9 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
+        portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
+        portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -484,7 +496,9 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
+        portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
+        portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -670,6 +684,7 @@ void ESP32_VS1053_Stream::stopSong()
     _http = nullptr;
     _vs1053->stopSong();
     _deallocateRingbuffer();
+    _ringbuffer_filled = false;
     _dataSeen = false;
     _remainingBytes = 0;
     _bytesLeftInChunk = 0;

@@ -14,12 +14,12 @@
 #define VS1053_DATA_TIMEOUT_MS 900
 #define VS1053_MAX_PLAYLIST_READ 1024
 #define VS1053_MAX_URL_LENGTH 512
-#define VS1053_MAX_BYTES_PER_LOOP size_t(1024 * 16)
 #define VS1053_MAX_REDIRECT_COUNT 3
 
 #define VS1053_PSRAM_BUFFER_ENABLED true
 #define VS1053_PSRAM_BUFFER_SIZE size_t(1024 * 36)
 #define VS1053_PSRAM_MAX_MOVE size_t(1024 * 4)
+#define VS1053_MAX_BYTES_PER_LOOP (VS1053_PSRAM_BUFFER_SIZE / 2)
 
 #define VS1053_MAXVOLUME uint8_t(100)   /* do not change */
 #define VS1053_PLAYBUFFER_SIZE size_t(32)    /* do not change */
@@ -97,6 +97,7 @@ private:
     int _bitrate = 0;
     bool _chunkedResponse = false;
     bool _dataSeen = false;
+    bool _ringbuffer_filled = false;
     unsigned long _streamStalledTime = 0;
     uint8_t _redirectCount = 0;
 
