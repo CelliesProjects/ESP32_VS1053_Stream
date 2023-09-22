@@ -343,7 +343,9 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         _streamStalledTime = 0;
         log_d("redirected %i times", _redirectCount);
         _redirectCount = 0;
+#ifdef CONFIG_IDF_TARGET_ESP32S3
         _allocateRingbuffer();
+#endif
         return true;
     }
 
@@ -391,9 +393,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     while (_remainingBytes && _vs1053->data_request() && bytesToDecoder < VS1053_MAX_BYTES_PER_LOOP)
     {
         size_t size = 0;
-        portDISABLE_INTERRUPTS();
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
-        portENABLE_INTERRUPTS();
         if (!data)
         {
             log_d("No ringbuffer data available");
@@ -420,9 +420,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -496,9 +494,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -683,7 +679,9 @@ void ESP32_VS1053_Stream::stopSong()
     delete _http;
     _http = nullptr;
     _vs1053->stopSong();
+#ifdef CONFIG_IDF_TARGET_ESP32S3
     _deallocateRingbuffer();
+#endif
     _ringbuffer_filled = false;
     _dataSeen = false;
     _remainingBytes = 0;
