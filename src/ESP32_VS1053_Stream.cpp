@@ -343,9 +343,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         _streamStalledTime = 0;
         log_d("redirected %i times", _redirectCount);
         _redirectCount = 0;
-#ifdef CONFIG_IDF_TARGET_ESP32S3
         _allocateRingbuffer();
-#endif
         return true;
     }
 
@@ -679,9 +677,7 @@ void ESP32_VS1053_Stream::stopSong()
     delete _http;
     _http = nullptr;
     _vs1053->stopSong();
-#ifdef CONFIG_IDF_TARGET_ESP32S3
     _deallocateRingbuffer();
-#endif
     _ringbuffer_filled = false;
     _dataSeen = false;
     _remainingBytes = 0;
