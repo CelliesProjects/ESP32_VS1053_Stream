@@ -381,7 +381,9 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 {
     if (!_ringbuffer_filled)
     {
-        if (xRingbufferGetCurFreeSize(_ringbuffer_handle) > VS1053_PSRAM_BUFFER_SIZE - 512)
+        const size_t SET_LIMIT = min(size_t(1024 * 15), VS1053_PSRAM_BUFFER_SIZE - 1024);
+        const auto MINIMUM_TO_PLAY = min(size() ? size() : SET_LIMIT, SET_LIMIT);
+        if (VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle) < MINIMUM_TO_PLAY)
             return;
         else
             _ringbuffer_filled = true;
@@ -459,9 +461,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
         while (stream->available() && _vs1053->data_request() && _remainingBytes &&
                _musicDataPosition < _metaDataStart && millis() - start < MAX_TIME_MS)
         {
-            const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition
-                                                          : stream->available();
-
+            const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
             const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PLAYBUFFER_SIZE);
 
             if (stream->available() < BYTES_TO_READ)
@@ -746,4 +746,13 @@ size_t ESP32_VS1053_Stream::position()
 uint32_t ESP32_VS1053_Stream::bitrate()
 {
     return _bitrate;
+}
+
+const char *ESP32_VS1053_Stream::bufferStatus()
+{
+    if (!_ringbuffer_handle)
+        return "0/0";
+    static char _ringbuffer_status[24];
+    snprintf(_ringbuffer_status, sizeof(_ringbuffer_status), "%i/%i", VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle), VS1053_PSRAM_BUFFER_SIZE);
+    return _ringbuffer_status;
 }
