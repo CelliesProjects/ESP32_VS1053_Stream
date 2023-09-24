@@ -414,7 +414,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
     const auto MAX_TIME_MS = 10;
     auto start = millis();
     size_t bytesToRingBuffer = 0;
-    while (stream->available() && _musicDataPosition < _metaDataStart && millis() - start < MAX_TIME_MS)
+    while (stream && stream->available() && _musicDataPosition < _metaDataStart && millis() - start < MAX_TIME_MS)
     {
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
         const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, sizeof(_localbuffer));
@@ -458,7 +458,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
         const auto MAX_TIME_MS = 15;
         auto start = millis();
         size_t bytesToDecoder = 0;
-        while (stream->available() && _vs1053->data_request() && _remainingBytes &&
+        while (stream && stream->available() && _vs1053->data_request() && _remainingBytes &&
                _musicDataPosition < _metaDataStart && millis() - start < MAX_TIME_MS)
         {
             const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
@@ -495,7 +495,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
     const auto MAX_TIME_MS = 10;
     size_t bytesToRingBuffer = 0;
     auto start = millis();
-    while (stream->available() && _bytesLeftInChunk && _musicDataPosition < _metaDataStart && millis() - start < MAX_TIME_MS)
+    while (stream && stream->available() && _bytesLeftInChunk && _musicDataPosition < _metaDataStart && millis() - start < MAX_TIME_MS)
     {
         const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
         const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, sizeof(_localbuffer));
@@ -549,7 +549,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         const auto MAX_TIME_MS = 15;
         auto start = millis();
         size_t bytesToDecoder = 0;
-        while (_bytesLeftInChunk && _vs1053->data_request() && _musicDataPosition < _metaDataStart && millis() - start < MAX_TIME_MS)
+        while (stream && stream->available() && _bytesLeftInChunk && _vs1053->data_request() && _musicDataPosition < _metaDataStart && millis() - start < MAX_TIME_MS)
         {
             const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
             const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PLAYBUFFER_SIZE);
