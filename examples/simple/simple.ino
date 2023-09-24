@@ -11,6 +11,7 @@ const char* SSID = "xxx";
 const char* PSK = "xxx";
 
 void setup() {
+    Serial.setDebugOutput(true);
     Serial.begin(115200);
 
     WiFi.begin(SSID, PSK);
@@ -35,6 +36,8 @@ void setup() {
 
 void loop() {
     stream.loop();
+    //Serial.printf("Buffer status: %s\n", stream.bufferStatus());
+    delay(25);
 }
 
 void audio_showstation(const char* info) {
