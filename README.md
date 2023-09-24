@@ -60,6 +60,8 @@ void setup() {
 
 void loop() {
     stream.loop();
+    //Serial.printf("Buffer status: %s\n", stream.bufferStatus());
+    delay(25);
 }
 
 void audio_showstation(const char* info) {
@@ -127,7 +129,7 @@ void stopSong()
 void loop()
 ```
 
-This function has to called every couple of ms to feed the decoder with data. For bitrates up to 320kbps once every 25 ms is about right.
+This function has to called every couple of ms to feed the decoder with data.<br>For bitrates up to 320kbps somewhere between 5-25 ms is about right.
 
 <hr>
 
@@ -200,18 +202,23 @@ The current stream url might differ from the request url if the request url poin
 ```c++
 size_t size()
 ```
-
 Returns `0` if the stream is a radio stream.
 
 <hr>
 
 ### Get the current position in the file
-
 ```c++
 size_t position()
 ```
 
-Returns `0` if the stream is a radio stream.
+<hr>
+
+### Get the buffer fill status
+```c++
+const char *bufferStatus();
+```
+
+Returns `0/0` if there is no buffer. Otherwise returns `bytes-in-buffer/buffersize`.<br>A buffer will only be allocated if there is enough free psram.
 
 <hr>
 
@@ -222,7 +229,6 @@ Returns `0` if the stream is a radio stream.
 ```c++
 void audio_showstation(const char* info)
 ```
-
 <hr>
 
 ### Stream information callback.
@@ -239,7 +245,7 @@ void audio_showstreamtitle(const char* info)
 void audio_eof_stream(const char* info)
 ```
 
-Returns the current url. Very handy for coding a playlist.
+Returns the eof url. Very handy for coding a playlist.
 
 <hr>
 
