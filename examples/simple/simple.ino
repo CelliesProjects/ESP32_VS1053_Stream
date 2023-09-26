@@ -37,7 +37,7 @@ void setup() {
 void loop() {
     stream.loop();
     //Serial.printf("Buffer status: %s\n", stream.bufferStatus());
-    delay(25);
+    delay(5);
 }
 
 void audio_showstation(const char* info) {
