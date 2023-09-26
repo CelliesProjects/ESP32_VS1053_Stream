@@ -483,6 +483,10 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
 
     if (stream && stream->available() && _metaDataStart && _musicDataPosition == _metaDataStart)
     {
+        const auto DATA_NEEDED = stream->peek() * 16 + 1;
+        if (stream->available() < DATA_NEEDED)
+            return;
+
         const auto METALENGTH = stream->read() * 16;
         if (METALENGTH)
         {
@@ -573,8 +577,12 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         log_d("spend %lu ms stuffing %i bytes in decoder", millis() - start, bytesToDecoder);
     }
 
-    if (_metaDataStart && _musicDataPosition == _metaDataStart && _bytesLeftInChunk)
+    if (stream && stream->available() && _metaDataStart && _musicDataPosition == _metaDataStart && _bytesLeftInChunk)
     {
+        const auto DATA_NEEDED = stream->peek() * 16 + 1;
+        if (stream->available() < DATA_NEEDED)
+            return;
+
         const auto METALENGTH = stream->read() * 16;
         _bytesLeftInChunk--;
         if (METALENGTH)
@@ -677,6 +685,9 @@ void ESP32_VS1053_Stream::loop()
             _startMute = 0;
         }
     }
+
+    if (stream)
+        stream->setTimeout(0);
 
     if (_remainingBytes && _vs1053->data_request())
     {
