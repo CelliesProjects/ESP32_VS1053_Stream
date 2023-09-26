@@ -647,13 +647,10 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    if (_ringbuffer_handle && stream && !stream->available())
+    if (_ringbuffer_handle && stream && !stream->available() && !_streamStalledTime)
     {
-        if (!_streamStalledTime)
-        {
-            _streamStalledTime = millis();
-            _streamStalledTime += _streamStalledTime ? 0 : 1;
-        }
+        _streamStalledTime = millis();
+        _streamStalledTime += _streamStalledTime ? 0 : 1;
     }
 
     if (stream && stream->available() && _streamStalledTime)
