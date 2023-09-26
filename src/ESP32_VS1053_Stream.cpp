@@ -579,7 +579,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 
     if (stream && stream->available() && _metaDataStart && _musicDataPosition == _metaDataStart && _bytesLeftInChunk)
     {
-        const auto DATA_NEEDED = stream->peek() * 16 + 1;
+        const auto DATA_NEEDED = stream->peek() * 16 + 20; /* plus 20 because there could be a end-of-chunk in the data */
         if (stream->available() < DATA_NEEDED)
             return;
 
@@ -617,7 +617,10 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         _musicDataPosition = 0;
     }
 
-    if (!_bytesLeftInChunk && !_checkSync(stream))
+    if (stream && !_bytesLeftInChunk && stream->available() < 20) /* make sure we dont run out of data in the next test*/
+        return;
+
+    if (stream && !_bytesLeftInChunk && !_checkSync(stream))
     {
         _remainingBytes = 0;
         return;
@@ -636,7 +639,7 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    WiFiClient *const stream = _http->getStreamPtr();
+    WiFiClient *const stream = _http->getStreamPtr(); /* this can be a NULL ptr at the end of real files when al stream data is read but not yet in the decoder */
     if (!_ringbuffer_handle && !stream)
     {
         log_e("Stream connection lost");
