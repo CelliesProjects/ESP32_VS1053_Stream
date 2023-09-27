@@ -639,7 +639,7 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    WiFiClient *const stream = _http->getStreamPtr(); /* this can be a NULL ptr at the end of real files when al stream data is read but not yet in the decoder */
+    WiFiClient *const stream = _http->getStreamPtr(); /* this WILL be a NULL ptr at the end of real files -in psram buffer mode- when al stream data is read but not yet in the decoder */
     if (!_ringbuffer_handle && !stream)
     {
         log_e("Stream connection lost");
