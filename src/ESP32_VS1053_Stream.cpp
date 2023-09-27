@@ -399,11 +399,26 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         portDISABLE_INTERRUPTS();
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
         portENABLE_INTERRUPTS();
+        static auto ringbufferEmpty = 0;
         if (!data)
         {
-            log_i("No ringbuffer data available");
-            break;
+            if (!ringbufferEmpty)
+            {
+                ringbufferEmpty = millis();
+                ringbufferEmpty += ringbufferEmpty ? 0 : 1;
+                log_i("No buffer data available");
+                return;
+            }
+            const auto BAILOUT_MS = 2000;
+            if (millis() - ringbufferEmpty > BAILOUT_MS) 
+            {
+                log_e("Buffer empty for %i ms, bailing out...", BAILOUT_MS);
+                _remainingBytes = 0;
+                return;
+            }
+            return;
         }
+        ringbufferEmpty = 0;
         _vs1053->playChunk(data, size);
         vRingbufferReturnItem(_ringbuffer_handle, data);
         // bytesToDecoder += size;
