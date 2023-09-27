@@ -233,7 +233,7 @@ size_t position()
 const char *bufferStatus();
 ```
 
-Returns `0/0` if there is no buffer. Otherwise returns `bytes-in-buffer/buffersize`.<br>A buffer will only be allocated if there is enough free psram.
+Returns `0/0` if there is no buffer.<br>Otherwise returns something like `4096/65536` which means 4kB waiting in a 64kB buffer.<br>A buffer will only be allocated if there is enough free psram.
 
 <b>NOTE:</b> When compiling for a board with psram use the following build flags:
 
