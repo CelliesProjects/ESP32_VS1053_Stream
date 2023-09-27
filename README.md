@@ -18,12 +18,17 @@ Use [the latest Arduino ESP32 core version](https://github.com/espressif/arduino
 ## Example code
 
 ```c++
+#include <Arduino.h>
 #include <VS1053.h>               /* https://github.com/baldram/ESP_VS1053_Library */
 #include <ESP32_VS1053_Stream.h>
 
-#define VS1053_CS     5
-#define VS1053_DCS    21
-#define VS1053_DREQ   22
+#define SPI_CLK_PIN 18
+#define SPI_MISO_PIN 19
+#define SPI_MOSI_PIN 23
+
+#define VS1053_CS 5
+#define VS1053_DCS 21
+#define VS1053_DREQ 22
 
 ESP32_VS1053_Stream stream;
 
@@ -31,6 +36,11 @@ const char* SSID = "xxx";
 const char* PSK = "xxx";
 
 void setup() {
+#if defined(CONFIG_IDF_TARGET_ESP32S2) && ARDUHAL_LOG_LEVEL != ARDUHAL_LOG_LEVEL_NONE
+    delay(3000);
+    Serial.setDebugOutput(true);
+#endif
+
     Serial.begin(115200);
 
     WiFi.begin(SSID, PSK);
@@ -41,13 +51,18 @@ void setup() {
         delay(10);
     Serial.println("wifi connected - starting decoder");
 
-    SPI.begin();  /* start SPI before starting decoder */
+    SPI.setHwCs(true);
+    SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);  /* start SPI before starting decoder */
 
-    stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ);
+    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected())
+    {
+        Serial.println("Decoder not running");
+        while (1) delay(100);
+    };
 
     Serial.println("decoder running - starting stream");
 
-    stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
+    stream.connecttohost("http://espace.tekno1.fr/tekno1.m3u");
 
     Serial.print("codec: ");
     Serial.println(stream.currentCodec());
