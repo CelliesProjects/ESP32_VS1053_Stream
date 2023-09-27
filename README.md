@@ -235,6 +235,12 @@ const char *bufferStatus();
 
 Returns `0/0` if there is no buffer. Otherwise returns `bytes-in-buffer/buffersize`.<br>A buffer will only be allocated if there is enough free psram.
 
+<b>NOTE:</b> When compiling for a board with psram use the following build flags:
+
+```
+-mfix-esp32-psram-cache-issue
+-mfix-esp32-psram-cache-strategy=memw
+```
 <hr>
 
 # Event callbacks
