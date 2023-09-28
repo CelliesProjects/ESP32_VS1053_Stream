@@ -802,6 +802,6 @@ const char *ESP32_VS1053_Stream::bufferStatus()
     if (!_ringbuffer_handle)
         return "0/0";
     static char ringbuffer_status[24];
-    snprintf(ringbuffer_status, sizeof(ringbuffer_status), "%u/%u", VS1053_PSRAM_BUFFER_SIZE - (size_t)xRingbufferGetCurFreeSize(_ringbuffer_handle), VS1053_PSRAM_BUFFER_SIZE);
+    snprintf(ringbuffer_status, sizeof(ringbuffer_status), "%u/%i", VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle), VS1053_PSRAM_BUFFER_SIZE);
     return ringbuffer_status;
 }
