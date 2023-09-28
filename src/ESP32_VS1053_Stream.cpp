@@ -577,7 +577,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
     }
     else
     {
-        const auto MAX_TIME_MS = 15;
+        const auto MAX_TIME_MS = 20;
         const auto start = millis();
         // size_t bytesToDecoder = 0;
         while (stream && stream->available() && _bytesLeftInChunk && _vs1053->data_request() && _musicDataPosition < _metaDataStart && millis() - start < MAX_TIME_MS)
@@ -802,6 +802,6 @@ const char *ESP32_VS1053_Stream::bufferStatus()
     if (!_ringbuffer_handle)
         return "0/0";
     static char ringbuffer_status[24];
-    snprintf(ringbuffer_status, sizeof(ringbuffer_status), "%u/%i", VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle), VS1053_PSRAM_BUFFER_SIZE);
+    snprintf(ringbuffer_status, sizeof(ringbuffer_status), "%u/%lu", VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle), VS1053_PSRAM_BUFFER_SIZE);
     return ringbuffer_status;
 }
