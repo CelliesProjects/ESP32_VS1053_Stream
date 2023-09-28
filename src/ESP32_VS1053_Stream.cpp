@@ -339,7 +339,12 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         _metaDataStart = _http->header(ICY_METAINT).toInt();
         _musicDataPosition = _metaDataStart ? 0 : -100;
         _bitrate = _http->header(BITRATE).toInt();
-        snprintf(_url, sizeof(_url), "%s", url);
+        _url[0] = _savedStartChar;
+        if (strcmp(_url, url)) /* 0 means strings are equal*/
+        {
+            _vs1053->stopSong();
+            snprintf(_url, sizeof(_url), "%s", url);
+        }
         _streamStalledTime = 0;
         log_d("redirected %i times", _redirectCount);
         _redirectCount = 0;
@@ -410,7 +415,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
                 return;
             }
             const auto BAILOUT_MS = 2000;
-            if (millis() - ringbufferEmpty > BAILOUT_MS) 
+            if (millis() - ringbufferEmpty > BAILOUT_MS)
             {
                 log_e("Buffer empty for %i ms, bailing out...", BAILOUT_MS);
                 _remainingBytes = 0;
@@ -693,7 +698,8 @@ void ESP32_VS1053_Stream::loop()
 
     if (_startMute)
     {
-        const auto WAIT_TIME_MS = ((!_bitrate && _remainingBytes == -1) || _currentCodec == AAC || _currentCodec == AACP)
+        const auto WAIT_TIME_MS = ((!_bitrate && _remainingBytes == -1) ||
+                                   _currentCodec == AAC || _currentCodec == AACP || _currentCodec == OGG)
                                       ? 380
                                       : 80;
         if (millis() - _startMute > WAIT_TIME_MS)
@@ -738,13 +744,14 @@ void ESP32_VS1053_Stream::stopSong()
     _http->end();
     delete _http;
     _http = nullptr;
-    _vs1053->stopSong();
+
     _deallocateRingbuffer();
     _ringbuffer_filled = false;
     _dataSeen = false;
     _remainingBytes = 0;
     _bytesLeftInChunk = 0;
     _currentCodec = STOPPED;
+    _savedStartChar = _url[0];
     _url[0] = 0;
     _bitrate = 0;
     _offset = 0;

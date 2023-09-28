@@ -100,6 +100,7 @@ private:
     bool _ringbuffer_filled = false;
     unsigned long _streamStalledTime = 0;
     uint8_t _redirectCount = 0;
+    char _savedStartChar;
 
     enum codec_t
     {
