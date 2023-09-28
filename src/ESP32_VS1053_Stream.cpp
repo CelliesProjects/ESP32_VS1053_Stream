@@ -744,7 +744,6 @@ void ESP32_VS1053_Stream::stopSong()
     _http->end();
     delete _http;
     _http = nullptr;
-
     _deallocateRingbuffer();
     _ringbuffer_filled = false;
     _dataSeen = false;
