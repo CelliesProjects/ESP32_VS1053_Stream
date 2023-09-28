@@ -25,6 +25,9 @@ void setup() {
 
     WiFi.begin(SSID, PSK);
 
+    WiFi.setSleep(false); 
+    /* important to set this right! See issue #15 */
+    
     Serial.println("\n\nSimple vs1053 Streaming example.");
 
     while (!WiFi.isConnected())
