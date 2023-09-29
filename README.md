@@ -15,6 +15,28 @@ Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and 
 
 Use [the latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest).
 
+## Tips for troublefree streaming.
+
+### WiFi setup
+
+Do not forget to switch WiFi out of power save mode:
+
+```
+...
+WiFi.begin(SSID, PSK);
+WiFi.setSleep(false); 
+...
+```
+
+<hr>
+
+### Reboots while playing
+If your system is not running stable you could try to disable psram buffering in `ESP32_VS1053_Stream.h`.
+
+Another source of sudden reboots are cheap dev boards with a too small 3.3v regulator.
+
+<hr>
+
 ## Example code
 
 ```c++
