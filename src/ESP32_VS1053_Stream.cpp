@@ -544,7 +544,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
         }
 
         _bytesLeftInChunk -= BYTES_IN_BUFFER;
-        // bytesToRingBuffer += BYTES_IN_BUFFER;
+        bytesToRingBuffer += BYTES_IN_BUFFER;
         _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
     }
     log_d("spend %lu ms stuffing %i bytes in ringbuffer", millis() - start, bytesToRingBuffer);
@@ -592,7 +592,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
             _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
             _bytesLeftInChunk -= BYTES_IN_BUFFER;
             _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
-            // bytesToDecoder += BYTES_IN_BUFFER;
+            bytesToDecoder += BYTES_IN_BUFFER;
         }
         log_d("spend %lu ms stuffing %i bytes in decoder", millis() - start, bytesToDecoder);
     }
