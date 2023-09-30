@@ -31,7 +31,7 @@ WiFi.setSleep(false);
 <hr>
 
 ### Reboots while playing
-If your system is not running stable you could try to disable psram buffering in `ESP32_VS1053_Stream.h`.
+If your system is not running stable you could try to disable psram buffering by commenting out `-D BOARD_HAS_PSRAM` in `platformio.ini`.
 
 Another source of sudden reboots are cheap dev boards with a too small 3.3v regulator.
 
