@@ -15,7 +15,7 @@ Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and 
 
 Use [the latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest).
 
-## Tips for troublefree streaming.
+## Tips for troublefree streaming
 
 ### WiFi setup
 
@@ -31,7 +31,7 @@ WiFi.setSleep(false);
 <hr>
 
 ### Reboots while playing
-If your system is not running stable you could try to disable psram buffering by commenting out `-D BOARD_HAS_PSRAM` in `platformio.ini`.
+If your system is not running stable you could try to disable psram buffering by commenting out `-D BOARD_HAS_PSRAM` in `platformio.ini`.<br>This should only have effect on boards that have the psram cache issue.<br>I don't know how to do that in the Arduino IDE.
 
 Another source of sudden reboots are cheap dev boards with a too small 3.3v regulator.
 
@@ -250,6 +250,7 @@ Returns `0` if the stream is a radio stream.
 ```c++
 size_t position()
 ```
+Returns `0` if the stream is a radio stream.
 
 <hr>
 
@@ -266,6 +267,7 @@ Returns `0/0` if there is no buffer.<br>Otherwise returns something like `4096/6
 -mfix-esp32-psram-cache-issue
 -mfix-esp32-psram-cache-strategy=memw
 ```
+And take a look at [tips for troublefree streaming](#Reboots-while-playing)
 <hr>
 
 # Event callbacks
