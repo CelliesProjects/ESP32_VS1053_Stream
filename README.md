@@ -31,7 +31,7 @@ WiFi.setSleep(false);
 <hr>
 
 ### Reboots while playing
-If your system is not running stable you could try to disable psram buffering by commenting out `-D BOARD_HAS_PSRAM` in `platformio.ini`.<br>This should only have effect on boards that have the psram cache issue.<br>I don't know how to do that in the Arduino IDE.
+If your system is not running stable you could try to disable psram buffering in `ESP32_VS1053_Stream.h`.
 
 Another source of sudden reboots are cheap dev boards with a too small 3.3v regulator.
 
