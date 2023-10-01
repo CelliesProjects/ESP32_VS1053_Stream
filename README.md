@@ -267,7 +267,7 @@ Returns `0/0` if there is no buffer.<br>Otherwise returns something like `4096/6
 -mfix-esp32-psram-cache-issue
 -mfix-esp32-psram-cache-strategy=memw
 ```
-And take a look at [tips for troublefree streaming](#Reboots-while-playing)
+And take a look at [tips for troublefree streaming](#Tips-for-troublefree-streaming)
 <hr>
 
 # Event callbacks
