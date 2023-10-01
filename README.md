@@ -111,7 +111,7 @@ WiFi.setSleep(false);
 <hr>
 
 ### Prevent reboots while playing
-Do not use the `-D BOARD_HAS_PSRAM` build flag in PlatformIO or the `PSRAM: Enabled` option in Arduino IDE. Early boards have issues with the psram cache, resulting in reboots.<br> Boards without these issues don't need this flag to enable the psram.
+Do not use the `-D BOARD_HAS_PSRAM` build flag in PlatformIO or the `PSRAM: Enabled` option in Arduino IDE. Early boards have issues with the psram cache, resulting in reboots.<br> Boards without these issues don't need this flag or option to enable the psram.
 
 Another source of sudden reboots are cheap dev boards with a too small 3.3v regulator.
 
@@ -261,13 +261,6 @@ const char *bufferStatus();
 
 Returns `0/0` if there is no buffer.<br>Otherwise returns something like `4096/65536` which means 4kB waiting in a 64kB buffer.<br>A buffer will only be allocated if there is enough free psram.
 
-<b>NOTE:</b> When compiling for a board with psram use the following build flags:
-
-```
--mfix-esp32-psram-cache-issue
--mfix-esp32-psram-cache-strategy=memw
-```
-And take a look at [tips for troublefree streaming](#Tips-for-troublefree-streaming)
 <hr>
 
 # Event callbacks
