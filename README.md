@@ -15,28 +15,6 @@ Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and 
 
 Use [the latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest).
 
-## Tips for troublefree streaming
-
-### WiFi setup
-
-Do not forget to switch WiFi out of power save mode:
-
-```
-...
-WiFi.begin(SSID, PSK);
-WiFi.setSleep(false); 
-...
-```
-
-<hr>
-
-### Reboots while playing
-Do not use the `-D BOARD_HAS_PSRAM` build flag in PlatformIO or the `PSRAM: Enabled` option in Arduino IDE. Early boards have issues with the psram cache, resulting in reboots.<br> Boards without these issues don't need this flag to enable the psram.
-
-Another source of sudden reboots are cheap dev boards with a too small 3.3v regulator.
-
-<hr>
-
 ## Example code
 
 ```c++
@@ -116,6 +94,28 @@ void audio_eof_stream(const char* info) {
     Serial.printf("eof: %s\n", info);
 }
 ```
+
+## Tips for troublefree streaming
+
+### WiFi setup
+
+Do not forget to switch WiFi out of power save mode:
+
+```
+...
+WiFi.begin(SSID, PSK);
+WiFi.setSleep(false); 
+...
+```
+
+<hr>
+
+### Prevent reboots while playing
+Do not use the `-D BOARD_HAS_PSRAM` build flag in PlatformIO or the `PSRAM: Enabled` option in Arduino IDE. Early boards have issues with the psram cache, resulting in reboots.<br> Boards without these issues don't need this flag to enable the psram.
+
+Another source of sudden reboots are cheap dev boards with a too small 3.3v regulator.
+
+<hr>
 
 # Functions
 
