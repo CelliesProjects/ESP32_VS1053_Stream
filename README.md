@@ -111,9 +111,27 @@ WiFi.setSleep(false);
 <hr>
 
 ### Prevent reboots while playing
-Do not use the `-D BOARD_HAS_PSRAM` build flag in PlatformIO or the `PSRAM: Enabled` option in Arduino IDE. Early boards have issues with the psram cache, resulting in reboots.<br> Boards without these issues do not need this flag or option to enable the psram.
 
-Another source of sudden reboots are cheap dev boards with a too small 3.3v regulator.
+Early version of the esp32 have issues with the psram cache, resulting in reboots.
+
+This can not be prevented on V0.0 hardware other than not using the psram.
+
+On V1.0 hardware psram can be used with the following build flags:
+```    
+    -D BOARD_HAS_PSRAM
+    -mfix-esp32-psram-cache-issue
+    -mfix-esp32-psram-cache-strategy=memw
+```
+
+On V3.0 hardware psram can be used with the following build flag:
+```    
+    -D BOARD_HAS_PSRAM
+```
+
+
+In PIO you can find out what hardware revision you have by running `esptool.py flash_id` in a terminal.
+
+In Arduino IDE you can see the hardware revision when you upload a sketch and have `upload` checked in the `Show verbose output during` option on the `File->Preferences` page. 
 
 <hr>
 
