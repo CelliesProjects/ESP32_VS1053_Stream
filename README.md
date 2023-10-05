@@ -101,7 +101,7 @@ void audio_eof_stream(const char* info) {
 
 Do not forget to switch WiFi out of power save mode:
 
-```
+```c++
 ...
 WiFi.begin(SSID, PSK);
 WiFi.setSleep(false); 
@@ -111,28 +111,30 @@ WiFi.setSleep(false);
 <hr>
 
 ### Prevent reboots while playing
+Early version of the esp32 have issues with the external psram cache, resulting in reboots.<br>Workarounds are possible depending on the hardware revision.
 
-Early version of the esp32 have issues with the psram cache, resulting in reboots.
+#### Revision V0.0
+No workarounds are possible for this revision other than not using the psram.
 
-This can not be prevented on V0.0 hardware other than not using the psram.
-
-On V1.0 hardware psram can be used with the following build flags:
-```    
-    -D BOARD_HAS_PSRAM
-    -mfix-esp32-psram-cache-issue
-    -mfix-esp32-psram-cache-strategy=memw
+#### Revision V1.0
+On revision V1.0 psram can be used with the following build flags:
+```bash
+-D BOARD_HAS_PSRAM
+-mfix-esp32-psram-cache-issue
+-mfix-esp32-psram-cache-strategy=memw
 ```
 
-On V3.0 hardware psram can be used with the following build flag:
-```    
-    -D BOARD_HAS_PSRAM
+#### Revision V3.0
+On revision V3.0 psram can be used with the following build flag:
+```bash
+-D BOARD_HAS_PSRAM
 ```
 
+#### Find your hardware revision
 
 In PIO you can find out what hardware revision you have by running `esptool.py flash_id` in a terminal.
 
-In Arduino IDE you can see the hardware revision when you upload a sketch and have `upload` checked in the `Show verbose output during` option on the `File->Preferences` page. 
-
+In Arduino IDE go to `File->Preferences` and find the `Show verbose output during` option. Check the box marked `upload`.<br>You can now see the hardware revision when you upload a sketch.
 <hr>
 
 # Functions
