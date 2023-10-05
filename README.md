@@ -130,6 +130,8 @@ On revision V3.0 psram can be used with the following build flag:
 -D BOARD_HAS_PSRAM
 ```
 
+Source: [esp-idf api guide on external ram](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/external-ram.html#chip-revisions).
+
 #### Find your hardware revision
 
 In PIO you can find out what hardware revision you have by running `esptool.py flash_id` in a terminal.
