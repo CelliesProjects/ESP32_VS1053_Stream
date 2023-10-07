@@ -344,7 +344,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         {
             _vs1053->stopSong();
             snprintf(_url, sizeof(_url), "%s", url);
-            log_i("stream stopped");
+            log_d("stream stopped");
         }
         _streamStalledTime = 0;
         log_d("redirected %i times", _redirectCount);
