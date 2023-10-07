@@ -340,10 +340,11 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         _musicDataPosition = _metaDataStart ? 0 : -100;
         _bitrate = _http->header(BITRATE).toInt();
         _url[0] = _savedStartChar;
-        if (strcmp(_url, url)) /* 0 means strings are equal*/
+        if (strcmp(_url, url) || !_offset)
         {
             _vs1053->stopSong();
             snprintf(_url, sizeof(_url), "%s", url);
+            log_i("stream stopped");
         }
         _streamStalledTime = 0;
         log_d("redirected %i times", _redirectCount);
