@@ -87,6 +87,7 @@ private:
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *const stream);
     void _chunkedStreamToRingBuffer(WiFiClient *const stream);
+    void _handleHLS_M3U();
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
@@ -101,6 +102,7 @@ private:
     bool _ringbuffer_filled = false;
     unsigned long _streamStalledTime = 0;
     uint8_t _redirectCount = 0;
+    bool _hlsPlaying = false;
 
     enum codec_t
     {
@@ -108,7 +110,8 @@ private:
         MP3,
         OGG,
         AAC,
-        AACP
+        AACP,
+        HLS
     } _currentCodec = STOPPED;
 };
 

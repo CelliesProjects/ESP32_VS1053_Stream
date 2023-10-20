@@ -269,7 +269,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             CONTENT.indexOf("audio/x-scpls") != -1 ||
             CONTENT.indexOf("audio/mpegurl") != -1 ||
             CONTENT.indexOf("audio/x-mpegurl") != -1 ||
-            CONTENT.indexOf("application/x-mpegurl") != -1 ||
+
             CONTENT.indexOf("application/pls+xml") != -1 ||
             CONTENT.indexOf("application/vnd.apple.mpegurl") != -1)
         {
@@ -322,6 +322,15 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 
         else if (CONTENT.equals("audio/aacp"))
             _currentCodec = AACP;
+
+        else if (CONTENT.equals("application/mpegurl") ||
+                 CONTENT.equals("application/x-mpegurl") ||
+                 CONTENT.equals("audio/mpegurl") ||
+                 CONTENT.equals("audio/x-mpegurl"))
+        {
+            _currentCodec = HLS;
+            _hlsPlaying = true;
+        }
 
         else
         {
@@ -402,9 +411,9 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     while (_remainingBytes && _vs1053->data_request() && millis() - start < MAX_TIME_MS)
     {
         size_t size = 0;
-        //portDISABLE_INTERRUPTS();
+        // portDISABLE_INTERRUPTS();
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
-        //portENABLE_INTERRUPTS();
+        // portENABLE_INTERRUPTS();
         static auto ringbufferEmpty = 0;
         if (!data)
         {
@@ -447,9 +456,9 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        //portDISABLE_INTERRUPTS();
+        // portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        //portENABLE_INTERRUPTS();
+        // portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -534,9 +543,9 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        //portDISABLE_INTERRUPTS();
+        // portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        //portENABLE_INTERRUPTS();
+        // portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -648,8 +657,86 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
     }
 }
 
+// https://github.com/pxpvxid/bbc-radio-streams
+
+void ESP32_VS1053_Stream::_handleHLS_M3U()
+{
+    // if we have a URL then that is the playlist
+
+    // put it in psram
+    WiFiClient *stream = _http->getStreamPtr();
+    if (!stream)
+    {
+        log_i("No stream ptr.");
+        _eofStream();
+        return;
+    }
+
+    if (!stream->available())
+    {
+        log_i("No stream data available");
+        return;
+    }
+    static char *M3Ufile = (char *)heap_caps_malloc(sizeof(uint8_t) * stream->available() + 1, MALLOC_CAP_SPIRAM);
+
+    if (!M3Ufile)
+    {
+        log_i("Could not allocate M3U file in psram");
+        _eofStream();
+        return;
+    }
+    log_i("downloading url: %s", _url);
+
+    log_i("Allocated %i bytes M3Ufile", stream->available());
+
+    auto cnt = 0;
+    while (stream->available())
+    {
+        M3Ufile[cnt++] = stream->read();
+    }
+    M3Ufile[cnt] = 0;
+
+    // https://en.wikipedia.org/wiki/M3U#Extended_M3U
+    // https://www.rfc-editor.org/rfc/rfc8216.html <------ good resource
+    log_i("Data:\n%s", M3Ufile);
+
+    // parse it
+
+    // show the url up to last slash
+
+    char localURL[300] = {0};
+    char *lastSlash = strrchr(_url, '/');
+    cnt = 0;
+    auto len = lastSlash - _url;
+
+    while (cnt < len)
+    {
+        localURL[cnt] = _url[cnt];
+        cnt++;
+    }
+    log_i("we are at %s", localURL);
+
+    // add the last line to the url -this is the relative url-
+
+    
+
+
+
+    // download parts to ringbuffer for 10 ms
+
+    // play from ringbuffer
+    _eofStream();
+    _hlsPlaying = false;
+}
+
 void ESP32_VS1053_Stream::loop()
 {
+    if (_hlsPlaying)
+    {
+        _handleHLS_M3U();
+        return;
+    }
+
     if (!_http)
         return;
 
@@ -716,7 +803,7 @@ void ESP32_VS1053_Stream::loop()
         stream->setTimeout(0);
         stream->setNoDelay(true);
     }
-    
+
     if (_remainingBytes && _vs1053->data_request())
     {
         if (_chunkedResponse)
@@ -780,7 +867,7 @@ void ESP32_VS1053_Stream::setTone(uint8_t *rtone)
 
 const char *ESP32_VS1053_Stream::currentCodec()
 {
-    const char *name[] = {"STOPPED", "MP3", "OGG", "AAC", "AAC+"};
+    const char *name[] = {"STOPPED", "MP3", "OGG", "AAC", "AAC+", "HLS"};
     return name[_currentCodec];
 }
 
