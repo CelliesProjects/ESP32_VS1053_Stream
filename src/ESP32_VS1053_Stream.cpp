@@ -305,15 +305,17 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             
             while (stream->available())
             {
-                String fType;
-                _readLine(fType, stream);
-                log_i("Value: %s", fType.c_str());
-                if (fType.startsWith("http"))
+                String m3uData;
+                _readLine(m3uData, stream);
+                //_parseM3UDirective();
+                log_i("M3U data: %s", m3uData.c_str());
+                if (m3uData.startsWith("http"))
                 {
                     stopSong();
-                    return connecttohost(fType.c_str(), username, pwd);
+                    return connecttohost(m3uData.c_str(), username, pwd);
                 }
             }
+            log_i("No action from M3U data - stopping playback");
             stopSong();
             return false;
         }
@@ -355,7 +357,8 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             log_d("stream stopped");
         }
         _streamStalledTime = 0;
-        log_d("redirected %i times", _redirectCount);
+        log_i("redirected %i times", _redirectCount);
+        _redirectCount = 0;
         _allocateRingbuffer();
         return true;
     }
@@ -835,7 +838,7 @@ void ESP32_VS1053_Stream::stopSong()
     _bytesLeftInChunk = 0;
     _currentCodec = STOPPED;
     _savedStartChar = _url[0];
-    _redirectCount = 0;
+    //_redirectCount = 0;
     _url[0] = 0;
     _bitrate = 0;
     _offset = 0;
