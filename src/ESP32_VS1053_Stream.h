@@ -87,7 +87,7 @@ private:
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *const stream);
     void _chunkedStreamToRingBuffer(WiFiClient *const stream);
-    void _handleHLS_M3U();
+    //void _handleHLS_M3U();
 
     unsigned long _startMute = 0;
     size_t _offset = 0;

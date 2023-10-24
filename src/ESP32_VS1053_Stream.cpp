@@ -156,6 +156,19 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     return true;
 }
 
+String &_readLine(String &str, WiFiClient *stream)
+{
+    char ch = stream->read();
+    while (ch != '\n' && ch != '\r' && stream->available())
+    {
+        str.concat(ch);
+        ch = stream->read();
+    }
+    if (stream->peek() == '\n')
+        stream->read();
+    return str;
+}
+
 bool ESP32_VS1053_Stream::isChipConnected()
 {
     return _vs1053 ? _vs1053->isChipConnected() : false;
@@ -269,16 +282,18 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             CONTENT.indexOf("audio/x-scpls") != -1 ||
             CONTENT.indexOf("audio/mpegurl") != -1 ||
             CONTENT.indexOf("audio/x-mpegurl") != -1 ||
-
+            CONTENT.indexOf("application/mpegurl") != -1 ||
+            CONTENT.indexOf("application/x-mpegurl") != -1 ||
             CONTENT.indexOf("application/pls+xml") != -1 ||
             CONTENT.indexOf("application/vnd.apple.mpegurl") != -1)
         {
-            log_d("url %s is a playlist", url);
+            log_i("url %s is a playlist", url);
             if (!_canRedirect())
             {
                 stopSong();
                 return false;
             }
+
             WiFiClient *stream = _http->getStreamPtr();
             if (!stream)
             {
@@ -286,28 +301,21 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 stopSong();
                 return false;
             }
-            const auto BYTES_TO_READ =
-                min(stream->available(), VS1053_MAX_PLAYLIST_READ);
-            if (!BYTES_TO_READ)
+
+            
+            while (stream->available())
             {
-                log_e("playlist contains no data");
-                stopSong();
-                return false;
+                String fType;
+                _readLine(fType, stream);
+                log_i("Value: %s", fType.c_str());
+                if (fType.startsWith("http"))
+                {
+                    stopSong();
+                    return connecttohost(fType.c_str(), username, pwd);
+                }
             }
-            char file[BYTES_TO_READ + 1];
-            stream->readBytes(file, BYTES_TO_READ);
-            file[BYTES_TO_READ] = 0;
-            char *newurl = strstr(file, "http");
-            if (!newurl)
-            {
-                log_e("playlist contains no url");
-                stopSong();
-                return false;
-            }
-            strtok(newurl, "\r\n;?");
             stopSong();
-            log_d("playlist reconnects to: %s", newurl);
-            return connecttohost(newurl, username, pwd, offset);
+            return false;
         }
 
         else if (CONTENT.equals("audio/mpeg"))
@@ -322,15 +330,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 
         else if (CONTENT.equals("audio/aacp"))
             _currentCodec = AACP;
-
-        else if (CONTENT.equals("application/mpegurl") ||
-                 CONTENT.equals("application/x-mpegurl") ||
-                 CONTENT.equals("audio/mpegurl") ||
-                 CONTENT.equals("audio/x-mpegurl"))
-        {
-            _currentCodec = HLS;
-            _hlsPlaying = true;
-        }
 
         else
         {
@@ -357,7 +356,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         }
         _streamStalledTime = 0;
         log_d("redirected %i times", _redirectCount);
-        _redirectCount = 0;
         _allocateRingbuffer();
         return true;
     }
@@ -381,7 +379,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             return connecttohost(newurl, username, pwd, 0);
         }
         log_e("Something went wrong redirecting from %s", url);
-        _redirectCount = 0;
         stopSong();
         return false;
 
@@ -658,7 +655,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 }
 
 // https://github.com/pxpvxid/bbc-radio-streams
-
+/*
 void ESP32_VS1053_Stream::_handleHLS_M3U()
 {
     // if we have a URL then that is the playlist
@@ -718,22 +715,18 @@ void ESP32_VS1053_Stream::_handleHLS_M3U()
 
     // add the last line to the url -this is the relative url-
 
-    
-
-
-
     // download parts to ringbuffer for 10 ms
 
     // play from ringbuffer
     _eofStream();
     _hlsPlaying = false;
 }
-
+*/
 void ESP32_VS1053_Stream::loop()
 {
     if (_hlsPlaying)
     {
-        _handleHLS_M3U();
+        //_handleHLS_M3U();
         return;
     }
 
@@ -842,6 +835,7 @@ void ESP32_VS1053_Stream::stopSong()
     _bytesLeftInChunk = 0;
     _currentCodec = STOPPED;
     _savedStartChar = _url[0];
+    _redirectCount = 0;
     _url[0] = 0;
     _bitrate = 0;
     _offset = 0;
