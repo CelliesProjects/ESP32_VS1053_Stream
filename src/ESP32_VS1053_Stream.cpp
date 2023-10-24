@@ -294,7 +294,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 return false;
             }
 
-            WiFiClient *stream = _http->getStreamPtr();
+            WiFiClient *stream = _http->getStreamPtr();            
             if (!stream)
             {
                 log_e("No stream handle");
@@ -302,20 +302,47 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 return false;
             }
 
-            
+            // https://en.wikipedia.org/wiki/M3U#Extended_M3U
+            // https://www.rfc-editor.org/rfc/rfc8216.html <------ good resource
+
             while (stream->available())
             {
                 String m3uData;
                 _readLine(m3uData, stream);
-                //_parseM3UDirective();
+                //_parseM3U(m3uData);
                 log_i("M3U data: %s", m3uData.c_str());
+
+                // basically looking for a couple of things depending on the type of playlist
+
+                // HLS MASTER_PLAYLIST
+                // a variant stream pointed to by a preceding #EXT-X-STREAM-INF: <codec & bitrate information>
+                // there can be multiple variants with differing codecs, bandwidth etc
+                // skip the variants that have the wrong codec type etc
+                // the next line is a absolute (starting with 'http...') or relative URL
+                // then the remaining variants have to be saved and compared
+                // save only one variant and overwrite it with a better one if a better one is parsed
+                // the variant with the biggest bandwidth will be opened by calling connecttohost recursively and will land us below @ HLS VARIANT PLAYLIST
+
+                // HLS VARIANT PLAYLIST
+                // a integer giving the first sequence that has to be played: #EXT-X-MEDIA-SEQUENCE:
+                // a list of media segments pointed to a preceding #EXTINF: line
+                // the next line is a absolute or relative link to a media segment
+                // relative links are relative to the variant playlist location???? CHECK THIS!!!
+                // these files have to be played in order, specified by #EXT-X-MEDIA-SEQUENCE:
+
+                // if we meet a #EXT-X-ENDLIST (and all music data is in the buffer) we are done reading this stream
+                // after all segments are buffered, the HLS VARIANT PLAYLIST should be reloaded and the above steps repeated
+
+                // OLDFASHIONED PLAYLISTS
+                // a new URL on a single line
                 if (m3uData.startsWith("http"))
                 {
                     stopSong();
                     return connecttohost(m3uData.c_str(), username, pwd);
                 }
             }
-            log_i("No action from M3U data - stopping playback");
+
+            log_i("No action taken from M3U data - stopping playback");
             stopSong();
             return false;
         }
@@ -696,8 +723,6 @@ void ESP32_VS1053_Stream::_handleHLS_M3U()
     }
     M3Ufile[cnt] = 0;
 
-    // https://en.wikipedia.org/wiki/M3U#Extended_M3U
-    // https://www.rfc-editor.org/rfc/rfc8216.html <------ good resource
     log_i("Data:\n%s", M3Ufile);
 
     // parse it
