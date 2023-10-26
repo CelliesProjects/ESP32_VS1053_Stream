@@ -169,6 +169,34 @@ String &_readLine(String &str, WiFiClient *stream)
     return str;
 }
 
+void _parseEXTM3ULine(String &m3uData, WiFiClient *stream, size_t highestBitrate, char *url, const size_t len)
+{
+    if (m3uData.startsWith("#EXT-X-STREAM-INF:"))
+    {
+        const auto bwOffset = m3uData.indexOf("BANDWIDTH=") + 10;
+        const size_t parsedBitrate = strtol(&m3uData[bwOffset], NULL, 10);
+
+        log_d("parsed bandwidth: %u", parsedBitrate);
+
+        if (parsedBitrate > highestBitrate)
+        {
+            auto cnt = 0;
+            char ch = stream->read();
+            while (ch != '\r' && ch != '\n' && cnt < len - 1 && stream->available())
+            {
+                url[cnt++] = ch;
+                ch = stream->read();
+            }
+            url[cnt] = 0;
+            if (stream->peek() == '\n')
+                ch = stream->read();
+
+            highestBitrate = parsedBitrate;
+            log_i("highest bitrate is now: %u for %s", highestBitrate, url);
+        }
+    }
+}
+
 bool ESP32_VS1053_Stream::isChipConnected()
 {
     return _vs1053 ? _vs1053->isChipConnected() : false;
@@ -294,7 +322,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 return false;
             }
 
-            WiFiClient *stream = _http->getStreamPtr();            
+            WiFiClient *stream = _http->getStreamPtr();
             if (!stream)
             {
                 log_e("No stream handle");
@@ -305,12 +333,15 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             // https://en.wikipedia.org/wiki/M3U#Extended_M3U
             // https://www.rfc-editor.org/rfc/rfc8216.html <------ good resource
 
+            static size_t highestBitrate = 0;
+            char newUrl[VS1053_MAX_URL_LENGTH];
+
             while (stream->available())
             {
-                String m3uData;
-                _readLine(m3uData, stream);
-                //_parseM3U(m3uData);
-                log_i("M3U data: %s", m3uData.c_str());
+                String currentLine;
+                _readLine(currentLine, stream);
+                log_i("a line of M3U data: %s", currentLine.c_str());
+                _parseEXTM3ULine(currentLine, stream, highestBitrate, newUrl, VS1053_MAX_URL_LENGTH);
 
                 // basically looking for a couple of things depending on the type of playlist
 
@@ -335,10 +366,38 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 
                 // OLDFASHIONED PLAYLISTS
                 // a new URL on a single line
-                if (m3uData.startsWith("http"))
+                if (currentLine.startsWith("http"))
                 {
                     stopSong();
-                    return connecttohost(m3uData.c_str(), username, pwd);
+                    return connecttohost(currentLine.c_str(), username, pwd);
+                }
+            }
+
+            // check if parsing delivered a url
+            // if the url is relative, construct an absolute one
+            if (newUrl)
+            {
+                if (strstr(newUrl, "http") == NULL) /* does it start with 'http'? */
+                {
+                    // relative link, contruct a absolute
+                    // first get our current location
+                    // then append the relative url
+                    // find last occurance of '/' in url
+                    char *pch;
+                    pch = strrchr(url, '/');
+                    pch[1] = 0;
+                    log_i("%s", url);
+                    char constructedUrl[VS1053_MAX_URL_LENGTH];
+                    snprintf(constructedUrl, VS1053_MAX_URL_LENGTH, "%s%s", url, newUrl);
+                    log_i("constructed variant url: %s", constructedUrl);
+                    //start a task that reads from the variant url
+                    // return result of starting task
+                }
+                else
+                {
+                    log_i("variant url: %s", constructedUrl);
+                    //start a task that reads from the variant url
+                    //return result of tsarting task
                 }
             }
 
