@@ -89,6 +89,8 @@ private:
     void _chunkedStreamToRingBuffer(WiFiClient *const stream);
     //void _handleHLS_M3U();
 
+    static void _processVariantHLS(void *parameter);
+
     unsigned long _startMute = 0;
     size_t _offset = 0;
     int32_t _remainingBytes = 0;

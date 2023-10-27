@@ -334,7 +334,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             // https://www.rfc-editor.org/rfc/rfc8216.html <------ good resource
 
             static size_t highestBitrate = 0;
-            char newUrl[VS1053_MAX_URL_LENGTH];
+            static char newUrl[VS1053_MAX_URL_LENGTH];
 
             while (stream->available())
             {
@@ -377,27 +377,43 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             // if the url is relative, construct an absolute one
             if (newUrl)
             {
-                if (strstr(newUrl, "http") == NULL) /* does it start with 'http'? */
+                if (strstr(newUrl, "http") == NULL) /* does it start with 'http'? TODO: THIS LOOKS FRAGILE*/
                 {
-                    // relative link, contruct a absolute
-                    // first get our current location
-                    // then append the relative url
-                    // find last occurance of '/' in url
+                    // here newUrl does not start with 'http'
+                    // so we use our current location and newUrl to construct the variant url
                     char *pch;
                     pch = strrchr(url, '/');
+                    // char saved = pch[1];
                     pch[1] = 0;
                     log_i("%s", url);
-                    char constructedUrl[VS1053_MAX_URL_LENGTH];
+                    static char constructedUrl[VS1053_MAX_URL_LENGTH];  //needs to be static to pass it to the task
                     snprintf(constructedUrl, VS1053_MAX_URL_LENGTH, "%s%s", url, newUrl);
+                    // pch[1] = saved;
                     log_i("constructed variant url: %s", constructedUrl);
-                    //start a task that reads from the variant url
-                    // return result of starting task
+                    // start a task that reads from this variant url
+                    const BaseType_t result = xTaskCreate(
+                        _processVariantHLS, /* Function to implement the task */
+                        "readHLS",          /* Name of the task */
+                        8000,               /* Stack size in BYTES! */
+                        constructedUrl,     /* Task input parameter */
+                        1,                  /* Priority of the task */
+                        NULL                /* Task handle. */
+                    );
+                    return result == pdPASS;
                 }
                 else
                 {
-                    log_i("variant url: %s", constructedUrl);
-                    //start a task that reads from the variant url
-                    //return result of tsarting task
+                    log_i("variant url: %s", newUrl);
+                    // start a task that reads from this variant url
+                    const BaseType_t result = xTaskCreate(
+                        _processVariantHLS, /* Function to implement the task */
+                        "readHLS",          /* Name of the task */
+                        8000,               /* Stack size in BYTES! */
+                        newUrl,             /* Task input parameter */
+                        1,                  /* Priority of the task */
+                        NULL                /* Task handle. */
+                    );
+                    return result == pdPASS;
                 }
             }
 
@@ -976,4 +992,17 @@ const char *ESP32_VS1053_Stream::bufferStatus()
     static char ringbuffer_status[24];
     snprintf(ringbuffer_status, sizeof(ringbuffer_status), "%u/%u", VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle), VS1053_PSRAM_BUFFER_SIZE);
     return ringbuffer_status;
+}
+
+void ESP32_VS1053_Stream::_processVariantHLS(void *parameter)
+{
+    char *url = (char *)parameter;
+    log_i("parameter passed: %s", url);
+
+    // task should check a message buffer to see if it is stopped by the user
+
+    while (true)
+    {
+        delay(20);
+    }
 }
