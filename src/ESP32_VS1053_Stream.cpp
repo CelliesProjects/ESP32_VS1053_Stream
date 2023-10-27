@@ -1,6 +1,6 @@
 #include "ESP32_VS1053_Stream.h"
 
-ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _url{0},
+ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _url{0}, _segmentM3Uurl{0},
                                              _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr) {}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
@@ -332,6 +332,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 
             // https://en.wikipedia.org/wiki/M3U#Extended_M3U
             // https://www.rfc-editor.org/rfc/rfc8216.html <------ good resource
+            // https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/StreamingMediaGuide/FrequentlyAskedQuestions/FrequentlyAskedQuestions.html
 
             static size_t highestBitrate = 0;
             static char newUrl[VS1053_MAX_URL_LENGTH]; // needs to be static to pass it to the task
@@ -345,7 +346,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 _readLine(currentLine, stream);
                 log_d("a line of M3U data: %s", currentLine.c_str());
 
-                // check for a supported codec
+                // check for a supported codec -> https://developer.mozilla.org/en-US/docs/Web/Media/Formats/codecs_parameter
                 if (strstr(currentLine.c_str(), "CODECS=\"mp4a.40.29\"") != nullptr)
                 {
                     log_i("supported codec found");
@@ -375,17 +376,17 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                     pch = strrchr(url, '/');
                     char saved = pch[1];
                     pch[1] = 0;
-                    static char constructedUrl[VS1053_MAX_URL_LENGTH]; // needs to be static to pass it to the task
-                    snprintf(constructedUrl, VS1053_MAX_URL_LENGTH, "%s%s", url, newUrl);
+                    // static char constructedUrl[VS1053_MAX_URL_LENGTH]; // needs to be static to pass it to the task
+                    snprintf(_segmentM3Uurl, VS1053_MAX_URL_LENGTH, "%s%s", url, newUrl);
                     pch[1] = saved;
 
-                    log_d("constructed variant url: %s", constructedUrl);
+                    log_d("constructed variant url: %s", _variantM3Uurl);
 
                     const BaseType_t result = xTaskCreate(
                         _processVariantHLS, /* Function to implement the task */
                         "readHLS",          /* Name of the task */
                         8000,               /* Stack size in BYTES! */
-                        (void *)this,     /* Task input parameter */
+                        (void *)this,       /* Task input parameter */
                         1,                  /* Priority of the task */
                         NULL                /* Task handle. */
                     );
@@ -395,12 +396,13 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 else
                 {
                     log_d("variant url: %s", newUrl);
+                    snprintf(_segmentM3Uurl, VS1053_MAX_URL_LENGTH, "%s", newUrl);
 
                     const BaseType_t result = xTaskCreate(
                         _processVariantHLS, /* Function to implement the task */
                         "readHLS",          /* Name of the task */
                         8000,               /* Stack size in BYTES! */
-                        (void *)this,             /* Task input parameter */
+                        (void *)this,       /* Task input parameter */
                         1,                  /* Priority of the task */
                         NULL                /* Task handle. */
                     );
@@ -934,7 +936,7 @@ void ESP32_VS1053_Stream::stopSong()
     _url[0] = 0;
     _bitrate = 0;
     _offset = 0;
-    _hlsPlaying = false;        
+    _hlsPlaying = false;
 }
 
 uint8_t ESP32_VS1053_Stream::getVolume()
@@ -988,13 +990,16 @@ const char *ESP32_VS1053_Stream::bufferStatus()
 }
 
 void ESP32_VS1053_Stream::_processVariantHLS(void *parameter)
-{    
+{
     ESP32_VS1053_Stream *player = (ESP32_VS1053_Stream *)parameter;
-
-    log_i("%s", player->_hlsPlaying ? "yes" : "no");
-
-    //get the url from the message que
-
+    HTTPClient segFile;
+    if (!segFile.begin(player->_segmentM3Uurl))
+    {
+        log_e("Could not open segment file.");
+        player->_eofStream();
+        vTaskDelete(NULL);
+    }
+    int httpResponseCode = segFile.GET();
 
     // task should check a message buffer to see if it is stopped by the user
 
@@ -1007,9 +1012,22 @@ void ESP32_VS1053_Stream::_processVariantHLS(void *parameter)
 
     // if we meet a #EXT-X-ENDLIST (and all music data is in the buffer) we are done reading this stream
     // after all segments are buffered, the HLS VARIANT PLAYLIST should be reloaded and the above steps repeated
-    
-    while (true)
+
+    if (httpResponseCode == HTTP_CODE_OK)
     {
-        delay(20);
+        const auto PLAYTIME = 10000;
+        const auto START = millis();
+        while (true)
+        {
+            if (millis() - START > PLAYTIME)
+                break;
+            delay(20);
+        }
     }
+    else
+        log_e("could not open segment file");
+
+    log_i("stopping HLS ");
+    player->_eofStream();
+    vTaskDelete(NULL);
 }
