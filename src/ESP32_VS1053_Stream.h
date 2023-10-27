@@ -6,6 +6,7 @@
 #include <freertos/ringbuf.h>
 #include <esp_heap_caps.h>
 #include <VS1053.h> /* https://github.com/baldram/ESP_VS1053_Library */
+#include <atomic>
 
 #define VS1053_INITIALVOLUME 95
 #define VS1053_ICY_METADATA true
@@ -104,7 +105,7 @@ private:
     bool _ringbuffer_filled = false;
     unsigned long _streamStalledTime = 0;
     uint8_t _redirectCount = 0;
-    bool _hlsPlaying = false;
+    std::atomic<bool> _hlsPlaying{false}; //https://forum.arduino.cc/t/thread-safe-data-transfer-interlock-using-std-atomic-and-std-memory-order/1159080/7
 
     enum codec_t
     {
