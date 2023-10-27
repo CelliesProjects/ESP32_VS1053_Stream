@@ -69,7 +69,6 @@ private:
     uint8_t _vs1053Buffer[VS1053_PLAYBUFFER_SIZE];
     uint8_t _localbuffer[VS1053_PSRAM_MAX_MOVE];
     char _url[VS1053_MAX_URL_LENGTH];
-    char _segmentM3Uurl[VS1053_MAX_URL_LENGTH];
     char _savedStartChar = 0;
 
     RingbufHandle_t _ringbuffer_handle;
@@ -89,9 +88,8 @@ private:
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *const stream);
     void _chunkedStreamToRingBuffer(WiFiClient *const stream);
-    //void _handleHLS_M3U();
+    void _handleHLS_M3U();
 
-    static void _processVariantHLS(void *parameter);
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
