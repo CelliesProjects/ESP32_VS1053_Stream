@@ -308,7 +308,9 @@ void audio_showstreamtitle(const char* info)
 void audio_eof_stream(const char* info)
 ```
 
-Returns the eof url. Very handy for coding a playlist.
+Returns the eof url.<br>Also called if a stream times out/errors.
+
+Handy function for coding a playlist.<br>You can use `connecttohost()` inside this function to start the next item.
 
 <hr>
 
