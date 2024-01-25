@@ -1,7 +1,9 @@
 #include "ESP32_VS1053_Stream.h"
 
-ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _url{0},
-                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr) {}
+ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0},
+                                             _localbuffer{0}, _url{0}, _m3u8Task(nullptr),
+                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr),
+                                             _buffer_storage(nullptr) {}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
@@ -402,9 +404,9 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     while (_remainingBytes && _vs1053->data_request() && millis() - start < MAX_TIME_MS)
     {
         size_t size = 0;
-        //portDISABLE_INTERRUPTS();
+        // portDISABLE_INTERRUPTS();
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
-        //portENABLE_INTERRUPTS();
+        // portENABLE_INTERRUPTS();
         static auto ringbufferEmpty = 0;
         if (!data)
         {
@@ -447,9 +449,9 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        //portDISABLE_INTERRUPTS();
+        // portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        //portENABLE_INTERRUPTS();
+        // portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -534,9 +536,9 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        //portDISABLE_INTERRUPTS();
+        // portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        //portENABLE_INTERRUPTS();
+        // portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -650,6 +652,12 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 
 void ESP32_VS1053_Stream::loop()
 {
+    if (_m3u8Running) 
+    {
+        _playFromRingBuffer();
+        return;
+    }
+
     if (!_http)
         return;
 
@@ -716,7 +724,7 @@ void ESP32_VS1053_Stream::loop()
         stream->setTimeout(0);
         stream->setNoDelay(true);
     }
-    
+
     if (_remainingBytes && _vs1053->data_request())
     {
         if (_chunkedResponse)
@@ -731,7 +739,7 @@ void ESP32_VS1053_Stream::loop()
 
 bool ESP32_VS1053_Stream::isRunning()
 {
-    return _http != nullptr;
+    return _http != nullptr || _m3u8Running;
 }
 
 void ESP32_VS1053_Stream::stopSong()
