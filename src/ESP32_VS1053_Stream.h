@@ -69,6 +69,7 @@ private:
     uint8_t _localbuffer[VS1053_PSRAM_MAX_MOVE];
     char _url[VS1053_MAX_URL_LENGTH];
     char _savedStartChar = 0;
+
     bool _m3u8Running = false;
     TaskHandle_t _m3u8Task;
 
