@@ -308,8 +308,8 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 stopSong();
                 return false;
             }
-            const auto BYTES_TO_READ =
-                min(stream->available(), VS1053_MAX_PLAYLIST_READ);
+
+            const auto BYTES_TO_READ = min(stream->available(), VS1053_MAX_PLAYLIST_READ);
             if (!BYTES_TO_READ)
             {
                 log_e("playlist contains no data");
@@ -319,6 +319,39 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             char file[BYTES_TO_READ + 1];
             stream->readBytes(file, BYTES_TO_READ);
             file[BYTES_TO_READ] = 0;
+
+            // if file starts with #EXTM3U
+            //    parse it to get a url that we can use to start the 'm3u8Reader' task
+            //    no valid url? then stopsong and exit
+            if (strncmp("#EXTM3U", file, 7))
+            {
+                log_i("EXTM3U found");
+
+                // parse 'file' -which is the master m3u8 file- to find the correct url of the detailed m3u8 file
+
+                // start the readerTask with a copy of the this pointer
+
+
+                // while still developing we just exit cleanly here
+                stopSong();
+                return false;
+
+                const BaseType_t result = xTaskCreate(
+                    m3u8Reader,
+                    "m3u8reader",
+                    8000,
+                    (void *)this, //< Pointer gets forwarded to the task
+                    1,
+                    NULL);
+
+                if (result != pdPASS)
+                {
+                    log_e("could not create m3u8 reader task");
+                    stopSong();
+                    return false;
+                }
+            }
+
             char *newurl = strstr(file, "http");
             if (!newurl)
             {
