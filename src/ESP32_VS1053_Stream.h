@@ -72,6 +72,7 @@ private:
 
     bool _m3u8Running = false;
     TaskHandle_t _m3u8Task;
+    static void m3u8Reader(void *arg);
 
     RingbufHandle_t _ringbuffer_handle;
     StaticRingbuffer_t *_buffer_struct;

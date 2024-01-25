@@ -11,6 +11,26 @@ ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
     delete _vs1053;
 }
 
+void ESP32_VS1053_Stream::m3u8Reader(void *arg)
+{
+    ESP32_VS1053_Stream *pStream = static_cast<ESP32_VS1053_Stream *>(arg);
+
+    log_i("m3u8Reader task init...");
+    if (!pStream->_ringbuffer_handle)
+    {
+        log_w("No ringbuffer");
+        vTaskDelete(NULL);
+    }
+
+    while (1)
+    {
+        log_i("m3u8Reader task running");
+        // parse the detailed m3u8 file
+
+        vTaskDelay(500);
+    }
+}
+
 void ESP32_VS1053_Stream::_allocateRingbuffer()
 {
     if (!psramFound() || !VS1053_PSRAM_BUFFER_ENABLED)
@@ -646,7 +666,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 
 void ESP32_VS1053_Stream::loop()
 {
-    if (_m3u8Running) 
+    if (_m3u8Running)
     {
         _playFromRingBuffer();
         return;
