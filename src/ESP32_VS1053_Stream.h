@@ -72,7 +72,7 @@ private:
 
     bool _m3u8Running = false;
     TaskHandle_t _m3u8Task;
-    char _m3u8DetailURL[VS1053_MAX_URL_LENGTH];
+    //char _m3u8DetailURL[VS1053_MAX_URL_LENGTH];
     static void m3u8Reader(void *arg);
 
     RingbufHandle_t _ringbuffer_handle;
@@ -115,7 +115,8 @@ private:
         MP3,
         OGG,
         AAC,
-        AACP
+        AACP,
+        HLS
     } _currentCodec = STOPPED;
 };
 

@@ -3,8 +3,10 @@
 
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0},
                                              _localbuffer{0}, _url{0}, _m3u8Task(nullptr),
-                                             _m3u8DetailURL{0}, _ringbuffer_handle(nullptr),
-                                             _buffer_struct(nullptr), _buffer_storage(nullptr) {}
+                                             /*_m3u8DetailURL{0},*/ _ringbuffer_handle(nullptr),
+                                             _buffer_struct(nullptr), _buffer_storage(nullptr)
+{
+}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
@@ -24,27 +26,23 @@ void ESP32_VS1053_Stream::m3u8Reader(void *arg)
         vTaskDelete(NULL);
     }
 
-    while (1)
+    log_i("Using %s as input variant file", pStream->_url);
+
+    while (pStream->_m3u8Running)
     {
-        log_i("m3u8Reader task running");
+        //log_i("m3u8Reader task running");
         // parse the detailed m3u8 file
 
-        vTaskDelay(500);
+        vTaskDelay(1000);
     }
+    log_i("Aborting m3u8 reader");
+    vTaskDelete(NULL);
 }
 
 void ESP32_VS1053_Stream::_m3u8parseMaster(const char *file, const size_t size)
 {
     log_i("file content: %s", file);
-    _m3u8DetailURL[0] = 0;
-    // parse file and return a detailed string in '_m3u8DetailedURL'
-
-    // first find out if this is a master or detailed playlist
-    if (strcmp(EXTINF, file))
-        log_i("this is a media playlist");
-
-    // if it is a detailed list, we can exit here and go to the main loop
-    // otherwise we have to parse the list to get a detailed list url
+    _url[0] = 0;
 }
 
 void ESP32_VS1053_Stream::_allocateRingbuffer()
@@ -87,7 +85,7 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
         return;
     }
     else
-        log_d("Allocated %i bytes ringbuffer in PSRAM", VS1053_PSRAM_BUFFER_SIZE);
+        log_i("Allocated %i bytes ringbuffer in PSRAM", VS1053_PSRAM_BUFFER_SIZE);
 }
 
 void ESP32_VS1053_Stream::_deallocateRingbuffer()
@@ -343,9 +341,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 const bool IS_VARIANT_PLAYLIST = strstr(file, EXTINF) != nullptr;
 
                 if (IS_MASTER_PLAYLIST != IS_VARIANT_PLAYLIST)
-                {
-                    log_i("This is a %s file", IS_MASTER_PLAYLIST ? "master" : "variant");
-                }
+                    log_i("This is a %s M3U8 file", IS_MASTER_PLAYLIST ? "master" : "variant");
 
                 if (IS_MASTER_PLAYLIST && IS_VARIANT_PLAYLIST)
                 {
@@ -356,10 +352,17 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 
                 if (IS_MASTER_PLAYLIST)
                 {
-                    _m3u8parseMaster(file, BYTES_TO_READ);
+                    stopSong();
+                    // parse the file and return the result of connecting new url
+                    return false;
                 }
-                else if (IS_VARIANT_PLAYLIST)
+
+                if (IS_VARIANT_PLAYLIST)
                 {
+                    _m3u8Running = true;
+                    _currentCodec = HLS;
+                    _allocateRingbuffer();
+                    snprintf(_url, sizeof(_url), "%s", url);
                     const BaseType_t result = xTaskCreate(
                         m3u8Reader,
                         "m3u8reader",
@@ -375,9 +378,9 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                         return false;
                     }
                     return true;
-                    
                 }
-                // if we end up here it is not a master AND not a variant m3u8 file so we just pfall through
+                // if we end up here it is not a master AND not a variant m3u8 file
+                // so we just fall through and parse it like a oldfashioned m3u
                 log_i("File contains no valid EXTM3U tags. Scanning for a valid URL");
             }
 
@@ -842,7 +845,6 @@ void ESP32_VS1053_Stream::stopSong()
     _url[0] = 0;
     _bitrate = 0;
     _offset = 0;
-
     _m3u8Running = false;
 }
 
@@ -866,7 +868,7 @@ void ESP32_VS1053_Stream::setTone(uint8_t *rtone)
 
 const char *ESP32_VS1053_Stream::currentCodec()
 {
-    const char *name[] = {"STOPPED", "MP3", "OGG", "AAC", "AAC+"};
+    const char *name[] = {"STOPPED", "MP3", "OGG", "AAC", "AAC+", "HLS"};
     return name[_currentCodec];
 }
 
