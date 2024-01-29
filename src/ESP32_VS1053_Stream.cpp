@@ -6,6 +6,7 @@ ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _
                                              /*_m3u8DetailURL{0},*/ _ringbuffer_handle(nullptr),
                                              _buffer_struct(nullptr), _buffer_storage(nullptr)
 {
+    _SemaphoreHandle1 = xSemaphoreCreateBinary();
 }
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
@@ -14,28 +15,32 @@ ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
     delete _vs1053;
 }
 
-void ESP32_VS1053_Stream::m3u8Reader(void *arg)
+void ESP32_VS1053_Stream::m3u8ReaderTask(void *arg)
 {
-    // retrieve the this pointer of the current VS1053 object
-    ESP32_VS1053_Stream *pStream = static_cast<ESP32_VS1053_Stream *>(arg);
+    log_i("m3u8ReaderTask init...");
 
-    log_i("m3u8Reader task init...");
+    ESP32_VS1053_Stream *pStream = static_cast<ESP32_VS1053_Stream *>(arg);
     if (!pStream->_ringbuffer_handle)
     {
         log_w("No ringbuffer");
         vTaskDelete(NULL);
     }
 
-    log_i("Using %s as input variant file", pStream->_url);
+    log_d("Using %s as input variant file", pStream->_url);
 
     while (pStream->_m3u8Running)
     {
-        //log_i("m3u8Reader task running");
-        // parse the detailed m3u8 file
-
-        vTaskDelay(1000);
+        auto cnt = 10;
+        while (cnt)
+        {
+            log_i("%i seconds", cnt);
+            vTaskDelay(1000);
+            cnt--;
+        }
+        log_i("calling stop");
+        pStream->_eofStream();
     }
-    log_i("Aborting m3u8 reader");
+    log_i("Closing m3u8 reader task");
     vTaskDelete(NULL);
 }
 
@@ -353,7 +358,10 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 if (IS_MASTER_PLAYLIST)
                 {
                     stopSong();
-                    // parse the file and return the result of connecting new url
+                    //_m3u8parseMaster(file, BYTES_TO_READ);   // this function fills in _url with a valid variant url or a nullptr
+                    // if (_url)
+                    //     return connecttohost(_url, username, pwd, offset);
+
                     return false;
                 }
 
@@ -364,7 +372,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                     _allocateRingbuffer();
                     snprintf(_url, sizeof(_url), "%s", url);
                     const BaseType_t result = xTaskCreate(
-                        m3u8Reader,
+                        m3u8ReaderTask,
                         "m3u8reader",
                         8000,
                         (void *)this,
