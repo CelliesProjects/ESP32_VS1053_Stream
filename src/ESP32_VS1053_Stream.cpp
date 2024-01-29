@@ -17,14 +17,7 @@ ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 
 void ESP32_VS1053_Stream::m3u8ReaderTask(void *arg)
 {
-    log_i("m3u8ReaderTask init...");
-
     ESP32_VS1053_Stream *pStream = static_cast<ESP32_VS1053_Stream *>(arg);
-    if (!pStream->_ringbuffer_handle)
-    {
-        log_w("No ringbuffer");
-        vTaskDelete(NULL);
-    }
 
     log_d("Using %s as input variant file", pStream->_url);
 
@@ -47,6 +40,7 @@ void ESP32_VS1053_Stream::m3u8ReaderTask(void *arg)
 void ESP32_VS1053_Stream::_m3u8parseMaster(const char *file, const size_t size)
 {
     log_i("file content: %s", file);
+    log_i("returning empty string");
     _url[0] = 0;
 }
 
@@ -367,9 +361,15 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 
                 if (IS_VARIANT_PLAYLIST)
                 {
+                    _allocateRingbuffer();
+                    if (!_ringbuffer_handle)
+                    {
+                        stopSong();
+                        return false;
+                    }
                     _m3u8Running = true;
                     _currentCodec = HLS;
-                    _allocateRingbuffer();
+
                     snprintf(_url, sizeof(_url), "%s", url);
                     const BaseType_t result = xTaskCreate(
                         m3u8ReaderTask,
