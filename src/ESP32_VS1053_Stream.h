@@ -76,7 +76,7 @@ private:
     static void m3u8ReaderTask(void *arg);
     void _m3u8parseMaster(const char *file, const size_t size);
 
-    SemaphoreHandle_t _SemaphoreHandle1 = NULL;
+    SemaphoreHandle_t _SemaphoreHandle1;
 
     RingbufHandle_t _ringbuffer_handle;
     StaticRingbuffer_t *_buffer_struct;
