@@ -3,8 +3,8 @@
 
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0},
                                              _localbuffer{0}, _url{0}, _m3u8Task(nullptr),
-                                             /*_m3u8DetailURL{0},*/ _ringbuffer_handle(nullptr),
-                                             _buffer_struct(nullptr), _buffer_storage(nullptr)
+                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr),
+                                             _buffer_storage(nullptr)
 {
     _SemaphoreHandle1 = xSemaphoreCreateBinary();
 }
@@ -19,10 +19,52 @@ void ESP32_VS1053_Stream::m3u8ReaderTask(void *arg)
 {
     ESP32_VS1053_Stream *pStream = static_cast<ESP32_VS1053_Stream *>(arg);
 
-    log_d("Using %s as input variant file", pStream->_url);
-
     while (pStream->_m3u8Running)
     {
+        HTTPClient http;
+
+        http.begin(pStream->_url);
+        const auto httpCode = http.GET();
+
+        if (httpCode != HTTP_CODE_OK)
+        {
+            log_e("something fucked up the http with code %i", httpCode);
+            http.end();
+            break;
+        }
+
+        WiFiClient *client = http.getStreamPtr();
+        if (client)
+        {
+            String currentLine;
+            currentLine.reserve(100);
+            while (client->available())
+            {
+                const char ch = client->read();
+                if (ch != '\n')
+                    currentLine.concat(ch);
+                else
+                {
+                    log_i("%s", currentLine.c_str());
+                    currentLine.clear();
+                }
+            }
+        }
+
+        http.end();
+
+        // make a vector? of the different segment urls
+
+        // count the number of segments by counting number of '#EXTINF' instances
+
+        // start moving data from the url to the ringbuffer in a loop until eof
+
+        // is there more than 1 url left in the vector?
+
+        // yes, go to next url in the vector (repeat loop)
+
+        // no, (only 1 url left) refill the vector
+
         auto cnt = 10;
         while (cnt)
         {
@@ -33,7 +75,7 @@ void ESP32_VS1053_Stream::m3u8ReaderTask(void *arg)
         log_i("calling stop");
         pStream->_eofStream();
     }
-    log_i("Closing m3u8 reader task");
+    log_d("Closing m3u8 reader task");
     vTaskDelete(NULL);
 }
 
@@ -84,7 +126,7 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
         return;
     }
     else
-        log_i("Allocated %i bytes ringbuffer in PSRAM", VS1053_PSRAM_BUFFER_SIZE);
+        log_d("Allocated %i bytes ringbuffer in PSRAM", VS1053_PSRAM_BUFFER_SIZE);
 }
 
 void ESP32_VS1053_Stream::_deallocateRingbuffer()
@@ -340,7 +382,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 const bool IS_VARIANT_PLAYLIST = strstr(file, EXTINF) != nullptr;
 
                 if (IS_MASTER_PLAYLIST != IS_VARIANT_PLAYLIST)
-                    log_i("This is a %s M3U8 file", IS_MASTER_PLAYLIST ? "master" : "variant");
+                    log_i("This is a %s M3U8 file", IS_MASTER_PLAYLIST ? "master" : "media segment");
 
                 if (IS_MASTER_PLAYLIST && IS_VARIANT_PLAYLIST)
                 {
