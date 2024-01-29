@@ -1,9 +1,10 @@
 #include "ESP32_VS1053_Stream.h"
+#include "HLSCommon.h"
 
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0},
                                              _localbuffer{0}, _url{0}, _m3u8Task(nullptr),
-                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr),
-                                             _buffer_storage(nullptr) {}
+                                             _m3u8DetailURL{0}, _ringbuffer_handle(nullptr),
+                                             _buffer_struct(nullptr), _buffer_storage(nullptr) {}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
@@ -13,6 +14,7 @@ ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 
 void ESP32_VS1053_Stream::m3u8Reader(void *arg)
 {
+    // retrieve the this pointer of the current VS1053 object
     ESP32_VS1053_Stream *pStream = static_cast<ESP32_VS1053_Stream *>(arg);
 
     log_i("m3u8Reader task init...");
@@ -29,6 +31,20 @@ void ESP32_VS1053_Stream::m3u8Reader(void *arg)
 
         vTaskDelay(500);
     }
+}
+
+void ESP32_VS1053_Stream::_m3u8parseMaster(const char *file, const size_t size)
+{
+    log_i("file content: %s", file);
+    _m3u8DetailURL[0] = 0;
+    // parse file and return a detailed string in '_m3u8DetailedURL'
+
+    // first find out if this is a master or detailed playlist
+    if (strcmp(EXTINF, file))
+        log_i("this is a media playlist");
+
+    // if it is a detailed list, we can exit here and go to the main loop
+    // otherwise we have to parse the list to get a detailed list url
 }
 
 void ESP32_VS1053_Stream::_allocateRingbuffer()
@@ -320,36 +336,49 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             stream->readBytes(file, BYTES_TO_READ);
             file[BYTES_TO_READ] = 0;
 
-            // if file starts with #EXTM3U
-            //    parse it to get a url that we can use to start the 'm3u8Reader' task
-            //    no valid url? then stopsong and exit
-            if (strncmp("#EXTM3U", file, 7))
+            if (!strncmp("#EXTM3U", file, 7))
             {
                 log_i("EXTM3U found");
+                const bool IS_MASTER_PLAYLIST = strstr(file, EXT_X_STREAM_INF) != nullptr;
+                const bool IS_VARIANT_PLAYLIST = strstr(file, EXTINF) != nullptr;
 
-                // parse 'file' -which is the master m3u8 file- to find the correct url of the detailed m3u8 file
-
-                // start the readerTask with a copy of the this pointer
-
-
-                // while still developing we just exit cleanly here
-                stopSong();
-                return false;
-
-                const BaseType_t result = xTaskCreate(
-                    m3u8Reader,
-                    "m3u8reader",
-                    8000,
-                    (void *)this, //< Pointer gets forwarded to the task
-                    1,
-                    NULL);
-
-                if (result != pdPASS)
+                if (IS_MASTER_PLAYLIST != IS_VARIANT_PLAYLIST)
                 {
-                    log_e("could not create m3u8 reader task");
+                    log_i("This is a %s file", IS_MASTER_PLAYLIST ? "master" : "variant");
+                }
+
+                if (IS_MASTER_PLAYLIST && IS_VARIANT_PLAYLIST)
+                {
+                    log_i("PARSE ERROR! File cannot be master AND variant. Quiting...");
                     stopSong();
                     return false;
                 }
+
+                if (IS_MASTER_PLAYLIST)
+                {
+                    _m3u8parseMaster(file, BYTES_TO_READ);
+                }
+                else if (IS_VARIANT_PLAYLIST)
+                {
+                    const BaseType_t result = xTaskCreate(
+                        m3u8Reader,
+                        "m3u8reader",
+                        8000,
+                        (void *)this,
+                        1,
+                        NULL);
+
+                    if (result != pdPASS)
+                    {
+                        log_e("could not create m3u8 reader task");
+                        stopSong();
+                        return false;
+                    }
+                    return true;
+                    
+                }
+                // if we end up here it is not a master AND not a variant m3u8 file so we just pfall through
+                log_i("File contains no valid EXTM3U tags. Scanning for a valid URL");
             }
 
             char *newurl = strstr(file, "http");
@@ -361,7 +390,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             }
             strtok(newurl, "\r\n;?");
             stopSong();
-            log_d("playlist reconnects to: %s", newurl);
+            log_i("playlist reconnects to: %s", newurl);
             return connecttohost(newurl, username, pwd, offset);
         }
 
@@ -813,6 +842,8 @@ void ESP32_VS1053_Stream::stopSong()
     _url[0] = 0;
     _bitrate = 0;
     _offset = 0;
+
+    _m3u8Running = false;
 }
 
 uint8_t ESP32_VS1053_Stream::getVolume()

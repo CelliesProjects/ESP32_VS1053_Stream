@@ -72,6 +72,7 @@ private:
 
     bool _m3u8Running = false;
     TaskHandle_t _m3u8Task;
+    char _m3u8DetailURL[VS1053_MAX_URL_LENGTH];
     static void m3u8Reader(void *arg);
 
     RingbufHandle_t _ringbuffer_handle;
@@ -91,6 +92,8 @@ private:
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *const stream);
     void _chunkedStreamToRingBuffer(WiFiClient *const stream);
+
+    void _m3u8parseMaster(const char *file, const size_t size);
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
