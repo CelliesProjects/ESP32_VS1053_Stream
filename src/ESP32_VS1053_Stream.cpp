@@ -25,7 +25,7 @@ void ESP32_VS1053_Stream::m3u8ReaderTask(void *arg)
 
         if (httpCode != HTTP_CODE_OK)
         {
-            log_e("something fucked up the http with code %i", httpCode);
+            log_e("http error %i", httpCode);
             http.end();
             break;
         }
@@ -34,7 +34,6 @@ void ESP32_VS1053_Stream::m3u8ReaderTask(void *arg)
         if (client)
         {
             String currentLine;
-            //currentLine.reserve(100);
             while (client->available())
             {
                 const char ch = client->read();
