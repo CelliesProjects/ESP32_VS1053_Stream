@@ -75,6 +75,7 @@ private:
     //char _m3u8DetailURL[VS1053_MAX_URL_LENGTH];
     static void m3u8ReaderTask(void *arg);
     void _m3u8parseMaster(const char *file, const size_t size);
+    static void _parseSegments(WiFiClient *client, std::vector<String> &segment, bool streamEnds);
 
     SemaphoreHandle_t _SemaphoreHandle1;
 

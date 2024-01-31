@@ -13,66 +13,113 @@ ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
     delete _vs1053;
 }
 
+void ESP32_VS1053_Stream::_parseSegments(WiFiClient *client, std::vector<String> &segment, bool streamEnds)
+{
+    (void)streamEnds; // supress compiler error: parameter 'streamEnds' set but not used [-Werror=unused-but-set-parameter]
+    segment.clear();
+    String currentLine;
+    while (client->available())
+    {
+        const char ch = client->read();
+        if (ch != '\n')
+            currentLine.concat(ch);
+        else
+        {
+            if (currentLine.startsWith(EXT_X_ENDLIST))
+                streamEnds = true;
+
+            else if (currentLine.startsWith(EXTINF))
+            {
+                log_d("segment data: %s", currentLine.c_str());
+                String segurl;
+                char ch = (char)client->read();
+                while (ch != '\n' && client->available())
+                {
+                    segurl.concat(ch);
+                    ch = (char)client->read();
+                }
+                log_d("read url: %s", segurl.c_str());
+                segment.push_back(segurl);
+            }
+            currentLine.clear();
+        }
+    }
+}
+
+bool _segmentToRingBuffer(String &segurl)
+{
+    // connect with wificlient to segurl
+    // return false on fail
+
+    return false;
+}
+
 void ESP32_VS1053_Stream::m3u8ReaderTask(void *arg)
 {
     ESP32_VS1053_Stream *pStream = static_cast<ESP32_VS1053_Stream *>(arg);
 
-    while (pStream->_m3u8Running)
+    // TODO: wrap everything in a nice endless loop
+
+    HTTPClient http;
+    // TODO: set connection as keep-alive
+    if (!http.begin(pStream->_url))
     {
-        HTTPClient http;
-        http.begin(pStream->_url);
-        const auto httpCode = http.GET();
-
-        if (httpCode != HTTP_CODE_OK)
-        {
-            log_e("http error %i", httpCode);
-            http.end();
-            break;
-        }
-
-        WiFiClient *client = http.getStreamPtr();
-        if (client)
-        {
-            String currentLine;
-            while (client->available())
-            {
-                const char ch = client->read();
-                if (ch != '\n')
-                    currentLine.concat(ch);
-                else
-                {
-                    log_i("%s", currentLine.c_str());
-                    currentLine.clear();
-                }
-            }
-        }
-
-        http.end();
-
-        // make a vector? of the different segment urls
-
-        // count the number of segments by counting number of '#EXTINF' instances
-
-        // start moving data from the url to the ringbuffer in a loop until eof
-
-        // is there more than 1 url left in the vector?
-
-        // yes, go to next url in the vector (repeat loop)
-
-        // no, (only 1 url left) refill the vector
-
-        auto cnt = 10;
-        while (cnt)
-        {
-            log_i("%i seconds", cnt);
-            vTaskDelay(1000);
-            cnt--;
-        }
-        log_i("calling stop");
+        log_e("could not connect to %s", pStream->_url);
         pStream->_eofStream();
+        vTaskDelete(NULL);
     }
-    log_d("Closing m3u8 reader task");
-    vTaskDelete(NULL);
+
+    const auto httpCode = http.GET();
+
+    if (httpCode != HTTP_CODE_OK)
+    {
+        log_e("http error %i", httpCode);
+        http.end();
+        pStream->_eofStream();
+        vTaskDelete(NULL);
+    }
+
+    WiFiClient *client = http.getStreamPtr();
+    if (!client)
+    {
+        log_e("client nullptr");
+        http.end();
+        pStream->_eofStream();
+        vTaskDelete(NULL);
+    }
+
+    bool streamEnds = false;
+    std::vector<String> segments;
+
+    _parseSegments(client, segments, streamEnds);
+
+    client->stop();
+    http.end();
+
+    // TODO: we can re-use http from here
+
+    log_i("%i segments added", segments.size());
+
+    while (segments.size() > (streamEnds ? 0 : 1))  // only play last segment if audio ends 
+    {
+        log_i("%s", segments[0].c_str());
+        // connect to segment [0]
+        segments[0].toLowerCase();
+        const bool result = _segmentToRingBuffer(segments[0]);
+        // fill ringbuffer until eof
+        segments.erase(segments.begin());
+    }
+    segments.clear();
+
+    streamEnds = true; // TODO: remove in production
+
+    if (streamEnds)
+    {
+        log_d("Closing m3u8 reader task");
+
+        pStream->_eofStream();
+        vTaskDelete(NULL);
+    }
 }
 
 void ESP32_VS1053_Stream::_m3u8parseMaster(const char *file, const size_t size)
