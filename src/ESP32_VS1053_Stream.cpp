@@ -13,43 +13,81 @@ ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
     delete _vs1053;
 }
 
-void ESP32_VS1053_Stream::_parseSegments(WiFiClient *client, std::vector<String> &segment, bool streamEnds)
+void parseVariantHLS(const char *url, std::vector<String> &segment, bool &exitTagFound)
 {
-    (void)streamEnds; // supress compiler error: parameter 'streamEnds' set but not used [-Werror=unused-but-set-parameter]
-    segment.clear();
-    String currentLine;
-    while (client->available())
-    {
-        const char ch = client->read();
-        if (ch != '\n')
-            currentLine.concat(ch);
-        else
-        {
-            if (currentLine.startsWith(EXT_X_ENDLIST))
-                streamEnds = true;
+    HTTPClient http;
 
-            else if (currentLine.startsWith(EXTINF))
-            {
-                log_d("segment data: %s", currentLine.c_str());
-                String segurl;
-                char ch = (char)client->read();
-                while (ch != '\n' && client->available())
-                {
-                    segurl.concat(ch);
-                    ch = (char)client->read();
-                }
-                log_d("read url: %s", segurl.c_str());
-                segment.push_back(segurl);
-            }
-            currentLine.clear();
-        }
+    // Make the HTTP request to fetch the variant playlist
+    http.begin(url);
+    int httpCode = http.GET();
+
+    if (httpCode != HTTP_CODE_OK)
+    {
+        http.end();
+        return; // Failed to fetch the playlist
     }
+
+    // Read the response body
+    String payload = http.getString();
+    http.end();
+
+    // Parse the variant playlist
+    // Extract variant streams' URIs
+    int pos = 0;
+    while ((pos = payload.indexOf("#EXTINF:", pos)) != -1)
+    {
+        // Find the URI
+        int uriPos = payload.indexOf("\n", pos);
+        int uriEnd = payload.indexOf("\n", uriPos + 1);
+        String uri = payload.substring(uriPos + 1, uriEnd);
+        uri.trim();             // Trim the URI
+        segment.push_back(uri); // Add the trimmed URI to the vector
+
+        // Find the next variant stream
+        pos = payload.indexOf("#EXTINF:", uriEnd);
+    }
+
+    // Check for EXT-X-ENDLIST tag
+    exitTagFound = payload.indexOf("#EXT-X-ENDLIST") != -1;
 }
 
-bool _segmentToRingBuffer(String &segurl)
+bool _segmentToRingBuffer(String &segurl, const char *url) // location is current url
 {
-    // connect with wificlient to segurl
-    // return false on fail
+    // return false on everything but a successfull processed segment
+
+    String absoluteURL;
+
+    if (!segurl.startsWith("http"))
+    {
+        absoluteURL = url;
+        absoluteURL = absoluteURL.substring(0, absoluteURL.lastIndexOf("/") + 1) + segurl;
+        log_i("segment url: %s", absoluteURL.c_str());
+    }
+    else
+        absoluteURL = url;
+
+    HTTPClient http;
+
+    // Make the HTTP request to fetch the variant playlist
+    http.begin(absoluteURL);
+    int httpCode = http.GET();
+
+    if (httpCode != HTTP_CODE_OK)
+    {
+        http.end();
+        return false; // Failed to fetch the playlist
+    }
+
+    if (http.getSize() == -1)
+    {
+        http.end();
+        return false; // No data in playlist
+    }    
+
+    log_i("Opened segment file, size: %i", http.getSize());
+    // Read the response body
+    http.getString();
+    http.end();
 
     return false;
 }
@@ -58,75 +96,35 @@ void ESP32_VS1053_Stream::m3u8ReaderTask(void *arg)
 {
     ESP32_VS1053_Stream *pStream = static_cast<ESP32_VS1053_Stream *>(arg);
 
-    // TODO: wrap everything in a nice endless loop
-
-    HTTPClient http;
-    // TODO: set connection as keep-alive
-    if (!http.begin(pStream->_url))
-    {
-        log_e("could not connect to %s", pStream->_url);
-        pStream->_eofStream();
-        vTaskDelete(NULL);
-    }
-
-    const auto httpCode = http.GET();
-
-    if (httpCode != HTTP_CODE_OK)
-    {
-        log_e("http error %i", httpCode);
-        http.end();
-        pStream->_eofStream();
-        vTaskDelete(NULL);
-    }
-
-    WiFiClient *client = http.getStreamPtr();
-    if (!client)
-    {
-        log_e("client nullptr");
-        http.end();
-        pStream->_eofStream();
-        vTaskDelete(NULL);
-    }
-
-    bool streamEnds = false;
     std::vector<String> segments;
+    bool exitTagFound = false;
 
-    _parseSegments(client, segments, streamEnds);
-
-    client->stop();
-    http.end();
-
-    // TODO: we can re-use http from here
+    parseVariantHLS(pStream->_url, segments, exitTagFound);
 
     log_i("%i segments added", segments.size());
 
-    while (segments.size() > (streamEnds ? 0 : 1))  // only play last segment if audio ends 
+    while (segments.size() > (exitTagFound ? 0 : 1)) // only play last segment if exit tag found
     {
-        log_i("%s", segments[0].c_str());
-        // connect to segment [0]
         segments[0].toLowerCase();
-        const bool result = _segmentToRingBuffer(segments[0]);
-        // fill ringbuffer until eof
+
+        const bool result = _segmentToRingBuffer(segments[0], pStream->_url);
+        if (!result)
+            break;
+
         segments.erase(segments.begin());
     }
+
     segments.clear();
 
-    streamEnds = true; // TODO: remove in production
+    exitTagFound = true; // TODO: remove in production - only needed until everything is in a nice endless loop
 
-    if (streamEnds)
+    if (exitTagFound)
     {
-        log_d("Closing m3u8 reader task");
+        log_i("Closing m3u8 reader task because exit tag was encountered");
 
         pStream->_eofStream();
         vTaskDelete(NULL);
     }
-}
-
-void ESP32_VS1053_Stream::_m3u8parseMaster(const char *file, const size_t size)
-{
-    log_i("file content: %s", file);
-    log_i("returning empty string");
-    _url[0] = 0;
 }
 
 void ESP32_VS1053_Stream::_allocateRingbuffer()
