@@ -45,7 +45,7 @@ void setup() {
 
     Serial.println("decoder running - starting stream");
 
-    stream.connecttohost("http://espace.tekno1.fr/tekno1.m3u");
+    stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
 
     Serial.print("codec: ");
     Serial.println(stream.currentCodec());
