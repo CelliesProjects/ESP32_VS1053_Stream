@@ -70,6 +70,13 @@ private:
     char _url[VS1053_MAX_URL_LENGTH];
     char _savedStartChar = 0;
 
+    bool _m3u8Running = false;
+    TaskHandle_t _m3u8Task;
+    //char _m3u8DetailURL[VS1053_MAX_URL_LENGTH];
+    static void m3u8ReaderTask(void *arg);
+
+    SemaphoreHandle_t _SemaphoreHandle1;
+
     RingbufHandle_t _ringbuffer_handle;
     StaticRingbuffer_t *_buffer_struct;
     uint8_t *_buffer_storage;
@@ -87,6 +94,7 @@ private:
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *const stream);
     void _chunkedStreamToRingBuffer(WiFiClient *const stream);
+
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
@@ -108,7 +116,8 @@ private:
         MP3,
         OGG,
         AAC,
-        AACP
+        AACP,
+        HLS
     } _currentCodec = STOPPED;
 };
 

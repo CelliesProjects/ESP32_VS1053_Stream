@@ -1,12 +1,130 @@
 #include "ESP32_VS1053_Stream.h"
+#include "HLSCommon.h"
 
-ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _url{0},
-                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr) {}
+ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0},
+                                             _localbuffer{0}, _url{0}, _m3u8Task(nullptr),
+                                             _SemaphoreHandle1(xSemaphoreCreateBinary()),
+                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr),
+                                             _buffer_storage(nullptr) {}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
     stopSong();
     delete _vs1053;
+}
+
+void parseVariantHLS(const char *url, std::vector<String> &segment, bool &exitTagFound)
+{
+    HTTPClient http;
+
+    // Make the HTTP request to fetch the variant playlist
+    http.begin(url);
+    int httpCode = http.GET();
+
+    if (httpCode != HTTP_CODE_OK)
+    {
+        http.end();
+        return; // Failed to fetch the playlist
+    }
+
+    // Read the response body
+    String payload = http.getString();
+    http.end();
+
+    // Parse the variant playlist
+    // Extract variant streams' URIs
+    int pos = 0;
+    while ((pos = payload.indexOf("#EXTINF:", pos)) != -1)
+    {
+        // Find the URI
+        int uriPos = payload.indexOf("\n", pos);
+        int uriEnd = payload.indexOf("\n", uriPos + 1);
+        String uri = payload.substring(uriPos + 1, uriEnd);
+        uri.trim();             // Trim the URI
+        segment.push_back(uri); // Add the trimmed URI to the vector
+
+        // Find the next variant stream
+        pos = payload.indexOf("#EXTINF:", uriEnd);
+    }
+
+    // Check for EXT-X-ENDLIST tag
+    exitTagFound = payload.indexOf("#EXT-X-ENDLIST") != -1;
+}
+
+bool _segmentToRingBuffer(String &segurl, const char *url) // location is current url
+{
+    // return false on everything but a successfull processed segment
+
+    String absoluteURL;
+
+    if (!segurl.startsWith("http"))
+    {
+        absoluteURL = url;
+        absoluteURL = absoluteURL.substring(0, absoluteURL.lastIndexOf("/") + 1) + segurl;
+        log_i("segment url: %s", absoluteURL.c_str());
+    }
+    else
+        absoluteURL = url;
+
+    HTTPClient http;
+
+    // Make the HTTP request to fetch the variant playlist
+    http.begin(absoluteURL);
+    int httpCode = http.GET();
+
+    if (httpCode != HTTP_CODE_OK)
+    {
+        http.end();
+        return false; // Failed to fetch the playlist
+    }
+
+    if (http.getSize() == -1)
+    {
+        http.end();
+        return false; // No data in playlist
+    }    
+
+    log_i("Opened segment file, size: %i", http.getSize());
+    // Read the response body
+    http.getString();
+    http.end();
+
+    return false;
+}
+
+void ESP32_VS1053_Stream::m3u8ReaderTask(void *arg)
+{
+    ESP32_VS1053_Stream *pStream = static_cast<ESP32_VS1053_Stream *>(arg);
+
+    std::vector<String> segments;
+    bool exitTagFound = false;
+
+    parseVariantHLS(pStream->_url, segments, exitTagFound);
+
+    log_i("%i segments added", segments.size());
+
+    while (segments.size() > (exitTagFound ? 0 : 1)) // only play last segment if exit tag found
+    {
+        segments[0].toLowerCase();
+
+        const bool result = _segmentToRingBuffer(segments[0], pStream->_url);
+        if (!result)
+            break;
+
+        segments.erase(segments.begin());
+    }
+
+    segments.clear();
+
+    exitTagFound = true; // TODO: remove in production - only needed until everything is in a nice endless loop
+
+    if (exitTagFound)
+    {
+        log_i("Closing m3u8 reader task because exit tag was encountered");
+
+        pStream->_eofStream();
+        vTaskDelete(NULL);
+    }
 }
 
 void ESP32_VS1053_Stream::_allocateRingbuffer()
@@ -286,8 +404,8 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 stopSong();
                 return false;
             }
-            const auto BYTES_TO_READ =
-                min(stream->available(), VS1053_MAX_PLAYLIST_READ);
+
+            const auto BYTES_TO_READ = min(stream->available(), VS1053_MAX_PLAYLIST_READ);
             if (!BYTES_TO_READ)
             {
                 log_e("playlist contains no data");
@@ -297,6 +415,66 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             char file[BYTES_TO_READ + 1];
             stream->readBytes(file, BYTES_TO_READ);
             file[BYTES_TO_READ] = 0;
+
+            if (!strncmp("#EXTM3U", file, 7))
+            {
+                log_i("EXTM3U found");
+                const bool IS_MASTER_PLAYLIST = strstr(file, EXT_X_STREAM_INF) != nullptr;
+                const bool IS_VARIANT_PLAYLIST = strstr(file, EXTINF) != nullptr;
+
+                if (IS_MASTER_PLAYLIST != IS_VARIANT_PLAYLIST)
+                    log_i("This is a %s M3U8 file", IS_MASTER_PLAYLIST ? "master" : "media segment");
+
+                if (IS_MASTER_PLAYLIST && IS_VARIANT_PLAYLIST)
+                {
+                    log_i("PARSE ERROR! File cannot be master AND variant. Quiting...");
+                    stopSong();
+                    return false;
+                }
+
+                if (IS_MASTER_PLAYLIST)
+                {
+                    stopSong();
+                    //_m3u8parseMaster(file, BYTES_TO_READ);   // this function fills in _url with a valid variant url or a nullptr
+                    // if (_url)
+                    //     return connecttohost(_url, username, pwd, offset);
+
+                    return false;
+                }
+
+                if (IS_VARIANT_PLAYLIST)
+                {
+                    _allocateRingbuffer();
+                    if (!_ringbuffer_handle)
+                    {
+                        stopSong();
+                        return false;
+                    }
+                    _m3u8Running = true;
+                    _currentCodec = HLS;
+
+                    snprintf(_url, sizeof(_url), "%s", url);
+                    const BaseType_t result = xTaskCreate(
+                        m3u8ReaderTask,
+                        "m3u8reader",
+                        8000,
+                        (void *)this,
+                        1,
+                        NULL);
+
+                    if (result != pdPASS)
+                    {
+                        log_e("could not create m3u8 reader task");
+                        stopSong();
+                        return false;
+                    }
+                    return true;
+                }
+                // if we end up here it is not a master AND not a variant m3u8 file
+                // so we just fall through and parse it like a oldfashioned m3u
+                log_i("File contains no valid EXTM3U tags. Scanning for a valid URL");
+            }
+
             char *newurl = strstr(file, "http");
             if (!newurl)
             {
@@ -306,7 +484,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             }
             strtok(newurl, "\r\n;?");
             stopSong();
-            log_d("playlist reconnects to: %s", newurl);
+            log_i("playlist reconnects to: %s", newurl);
             return connecttohost(newurl, username, pwd, offset);
         }
 
@@ -402,9 +580,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     while (_remainingBytes && _vs1053->data_request() && millis() - start < MAX_TIME_MS)
     {
         size_t size = 0;
-        //portDISABLE_INTERRUPTS();
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
-        //portENABLE_INTERRUPTS();
         static auto ringbufferEmpty = 0;
         if (!data)
         {
@@ -447,9 +623,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        //portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        //portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -534,9 +708,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        //portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        //portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -650,6 +822,12 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 
 void ESP32_VS1053_Stream::loop()
 {
+    if (_m3u8Running)
+    {
+        _playFromRingBuffer();
+        return;
+    }
+
     if (!_http)
         return;
 
@@ -716,7 +894,7 @@ void ESP32_VS1053_Stream::loop()
         stream->setTimeout(0);
         stream->setNoDelay(true);
     }
-    
+
     if (_remainingBytes && _vs1053->data_request())
     {
         if (_chunkedResponse)
@@ -731,7 +909,7 @@ void ESP32_VS1053_Stream::loop()
 
 bool ESP32_VS1053_Stream::isRunning()
 {
-    return _http != nullptr;
+    return _http != nullptr || _m3u8Running;
 }
 
 void ESP32_VS1053_Stream::stopSong()
@@ -758,6 +936,7 @@ void ESP32_VS1053_Stream::stopSong()
     _url[0] = 0;
     _bitrate = 0;
     _offset = 0;
+    _m3u8Running = false;
 }
 
 uint8_t ESP32_VS1053_Stream::getVolume()
@@ -780,7 +959,7 @@ void ESP32_VS1053_Stream::setTone(uint8_t *rtone)
 
 const char *ESP32_VS1053_Stream::currentCodec()
 {
-    const char *name[] = {"STOPPED", "MP3", "OGG", "AAC", "AAC+"};
+    const char *name[] = {"STOPPED", "MP3", "OGG", "AAC", "AAC+", "HLS"};
     return name[_currentCodec];
 }
 
