@@ -806,6 +806,6 @@ const char *ESP32_VS1053_Stream::bufferStatus()
 
 void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
 {
-    used = VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle);
-    capacity = VS1053_PSRAM_BUFFER_SIZE;
+    used = _ringbuffer_handle ? VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle) : 0;
+    capacity = _ringbuffer_handle ? VS1053_PSRAM_BUFFER_SIZE : 0;
 }
