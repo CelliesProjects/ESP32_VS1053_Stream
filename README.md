@@ -280,10 +280,18 @@ Returns `0` if the stream is a radio stream.
 
 ### Get the buffer fill status
 ```c++
-const char *bufferStatus();
+const char *bufferStatus()
 ```
 
-Returns `0/0` if there is no buffer.<br>Otherwise returns something like `4096/65536` which means 4kB waiting in a 64kB buffer.<br>A buffer will only be allocated if there is enough free psram.
+Returns `0/0` if there is no buffer.<br>Otherwise returns something like `4096/65536` which means 4kB waiting in a 64kB buffer.
+
+```c++
+void bufferStatus(size_t &used, size_t &capacity)
+```
+
+There is also a version that takes two `size_t` variables by reference.<br>Works the same as the `const char *` version.
+
+A buffer will only be allocated if there is enough free psram.
 
 <hr>
 
