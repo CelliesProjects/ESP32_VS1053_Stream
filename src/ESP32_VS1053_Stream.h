@@ -61,6 +61,7 @@ public:
     size_t position();
     uint32_t bitrate();
     const char *bufferStatus();
+    void bufferStatus(size_t &used, size_t &capacity);
 
 private:
     VS1053 *_vs1053;

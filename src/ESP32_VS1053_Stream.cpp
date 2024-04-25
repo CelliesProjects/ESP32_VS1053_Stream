@@ -402,9 +402,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     while (_remainingBytes && _vs1053->data_request() && millis() - start < MAX_TIME_MS)
     {
         size_t size = 0;
-        //portDISABLE_INTERRUPTS();
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
-        //portENABLE_INTERRUPTS();
         static auto ringbufferEmpty = 0;
         if (!data)
         {
@@ -447,9 +445,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        //portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        //portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -534,9 +530,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
-        //portDISABLE_INTERRUPTS();
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
-        //portENABLE_INTERRUPTS();
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.");
@@ -716,7 +710,7 @@ void ESP32_VS1053_Stream::loop()
         stream->setTimeout(0);
         stream->setNoDelay(true);
     }
-    
+
     if (_remainingBytes && _vs1053->data_request())
     {
         if (_chunkedResponse)
@@ -808,4 +802,10 @@ const char *ESP32_VS1053_Stream::bufferStatus()
     static char ringbuffer_status[24];
     snprintf(ringbuffer_status, sizeof(ringbuffer_status), "%u/%u", VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle), VS1053_PSRAM_BUFFER_SIZE);
     return ringbuffer_status;
+}
+
+void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
+{
+    used = VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle);
+    capacity = VS1053_PSRAM_BUFFER_SIZE;
 }
