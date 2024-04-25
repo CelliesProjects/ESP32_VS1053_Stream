@@ -287,7 +287,7 @@ Returns `0/0` if there is no buffer.<br>Otherwise returns something like `4096/6
 void bufferStatus(size_t &used, size_t &capacity)
 ```
 
-There is also a version that takes two `size_t` variables by reference. Works the same as the `const char *` version.
+There is also a version that takes two `size_t` variables by reference.<br>Works the same as the `const char *` version.
 
 A buffer will only be allocated if there is enough free psram.
 
