@@ -286,8 +286,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 stopSong();
                 return false;
             }
-            const auto BYTES_TO_READ =
-                min(stream->available(), VS1053_MAX_PLAYLIST_READ);
+            const auto BYTES_TO_READ = min(stream->available(), VS1053_MAX_PLAYLIST_READ);
             if (!BYTES_TO_READ)
             {
                 log_e("playlist contains no data");
@@ -441,7 +440,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
         const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, sizeof(_localbuffer));
 
-        if (xRingbufferGetCurFreeSize(_ringbuffer_handle) < BYTES_TO_READ || stream->available() < BYTES_TO_READ)
+        if (xRingbufferGetCurFreeSize(_ringbuffer_handle) < BYTES_TO_READ)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
@@ -485,16 +484,13 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
         {
             const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
             const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PLAYBUFFER_SIZE);
-
-            if (stream->available() < BYTES_TO_READ)
-                break;
-
             const int BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, BYTES_TO_READ);
             _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
             _remainingBytes -= _remainingBytes > 0 ? BYTES_IN_BUFFER : 0;
             _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
             bytesToDecoder += BYTES_IN_BUFFER;
         }
+
         log_d("spend %lu ms stuffing %i bytes in decoder", millis() - start, bytesToDecoder);
     }
 
@@ -526,7 +522,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
         const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
         const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, sizeof(_localbuffer));
 
-        if (xRingbufferGetCurFreeSize(_ringbuffer_handle) < BYTES_TO_READ || stream->available() < BYTES_TO_READ)
+        if (xRingbufferGetCurFreeSize(_ringbuffer_handle) < BYTES_TO_READ)
             break;
 
         const int BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_TO_READ);
@@ -579,10 +575,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         {
             const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
             const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PLAYBUFFER_SIZE);
-
-            if (stream->available() < BYTES_TO_READ)
-                break;
-
             const int BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, BYTES_TO_READ);
             _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
             _bytesLeftInChunk -= BYTES_IN_BUFFER;
