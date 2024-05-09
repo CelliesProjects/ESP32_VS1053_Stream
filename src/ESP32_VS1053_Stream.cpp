@@ -396,24 +396,24 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     }
 
     const auto START_TIME_MS = millis();
-    const auto MAX_TIME_MS = 10;
+    const auto MAX_TIME_MS = 5;
     size_t bytesToDecoder = 0;
     while (_remainingBytes && _vs1053->data_request() && millis() - START_TIME_MS < MAX_TIME_MS)
     {
         size_t size = 0;
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
-        static auto ringbufferEmpty = 0;
+        static auto bufferEmptyStartTimeMs = 0;
         if (!data)
         {
-            if (!ringbufferEmpty)
+            if (!bufferEmptyStartTimeMs)
             {
-                ringbufferEmpty = millis();
-                ringbufferEmpty += ringbufferEmpty ? 0 : 1;
+                bufferEmptyStartTimeMs = millis();
+                bufferEmptyStartTimeMs += bufferEmptyStartTimeMs ? 0 : 1;
                 log_i("No buffer data available");
                 return;
             }
             const auto BAILOUT_MS = 2000;
-            if (millis() - ringbufferEmpty > BAILOUT_MS)
+            if (millis() - bufferEmptyStartTimeMs > BAILOUT_MS)
             {
                 log_e("Buffer empty for %i ms, bailing out...", BAILOUT_MS);
                 _remainingBytes = 0;
@@ -421,7 +421,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
             }
             return;
         }
-        ringbufferEmpty = 0;
+        bufferEmptyStartTimeMs = 0;
         _vs1053->playChunk(data, size);
         vRingbufferReturnItem(_ringbuffer_handle, data);
         bytesToDecoder += size;
@@ -433,7 +433,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
 {
     const auto START_TIME_MS = millis();
-    const auto MAX_TIME_MS = 10;
+    const auto MAX_TIME_MS = 5;
     size_t bytesToRingBuffer = 0;
     while (stream && stream->available() && _musicDataPosition < _metaDataStart && millis() - START_TIME_MS < MAX_TIME_MS)
     {
@@ -511,7 +511,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
 void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
 {
     const auto START_TIME_MS = millis();
-    const auto MAX_TIME_MS = 10;
+    const auto MAX_TIME_MS = 5;
     size_t bytesToRingBuffer = 0;
     while (stream && stream->available() && _bytesLeftInChunk && _musicDataPosition < _metaDataStart && millis() - START_TIME_MS < MAX_TIME_MS)
     {
