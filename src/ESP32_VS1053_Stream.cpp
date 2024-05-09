@@ -490,7 +490,6 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
             _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
             bytesToDecoder += BYTES_IN_BUFFER;
         }
-
         log_d("spend %lu ms stuffing %i bytes in decoder", millis() - start, bytesToDecoder);
     }
 
