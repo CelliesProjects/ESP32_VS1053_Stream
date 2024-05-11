@@ -397,40 +397,40 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
     const auto START_TIME_MS = millis();
     const auto MAX_TIME_MS = 5;
-    size_t bytesToDecoder = 0;
+    //size_t bytesToDecoder = 0;
     while (_remainingBytes && _vs1053->data_request() && millis() - START_TIME_MS < MAX_TIME_MS)
     {
         size_t size = 0;
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
-        static auto bufferEmptyStartTimeMs = 0;
+        static auto emptyBufferStartTimeMs = 0;
         if (!data)
         {
-            if (!bufferEmptyStartTimeMs)
+            if (!emptyBufferStartTimeMs)
             {
-                bufferEmptyStartTimeMs = millis();
-                bufferEmptyStartTimeMs += bufferEmptyStartTimeMs ? 0 : 1;
-                log_i("no buffer data available");
+                emptyBufferStartTimeMs = millis();
+                emptyBufferStartTimeMs += emptyBufferStartTimeMs ? 0 : 1;
+                log_e("no buffer data available");
                 return;
             }
             const auto BAILOUT_MS = 2000;
-            if (millis() - bufferEmptyStartTimeMs > BAILOUT_MS)
+            if (millis() - emptyBufferStartTimeMs > BAILOUT_MS)
             {
                 log_e("buffer empty for %i ms, bailing out...", BAILOUT_MS);
-                bufferEmptyStartTimeMs = 0;
+                emptyBufferStartTimeMs = 0;
                 _remainingBytes = 0;
                 return;
             }
             return;
         }
-        if (bufferEmptyStartTimeMs)
+        if (emptyBufferStartTimeMs)
         {
-            log_e("buffer empty for %i ms", millis() - bufferEmptyStartTimeMs);
-            bufferEmptyStartTimeMs = 0;
+            log_e("buffer empty for %i ms", millis() - emptyBufferStartTimeMs);
+            emptyBufferStartTimeMs = 0;
         }
 
         _vs1053->playChunk(data, size);
         vRingbufferReturnItem(_ringbuffer_handle, data);
-        bytesToDecoder += size;
+        //bytesToDecoder += size;
         _remainingBytes -= _remainingBytes > 0 ? size : 0;
     }
     log_d("spend %lu ms stuffing %i bytes in decoder", millis() - START_TIME_MS, bytesToDecoder);
