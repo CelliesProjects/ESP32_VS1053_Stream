@@ -409,19 +409,25 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
             {
                 bufferEmptyStartTimeMs = millis();
                 bufferEmptyStartTimeMs += bufferEmptyStartTimeMs ? 0 : 1;
-                log_i("No buffer data available");
+                log_i("no buffer data available");
                 return;
             }
             const auto BAILOUT_MS = 2000;
             if (millis() - bufferEmptyStartTimeMs > BAILOUT_MS)
             {
-                log_e("Buffer empty for %i ms, bailing out...", BAILOUT_MS);
+                log_e("buffer empty for %i ms, bailing out...", BAILOUT_MS);
+                bufferEmptyStartTimeMs = 0;
                 _remainingBytes = 0;
                 return;
             }
             return;
         }
-        bufferEmptyStartTimeMs = 0;
+        if (bufferEmptyStartTimeMs)
+        {
+            log_e("buffer empty for %i ms", millis() - bufferEmptyStartTimeMs);
+            bufferEmptyStartTimeMs = 0;
+        }
+
         _vs1053->playChunk(data, size);
         vRingbufferReturnItem(_ringbuffer_handle, data);
         bytesToDecoder += size;
