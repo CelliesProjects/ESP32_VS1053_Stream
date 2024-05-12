@@ -680,7 +680,7 @@ void ESP32_VS1053_Stream::loop()
 
     if (stream && stream->available() && _streamStalledTime)
     {
-        log_w("Stream stalled for %lu ms", millis() - _streamStalledTime);
+        log_d("Stream stalled for %lu ms", millis() - _streamStalledTime);
         _streamStalledTime = 0;
     }
 
