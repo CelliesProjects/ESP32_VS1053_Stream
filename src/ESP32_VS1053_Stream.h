@@ -95,7 +95,6 @@ private:
     int32_t _metaDataStart = 0;
     int32_t _musicDataPosition = 0;
     uint8_t _volume = VS1053_INITIALVOLUME;
-    int _bitrate = 0;
     bool _chunkedResponse = false;
     bool _dataSeen = false;
     bool _ringbuffer_filled = false;
@@ -110,6 +109,13 @@ private:
         AAC,
         AACP
     } _currentCodec = STOPPED;
+
+    const char *CONTENT_TYPE = "Content-Type";
+    const char *ICY_NAME = "icy-name";
+    const char *ICY_METAINT = "icy-metaint";
+    const char *ENCODING = "Transfer-Encoding";
+    const char *BITRATE = "icy-br";
+    const char *LOCATION = "Location";    
 };
 
 #endif

@@ -233,13 +233,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     _http->addHeader("Icy-MetaData", VS1053_ICY_METADATA ? "1" : "0");
     _http->setAuthorization(username, pwd);
 
-    const char *CONTENT_TYPE = "Content-Type";
-    const char *ICY_NAME = "icy-name";
-    const char *ICY_METAINT = "icy-metaint";
-    const char *ENCODING = "Transfer-Encoding";
-    const char *BITRATE = "icy-br";
-    const char *LOCATION = "Location";
-
     const char *header[] = {CONTENT_TYPE, ICY_NAME, ICY_METAINT,
                             ENCODING, BITRATE, LOCATION};
     _http->collectHeaders(header, sizeof(header) / sizeof(char *));
@@ -331,7 +324,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         _offset = (_remainingBytes == -1) ? 0 : offset;
         _metaDataStart = _http->header(ICY_METAINT).toInt();
         _musicDataPosition = _metaDataStart ? 0 : -100;
-        _bitrate = _http->header(BITRATE).toInt();
         if (strcmp(_url, url) || !_offset)
         {
             _vs1053->stopSong();
@@ -678,7 +670,7 @@ void ESP32_VS1053_Stream::loop()
 
     if (_startMute)
     {
-        const auto WAIT_TIME_MS = ((!_bitrate && _remainingBytes == -1) ||
+        const auto WAIT_TIME_MS = ((!bitrate() && _remainingBytes == -1) ||
                                    _currentCodec == AAC || _currentCodec == AACP || _currentCodec == OGG)
                                       ? 380
                                       : 80;
@@ -733,7 +725,6 @@ void ESP32_VS1053_Stream::stopSong()
     _remainingBytes = 0;
     _bytesLeftInChunk = 0;
     _currentCodec = STOPPED;
-    _bitrate = 0;
     _offset = 0;
 }
 
@@ -778,7 +769,7 @@ size_t ESP32_VS1053_Stream::position()
 
 uint32_t ESP32_VS1053_Stream::bitrate()
 {
-    return _bitrate;
+    return _http ? _http->header(BITRATE).toInt() : 0;
 }
 
 const char *ESP32_VS1053_Stream::bufferStatus()
