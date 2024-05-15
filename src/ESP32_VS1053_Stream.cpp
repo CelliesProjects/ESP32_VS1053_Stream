@@ -754,7 +754,7 @@ const char *ESP32_VS1053_Stream::currentCodec()
 
 const char *ESP32_VS1053_Stream::lastUrl()
 {
-    return _http != nullptr ? _url : "";
+    return _http ? _url : "";
 }
 
 size_t ESP32_VS1053_Stream::size()
