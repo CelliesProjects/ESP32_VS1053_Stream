@@ -323,8 +323,8 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         _chunkedResponse = _http->header(ENCODING).equalsIgnoreCase("chunked") ? true : false;
         _offset = (_remainingBytes == -1) ? 0 : offset;
         _metaDataStart = _http->header(ICY_METAINT).toInt();
-        _musicDataPosition = _metaDataStart ? 0 : -100;
-        if (strcmp(_url, url) || !_offset)
+        _musicDataPosition = _metaDataStart ? 0 : -1;
+        if (strcmp(_url, url))
         {
             _vs1053->stopSong();
             snprintf(_url, sizeof(_url), "%s", url);
