@@ -2,7 +2,7 @@
 
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _url{0},
                                              _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr),
-                                             _file(nullptr) {}
+                                             _filesystem(nullptr) {}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
@@ -622,6 +622,12 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 
 void ESP32_VS1053_Stream::loop()
 {
+    if (_playingFile)
+    {
+        _handleFile();
+        return;
+    }
+
     if (!_http)
         return;
 
@@ -703,28 +709,40 @@ void ESP32_VS1053_Stream::loop()
 
 bool ESP32_VS1053_Stream::isRunning()
 {
-    return _http != nullptr;
+    return _http != nullptr || _playingFile;
 }
 
 void ESP32_VS1053_Stream::stopSong()
 {
-    if (!_http)
-        return;
-    _vs1053->setVolume(0);
-    if (_http->connected())
+    if (!_http && !_playingFile)
     {
-        WiFiClient *const stream = _http->getStreamPtr();
-        if (stream)
-            stream->stop();
+        log_i("nothing to close");
+        return;
     }
-    _http->end();
-    delete _http;
-    _http = nullptr;
-    _deallocateRingbuffer();
-    _ringbuffer_filled = false;
+
+    _vs1053->setVolume(0);
+    if (_playingFile)
+    {
+    }
+
+    if (_http)
+    {
+        if (_http->connected())
+        {
+            WiFiClient *const stream = _http->getStreamPtr();
+            if (stream)
+                stream->stop();
+        }
+        _http->end();
+        delete _http;
+        _http = nullptr;
+        _deallocateRingbuffer();
+        _ringbuffer_filled = false;
+        _bytesLeftInChunk = 0;
+    }
+
     _dataSeen = false;
     _remainingBytes = 0;
-    _bytesLeftInChunk = 0;
     _currentCodec = STOPPED;
     _offset = 0;
 }
@@ -790,7 +808,7 @@ void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
 
 bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename)
 {
-    if (_file || _http)
+    if (_playingFile || _http)
     {
         log_i("there is already a stream running - aborting");
         return false;
@@ -801,14 +819,51 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename)
         log_e("file not found");
         return false;
     }
+    // check if the file has the correct mime type and bail out if not so
 
-    log_i("%s is found - attaching to the file pointer...", filename);
-    _file = fs.open(filename, "r", false);
+    _file = fs.open(filename, FILE_READ, false);
     if (!_file)
     {
-        log_e("%s could not be attached", filename);
+        log_e("file could not open");
         return false;
     }
-    log_i("%s is now attached", filename);
-    return false;
+    _filesystem = fs;
+
+    snprintf(_url, sizeof(_url), "%s", filename);
+    _playingFile = true;
+    return true;
+}
+
+void ESP32_VS1053_Stream::_handleFile()
+{
+    if (!_file)
+    {
+        log_e("no valid file handle");
+        return;
+    }
+
+    const auto START_MS = millis();
+    const auto MAX_MS = 5;
+    _file.seek(_filepos);
+    while (millis() - START_MS < MAX_MS && _file.available())
+    {
+        auto cnt = 0;
+        char buff[100];
+
+        while (cnt < sizeof(buff) && _file.available())
+            buff[cnt++] = (char)_file.read();
+
+        // Serial.printf("Read %i bytes\n", cnt);
+        Serial.printf("File pos: %i\n", _file.position());
+        Serial.printf("percentage: %.1f%%\n", (1.0 * (size_t)_file.position() / (size_t)_file.size()) * 100);
+    }
+
+    if (!_file.available())
+    {
+        log_i("file read complete");
+        _playingFile = false;
+        _filepos = 0;
+        return;
+    }
+    _filepos = _file.position();
 }

@@ -77,8 +77,11 @@ private:
     StaticRingbuffer_t *_buffer_struct;
     uint8_t *_buffer_storage;
 
+    FS _filesystem;
     File _file;
-
+    size_t _filepos = 0;
+    bool _playingFile = false;
+   
     size_t _nextChunkSize(WiFiClient *const stream);
     bool _checkSync(WiFiClient *const stream);
     void _handleMetadata(char *data, const size_t len);
@@ -92,6 +95,7 @@ private:
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *const stream);
     void _chunkedStreamToRingBuffer(WiFiClient *const stream);
+    void _handleFile();
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
