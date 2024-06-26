@@ -1,7 +1,8 @@
 #include "ESP32_VS1053_Stream.h"
 
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _url{0},
-                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr) {}
+                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr),
+                                             _file(nullptr) {}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
@@ -785,4 +786,29 @@ void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
 {
     used = _ringbuffer_handle ? VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle) : 0;
     capacity = _ringbuffer_handle ? VS1053_PSRAM_BUFFER_SIZE : 0;
+}
+
+bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename)
+{
+    if (_file || _http)
+    {
+        log_i("there is already a stream running - aborting");
+        return false;
+    }
+
+    if (!fs.exists(filename))
+    {
+        log_e("file not found");
+        return false;
+    }
+
+    log_i("%s is found - attaching to the file pointer...", filename);
+    _file = fs.open(filename, "r", false);
+    if (!_file)
+    {
+        log_e("%s could not be attached", filename);
+        return false;
+    }
+    log_i("%s is now attached", filename);
+    return false;
 }
