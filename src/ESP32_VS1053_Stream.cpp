@@ -852,7 +852,7 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
         return false;
     }
 
-    //TODO: make filename lowercase before compare
+    // TODO: make filename lowercase before compare
 
     if (endsWith(filename, ".mp3"))
         _currentCodec = MP3;
@@ -863,8 +863,13 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
         _file.close();
         return false;
     }
+
     _file.seek(offset);
-    snprintf(_url, sizeof(_url), "%s", filename);
+    if (strcmp(filename, _url))
+    {
+        snprintf(_url, sizeof(_url), "%s", filename);
+        _vs1053->startSong();
+    }
     _playingFile = true;
     _vs1053->setVolume(_volume);
     return true;
