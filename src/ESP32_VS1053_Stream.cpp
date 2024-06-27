@@ -1,8 +1,7 @@
 #include "ESP32_VS1053_Stream.h"
 
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _url{0},
-                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr),
-                                             _filesystem(nullptr) {}
+                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr) {}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
@@ -175,7 +174,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                                         const char *pwd, size_t offset)
 {
-    if (!_vs1053 || _http || !_networkIsActive() ||
+    if (!_vs1053 || _http || _playingFile || !_networkIsActive() ||
         tolower(url[0]) != 'h' ||
         tolower(url[1]) != 't' ||
         tolower(url[2]) != 't' ||
@@ -622,7 +621,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 
 void ESP32_VS1053_Stream::loop()
 {
-    if (_playingFile)
+    if (_playingFile && _file && _file.available() && _vs1053->data_request())
     {
         _handleFile();
         return;
@@ -723,6 +722,8 @@ void ESP32_VS1053_Stream::stopSong()
     _vs1053->setVolume(0);
     if (_playingFile)
     {
+        _file.close();
+        _playingFile = false;
     }
 
     if (_http)
@@ -739,9 +740,8 @@ void ESP32_VS1053_Stream::stopSong()
         _deallocateRingbuffer();
         _ringbuffer_filled = false;
         _bytesLeftInChunk = 0;
+        _dataSeen = false;
     }
-
-    _dataSeen = false;
     _remainingBytes = 0;
     _currentCodec = STOPPED;
     _offset = 0;
@@ -773,21 +773,27 @@ const char *ESP32_VS1053_Stream::currentCodec()
 
 const char *ESP32_VS1053_Stream::lastUrl()
 {
-    return _http ? _url : "";
+    return (_http || _playingFile) ? _url : "";
 }
 
 size_t ESP32_VS1053_Stream::size()
 {
+    if (_playingFile)
+        return _file.size();
     return _offset + (_http ? _http->getSize() != -1 ? _http->getSize() : 0 : 0);
 }
 
 size_t ESP32_VS1053_Stream::position()
 {
+    if (_playingFile)
+        return _file.position();
     return size() ? (size() - _remainingBytes) : 0;
 }
 
 uint32_t ESP32_VS1053_Stream::bitrate()
 {
+    if (_playingFile)
+        return 0;
     return _http ? _http->header(BITRATE).toInt() : 0;
 }
 
@@ -806,29 +812,63 @@ void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
     capacity = _ringbuffer_handle ? VS1053_PSRAM_BUFFER_SIZE : 0;
 }
 
+bool ESP32_VS1053_Stream::endsWith(const char *base, const char *searchString)
+{
+    int32_t slen = strlen(searchString);
+    // TODO: lowercase the ss
+    if (slen == 0)
+        return false;
+    const char *p = base + strlen(base);
+    //  while(p > base && isspace(*p)) p--;  // rtrim
+    p -= slen;
+    if (p < base)
+        return false;
+    return (strncmp(p, searchString, slen) == 0);
+}
+
 bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename)
+{
+    return connecttofile(fs, filename, 0);
+}
+
+bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const size_t offset)
 {
     if (_playingFile || _http)
     {
-        log_i("there is already a stream running - aborting");
+        log_w("there is already a stream running - aborting");
         return false;
     }
-
-    if (!fs.exists(filename))
-    {
-        log_e("file not found");
-        return false;
-    }
-    // check if the file has the correct mime type and bail out if not so
-
+    /*
+        if (!fs.exists(filename))
+        {
+            log_e("file not found");
+            return false;
+        }
+    */
     _file = fs.open(filename, FILE_READ, false);
     if (!_file)
     {
         log_e("file could not open");
         return false;
     }
-    _filesystem = fs;
 
+    if (offset >= _file.size())
+    {
+        _file.close();
+        return false;
+    }
+
+    if (endsWith(filename, ".mp3"))
+        _currentCodec = MP3;
+    else if (endsWith(filename, ".ogg"))
+        _currentCodec = OGG;
+    else
+    {
+        _file.close();
+        return false;
+    }
+    _file.seek(offset);
+    _offset = offset;
     snprintf(_url, sizeof(_url), "%s", filename);
     _playingFile = true;
     return true;
@@ -836,31 +876,23 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename)
 
 void ESP32_VS1053_Stream::_handleFile()
 {
-    if (!_file)
-    {
-        log_e("no valid file handle");
-        return;
-    }
-
     const auto START_MS = millis();
     const auto MAX_MS = 5;
-    size_t bytes_to_decoder = 0;
+    // size_t bytes_to_decoder = 0;
+
+    /* this loop is completely SPI IO driven where transactions take serious time */
+    /* and because of that it -may- take much longer to finish a loop then MAX_MS suggests */
     while (millis() - START_MS < MAX_MS && _file.available() && _vs1053->data_request())
     {
         const size_t BYTES_TO_READ = min((size_t)_file.available(), VS1053_PLAYBUFFER_SIZE);
         const size_t BYTES_IN_BUFFER = _file.readBytes((char *)_vs1053Buffer, BYTES_TO_READ);
         _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
-        bytes_to_decoder += BYTES_IN_BUFFER;
+        // bytes_to_decoder += BYTES_IN_BUFFER;
     }
 
-    log_i("%i bytes to decoder in %i ms", bytes_to_decoder, millis() - START_MS);
-    log_d("File pos: %i", _file.position());
-    log_i("percentage: %.1f%%", (1.0 * _file.position() / _file.size()) * 100);
+    // log_i("%i bytes to decoder in %i ms", bytes_to_decoder, millis() - START_MS);
+    log_d("percentage: %.1f%%", (1.0 * _file.position() / _file.size()) * 100);
 
     if (!_file.available() && _file.position() == _file.size())
-    {
-        log_i("file read complete");
-        _playingFile = false;
-        return;
-    }
+        _eofStream();
 }

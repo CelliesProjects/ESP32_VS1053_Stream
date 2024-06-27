@@ -44,6 +44,7 @@ public:
     bool connecttohost(const char *url, const char *username, const char *pwd, const size_t offset);
 
     bool connecttofile(fs::FS &fs, const char *filename);
+    bool connecttofile(fs::FS &fs, const char *filename, const size_t offset);
 
     void loop();
     bool isRunning();
@@ -77,11 +78,9 @@ private:
     StaticRingbuffer_t *_buffer_struct;
     uint8_t *_buffer_storage;
 
-    FS _filesystem;
     File _file;
-    size_t _filepos = 0;
     bool _playingFile = false;
-   
+
     size_t _nextChunkSize(WiFiClient *const stream);
     bool _checkSync(WiFiClient *const stream);
     void _handleMetadata(char *data, const size_t len);
@@ -96,6 +95,7 @@ private:
     void _streamToRingBuffer(WiFiClient *const stream);
     void _chunkedStreamToRingBuffer(WiFiClient *const stream);
     void _handleFile();
+    bool endsWith(const char *base, const char *searchString);
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
