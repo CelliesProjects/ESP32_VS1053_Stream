@@ -844,26 +844,23 @@ void ESP32_VS1053_Stream::_handleFile()
 
     const auto START_MS = millis();
     const auto MAX_MS = 5;
-    _file.seek(_filepos);
-    while (millis() - START_MS < MAX_MS && _file.available())
+    size_t bytes_to_decoder = 0;
+    while (millis() - START_MS < MAX_MS && _file.available() && _vs1053->data_request())
     {
-        auto cnt = 0;
-        char buff[100];
-
-        while (cnt < sizeof(buff) && _file.available())
-            buff[cnt++] = (char)_file.read();
-
-        // Serial.printf("Read %i bytes\n", cnt);
-        Serial.printf("File pos: %i\n", _file.position());
-        Serial.printf("percentage: %.1f%%\n", (1.0 * (size_t)_file.position() / (size_t)_file.size()) * 100);
+        const size_t BYTES_TO_READ = min((size_t)_file.available(), VS1053_PLAYBUFFER_SIZE);
+        const size_t BYTES_IN_BUFFER = _file.readBytes((char *)_vs1053Buffer, BYTES_TO_READ);
+        _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
+        bytes_to_decoder += BYTES_IN_BUFFER;
     }
 
-    if (!_file.available())
+    log_i("%i bytes to decoder in %i ms", bytes_to_decoder, millis() - START_MS);
+    log_d("File pos: %i", _file.position());
+    log_i("percentage: %.1f%%", (1.0 * _file.position() / _file.size()) * 100);
+
+    if (!_file.available() && _file.position() == _file.size())
     {
         log_i("file read complete");
         _playingFile = false;
-        _filepos = 0;
         return;
     }
-    _filepos = _file.position();
 }
