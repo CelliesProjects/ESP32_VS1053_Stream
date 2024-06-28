@@ -6,6 +6,7 @@ A streaming library for esp32, esp32-wrover, esp32-s2 and esp32-s3 with a separa
 This library plays mp3, ogg, aac, aac+ and <strike>flac</strike> files and streams and uses [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
 Supports http, https (insecure mode) and chunked audio streams.
+Plays mp3 and ogg files from sdcard.
 
 Visit [eStreamPlayer32_VS1053 for PIO](https://github.com/CelliesProjects/eStreamplayer32-vs1053-pio) to see a [PlatformIO](https://platformio.org/platformio) project using this library.
 
@@ -21,6 +22,7 @@ Use [the latest Arduino ESP32 core version](https://github.com/espressif/arduino
 
 ```c++
 #include <Arduino.h>
+#include <SD.h>
 #include <VS1053.h>               /* https://github.com/baldram/ESP_VS1053_Library */
 #include <ESP32_VS1053_Stream.h>
 
@@ -80,7 +82,7 @@ void setup() {
 
     if (!mountSDcard())
     {
-        Serial.println("sdcard not mounted. system halted");
+        Serial.println("sdcard not mounted - system halted");
         while (1)
             delay(100);
     };    
@@ -368,7 +370,7 @@ void audio_eof_stream(const char* info)
 
 Returns the eof url.<br>Also called if a stream times out/errors.
 
-Handy function for coding a playlist.<br>You can use `connecttohost()` inside this function to start the next item.
+You can use this function for coding a playlist.<br>Use `connecttohost()` or `connecttofile()` inside this function to start the next item.
 
 <hr>
 
