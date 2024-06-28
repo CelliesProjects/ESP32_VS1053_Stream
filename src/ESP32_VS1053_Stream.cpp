@@ -714,13 +714,12 @@ bool ESP32_VS1053_Stream::isRunning()
 void ESP32_VS1053_Stream::stopSong()
 {
     if (!_http && !_playingFile)
-    {
-        log_i("nothing to close");
         return;
-    }
 
     _vs1053->setVolume(0);
     _vs1053->stopSong();
+    _currentCodec = STOPPED;
+
     if (_playingFile)
     {
         _file.close();
@@ -742,10 +741,9 @@ void ESP32_VS1053_Stream::stopSong()
         _ringbuffer_filled = false;
         _bytesLeftInChunk = 0;
         _dataSeen = false;
+        _remainingBytes = 0;
+        _offset = 0;
     }
-    _remainingBytes = 0;
-    _currentCodec = STOPPED;
-    _offset = 0;
 }
 
 uint8_t ESP32_VS1053_Stream::getVolume()
@@ -813,20 +811,6 @@ void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
     capacity = _ringbuffer_handle ? VS1053_PSRAM_BUFFER_SIZE : 0;
 }
 
-bool ESP32_VS1053_Stream::_endsWith(const char *base, const char *searchString)
-{
-    int32_t slen = strlen(searchString);
-    // TODO: lowercase the ss
-    if (slen == 0)
-        return false;
-    const char *p = base + strlen(base);
-    //  while(p > base && isspace(*p)) p--;  // rtrim
-    p -= slen;
-    if (p < base)
-        return false;
-    return (strncmp(p, searchString, slen) == 0);
-}
-
 bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename)
 {
     return connecttofile(fs, filename, 0);
@@ -882,21 +866,16 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 {
     const auto START_MS = millis();
     const auto MAX_MS = 5;
-    // size_t bytes_to_decoder = 0;
 
     /* this loop is IO driven where -some- transactions take a serious amount of time */
-    /* and because of that -sometimes- it takes much longer to finish a loop then MAX_MS suggests */
-    /* up to 13-15 ms */
+    /* and because of that -sometimes- it takes much longer to finish a loop than MAX_MS suggests */
+    /* sometimes up to 13-15 ms */
     while (millis() - START_MS < MAX_MS && _file.available() && _vs1053->data_request())
     {
         const size_t BYTES_IN_BUFFER =
             _file.readBytes((char *)_vs1053Buffer, min((size_t)_file.available(), VS1053_PLAYBUFFER_SIZE));
         _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
-        // bytes_to_decoder += BYTES_IN_BUFFER;
     }
-
-    // log_i("%i bytes to decoder in %i ms", bytes_to_decoder, millis() - START_MS);
-    log_d("percentage: %.1f%%", 100.0 * (_file.position() / _file.size()));
 
     if (!_file.available() && _file.position() == _file.size())
         _eofStream();
