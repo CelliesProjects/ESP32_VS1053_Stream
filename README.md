@@ -32,42 +32,70 @@ Use [the latest Arduino ESP32 core version](https://github.com/espressif/arduino
 #define VS1053_DCS 21
 #define VS1053_DREQ 22
 
+#define SDREADER_CS 26
+
 ESP32_VS1053_Stream stream;
 
 const char* SSID = "xxx";
 const char* PSK = "xxx";
 
+bool mountSDcard()
+{
+    if (!SD.begin(SDREADER_CS))
+    {
+        Serial.println("Card Mount Failed");
+        return false;
+    }
+    uint8_t cardType = SD.cardType();
+
+    if (cardType == CARD_NONE)
+    {
+        Serial.println("No SD card attached");
+        return false;
+    }
+
+    uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+    Serial.println("SD Card Size: %lluMB\n", cardSize);
+    return true;
+}
+
 void setup() {
-#if defined(CONFIG_IDF_TARGET_ESP32S2) && ARDUHAL_LOG_LEVEL != ARDUHAL_LOG_LEVEL_NONE
-    delay(3000);
-    Serial.setDebugOutput(true);
-#endif
-
     Serial.begin(115200);
+    Serial.println("\n\nsimple vs1053 streaming example.\n");
 
-    WiFi.begin(SSID, PSK);
-    
-    WiFi.setSleep(false); 
-    /* important to set this right! See issue #15 */
+    Serial.printf("connecting to wifi network %s\n", SSID);
 
-    Serial.println("\n\nSimple vs1053 Streaming example.");
+    WiFi.begin(SSID, PSK);    
+    WiFi.setSleep(false);  /* important to set this right! See issue #15 */
 
     while (!WiFi.isConnected())
         delay(10);
-    Serial.println("wifi connected - starting decoder");
+
+    Serial.println("wifi connected - starting spi bus");
 
     SPI.setHwCs(true);
     SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);  /* start SPI before starting decoder */
 
+    Serial.println("spi running - starting vs1053");
+
     if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected())
     {
-        Serial.println("Decoder not running");
-        while (1) delay(100);
+        Serial.println("Decoder not running - system halted");
+        while (1) 
+            delay(100);
     };
 
-    Serial.println("decoder running - starting stream");
+    Serial.println("vs1053 running - starting playback");
 
-    stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
+    //stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
+    stream.connecttofile(SD, "/test.mp3");
+
+    if (!stream.isRunning())
+    {
+        Serial.println("no stream running - system halted");
+        while (1)
+            delay(100);
+    };    
 
     Serial.print("codec: ");
     Serial.println(stream.currentCodec());
@@ -75,7 +103,6 @@ void setup() {
     Serial.print("bitrate: ");
     Serial.print(stream.bitrate());
     Serial.println("kbps");
-
 }
 
 void loop() {
