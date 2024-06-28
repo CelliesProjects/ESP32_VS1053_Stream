@@ -623,7 +623,7 @@ void ESP32_VS1053_Stream::loop()
 {
     if (_playingFile && _file && _file.available() && _vs1053->data_request())
     {
-        _handleFile();
+        _handleLocalFile();
         return;
     }
 
@@ -812,7 +812,7 @@ void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
     capacity = _ringbuffer_handle ? VS1053_PSRAM_BUFFER_SIZE : 0;
 }
 
-bool ESP32_VS1053_Stream::endsWith(const char *base, const char *searchString)
+bool ESP32_VS1053_Stream::_endsWith(const char *base, const char *searchString)
 {
     int32_t slen = strlen(searchString);
     // TODO: lowercase the ss
@@ -834,10 +834,7 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename)
 bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const size_t offset)
 {
     if (_playingFile || _http)
-    {
-        log_w("there is already a stream running - aborting");
         return false;
-    }
 
     _file = fs.open(filename, FILE_READ, false);
     if (!_file)
@@ -854,9 +851,9 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
 
     // TODO: make filename lowercase before compare
 
-    if (endsWith(filename, ".mp3"))
+    if (_endsWith(filename, ".mp3"))
         _currentCodec = MP3;
-    else if (endsWith(filename, ".ogg"))
+    else if (_endsWith(filename, ".ogg"))
         _currentCodec = OGG;
     else
     {
@@ -875,14 +872,15 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
     return true;
 }
 
-void ESP32_VS1053_Stream::_handleFile()
+void ESP32_VS1053_Stream::_handleLocalFile()
 {
     const auto START_MS = millis();
     const auto MAX_MS = 5;
     // size_t bytes_to_decoder = 0;
 
-    /* this loop is SPI IO driven where transactions take serious time */
-    /* and because of that it -sometimes- takes much longer to finish a loop then MAX_MS suggests */
+    /* this loop is IO driven where -some- transactions take a serious amount of time */
+    /* and because of that -sometimes- it takes much longer to finish a loop then MAX_MS suggests */
+    /* up to 13-15 ms */
     while (millis() - START_MS < MAX_MS && _file.available() && _vs1053->data_request())
     {
         const size_t BYTES_IN_BUFFER =

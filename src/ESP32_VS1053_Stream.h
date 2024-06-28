@@ -94,8 +94,8 @@ private:
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *const stream);
     void _chunkedStreamToRingBuffer(WiFiClient *const stream);
-    void _handleFile();
-    bool endsWith(const char *base, const char *searchString);
+    void _handleLocalFile();
+    bool _endsWith(const char *base, const char *searchString);
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
