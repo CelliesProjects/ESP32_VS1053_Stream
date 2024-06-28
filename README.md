@@ -206,7 +206,19 @@ bool connecttohost(url, user, pwd, offset)
 
 <hr>
 
-### Stop a stream
+### Start or resume a local file
+
+```c++
+bool connecttofile(filesystem, filename)
+```
+
+```c++
+bool connecttofile(filesystem, filename)
+```
+
+<hr>
+
+### Stop a running stream
 
 ```c++
 void stopSong()
@@ -316,9 +328,9 @@ Returns `0/0` if there is no buffer.<br>Otherwise returns something like `4096/6
 void bufferStatus(size_t &used, size_t &capacity)
 ```
 
-There is also a version that takes two `size_t` variables by reference.<br>Works the same as the `const char *` version.
+This version takes two `size_t` variables by reference.<br>Works the same as the `const char *` version.
 
-A buffer will only be allocated if there is enough free psram.
+NOTE: A buffer will only be allocated if there is enough free psram. 
 
 <hr>
 
