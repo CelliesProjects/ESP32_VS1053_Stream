@@ -720,6 +720,7 @@ void ESP32_VS1053_Stream::stopSong()
     }
 
     _vs1053->setVolume(0);
+    _vs1053->stopSong();
     if (_playingFile)
     {
         _file.close();
@@ -849,14 +850,19 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
         return false;
     }
 
-    // TODO: make filename lowercase before compare
-
-    if (_endsWith(filename, ".mp3"))
+    if (_file.read() == 0xFF && _file.read() == 0xFB)
         _currentCodec = MP3;
-    else if (_endsWith(filename, ".ogg"))
+    _file.seek(0);
+    if (_file.read() == 0x49 && _file.read() == 0x44 && _file.read() == 0x33)
+        _currentCodec = MP3;
+
+    _file.seek(0);
+    if (_file.read() == 0x4F && _file.read() == 0x67 && _file.read() == 0x67)
         _currentCodec = OGG;
-    else
+
+    if (_currentCodec == STOPPED)
     {
+        log_w("unsupported file");
         _file.close();
         return false;
     }
