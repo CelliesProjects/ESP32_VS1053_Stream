@@ -5,7 +5,7 @@
 A streaming library for esp32, esp32-wrover, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.<br>
 This library plays mp3, ogg, aac, aac+ and <strike>flac</strike> files and streams and uses [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
-Supports http, https (insecure mode) and chunked audio streams.
+Supports http, https (insecure mode) and chunked audio files and streams.
 Plays mp3 and ogg files from sdcard.
 
 Visit [eStreamPlayer32_VS1053 for PIO](https://github.com/CelliesProjects/eStreamplayer32-vs1053-pio) to see a [PlatformIO](https://platformio.org/platformio) project using this library.
@@ -76,7 +76,7 @@ void setup() {
     Serial.println("wifi connected - starting spi bus");
 
     SPI.setHwCs(true);
-    SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);  /* start SPI before starting decoder */
+    SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);  /* start SPI before starting decoder or sdcard*/
 
     Serial.println("spi running - mounting sd card");
 
