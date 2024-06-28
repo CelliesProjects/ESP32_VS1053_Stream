@@ -76,7 +76,16 @@ void setup() {
     SPI.setHwCs(true);
     SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);  /* start SPI before starting decoder */
 
-    Serial.println("spi running - starting vs1053");
+    Serial.println("spi running - mounting sd card");
+
+    if (!mountSDcard())
+    {
+        Serial.println("sdcard not mounted. system halted");
+        while (1)
+            delay(100);
+    };    
+
+    Serial.println("card mounted - starting vs1053");
 
     if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected())
     {
@@ -213,7 +222,7 @@ bool connecttofile(filesystem, filename)
 ```
 
 ```c++
-bool connecttofile(filesystem, filename)
+bool connecttofile(filesystem, filename, offset)
 ```
 
 <hr>
