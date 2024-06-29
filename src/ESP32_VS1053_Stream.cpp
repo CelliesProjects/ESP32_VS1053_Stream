@@ -717,7 +717,6 @@ void ESP32_VS1053_Stream::stopSong()
         return;
 
     _vs1053->setVolume(0);
-    _vs1053->stopSong();
     _currentCodec = STOPPED;
 
     if (_playingFile)
@@ -854,6 +853,7 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
     _file.seek(offset);
     if (strcmp(filename, _url))
     {
+        _vs1053->stopSong();
         snprintf(_url, sizeof(_url), "%s", filename);
         _vs1053->startSong();
     }
