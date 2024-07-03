@@ -1,7 +1,8 @@
 #include "ESP32_VS1053_Stream.h"
 
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _url{0},
-                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr) {}
+                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr),
+                                             _filesystem(nullptr) {}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
@@ -621,7 +622,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 
 void ESP32_VS1053_Stream::loop()
 {
-    if (_playingFile && _file && _file.available() && _vs1053->data_request())
+    if (_playingFile && _file && _vs1053->data_request())
     {
         _handleLocalFile();
         return;
@@ -723,6 +724,7 @@ void ESP32_VS1053_Stream::stopSong()
     {
         _file.close();
         _playingFile = false;
+        return;
     }
 
     if (_http)
@@ -854,6 +856,7 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
         snprintf(_url, sizeof(_url), "%s", filename);
         _vs1053->startSong();
     }
+    _filesystem = fs;
     _playingFile = true;
     _vs1053->setVolume(_volume);
     return true;
@@ -861,12 +864,19 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
 
 void ESP32_VS1053_Stream::_handleLocalFile()
 {
-    const auto START_MS = millis();
-    const auto MAX_MS = 5;
+    if (!_filesystem.exists(_url))
+    {
+       log_e("fs error - closing file");
+       _eofStream();
+       return;
+    }
 
     /* this loop is IO driven where -some- transactions take a serious amount of time */
     /* and because of that -sometimes- it takes much longer to finish a loop than MAX_MS suggests */
     /* sometimes up to 13-15 ms */
+    const auto START_MS = millis();
+    const auto MAX_MS = 5;
+
     while (millis() - START_MS < MAX_MS && _file.available() && _vs1053->data_request())
     {
         const size_t BYTES_IN_BUFFER =

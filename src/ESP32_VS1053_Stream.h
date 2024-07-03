@@ -79,6 +79,7 @@ private:
     uint8_t *_buffer_storage;
 
     File _file;
+    fs::FS _filesystem;
     bool _playingFile = false;
 
     size_t _nextChunkSize(WiFiClient *const stream);
