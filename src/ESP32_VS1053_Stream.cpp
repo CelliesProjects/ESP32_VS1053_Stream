@@ -856,7 +856,7 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
         snprintf(_url, sizeof(_url), "%s", filename);
         _vs1053->startSong();
     }
-    _filesystem = fs;
+    _filesystem = &fs;
     _playingFile = true;
     _vs1053->setVolume(_volume);
     return true;
@@ -864,9 +864,9 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
 
 void ESP32_VS1053_Stream::_handleLocalFile()
 {
-    if (!_filesystem.exists(_url))
+    if (!_filesystem->exists(_url))
     {
-       log_e("fs error - closing file");
+       log_e("fs error - bailing out");
        _eofStream();
        return;
     }
