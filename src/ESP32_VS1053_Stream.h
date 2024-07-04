@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <HTTPClient.h>
+#include <FS.h>
 #include <freertos/ringbuf.h>
 #include <esp_heap_caps.h>
 #include <VS1053.h> /* https://github.com/baldram/ESP_VS1053_Library */
@@ -42,6 +43,9 @@ public:
     bool connecttohost(const char *url, const char *username, const char *pwd);
     bool connecttohost(const char *url, const char *username, const char *pwd, const size_t offset);
 
+    bool connecttofile(fs::FS &fs, const char *filename);
+    bool connecttofile(fs::FS &fs, const char *filename, const size_t offset);
+
     void loop();
     bool isRunning();
     void stopSong();
@@ -74,6 +78,10 @@ private:
     StaticRingbuffer_t *_buffer_struct;
     uint8_t *_buffer_storage;
 
+    File _file;
+    fs::FS *_filesystem;
+    bool _playingFile = false;
+
     size_t _nextChunkSize(WiFiClient *const stream);
     bool _checkSync(WiFiClient *const stream);
     void _handleMetadata(char *data, const size_t len);
@@ -87,6 +95,7 @@ private:
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *const stream);
     void _chunkedStreamToRingBuffer(WiFiClient *const stream);
+    void _handleLocalFile();
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
