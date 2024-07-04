@@ -148,7 +148,7 @@ Do not forget to switch WiFi out of power save mode:
 WiFi.begin(SSID, PSK);
 WiFi.setSleep(false); 
 ...
-``
+```
 <hr>
 
 ### Prevent reboots while playing
