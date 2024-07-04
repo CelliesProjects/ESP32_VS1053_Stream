@@ -149,7 +149,6 @@ WiFi.begin(SSID, PSK);
 WiFi.setSleep(false); 
 ...
 ```
-<hr>
 
 ### Prevent reboots while playing
 Early version of the esp32 have issues with the external psram cache, resulting in reboots.<br>Workarounds are possible depending on the hardware revision.
