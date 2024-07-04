@@ -5,8 +5,8 @@
 A streaming library for esp32, esp32-wrover, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.<br>
 This library plays mp3, ogg, aac, aac+ and <strike>flac</strike> files and streams and uses [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
-Supports http, https (insecure mode) and chunked audio files and streams.
-Plays mp3 and ogg files from sdcard.
+This library plays http, https (insecure mode) and chunked audio files and streams.
+Also plays mp3 and ogg files from sdcard.
 
 Visit [eStreamPlayer32_VS1053 for PIO](https://github.com/CelliesProjects/eStreamplayer32-vs1053-pio) to see a [PlatformIO](https://platformio.org/platformio) project using this library.
 
@@ -67,7 +67,7 @@ void setup() {
 
     Serial.printf("connecting to wifi network %s\n", SSID);
 
-    WiFi.begin(SSID, PSK);    
+    WiFi.begin(SSID, PSK);  
     WiFi.setSleep(false);  /* important to set this right! See issue #15 */
 
     while (!WiFi.isConnected())
@@ -85,7 +85,7 @@ void setup() {
         Serial.println("sdcard not mounted - system halted");
         while (1)
             delay(100);
-    };    
+    }
 
     Serial.println("card mounted - starting vs1053");
 
@@ -94,7 +94,7 @@ void setup() {
         Serial.println("Decoder not running - system halted");
         while (1) 
             delay(100);
-    };
+    }
 
     Serial.println("vs1053 running - starting playback");
 
@@ -106,7 +106,7 @@ void setup() {
         Serial.println("no stream running - system halted");
         while (1)
             delay(100);
-    };    
+    }
 
     Serial.print("codec: ");
     Serial.println(stream.currentCodec());
@@ -341,8 +341,7 @@ void bufferStatus(size_t &used, size_t &capacity)
 
 This version takes two `size_t` variables by reference.<br>Works the same as the `const char *` version.
 
-NOTE: A buffer will only be allocated if there is enough free psram. 
-
+NOTE: A buffer will only be allocated if there is enough free psram.
 <hr>
 
 # Event callbacks
@@ -368,7 +367,7 @@ void audio_showstreamtitle(const char* info)
 void audio_eof_stream(const char* info)
 ```
 
-Returns the eof url.<br>Also called if a stream times out/errors.
+Returns the eof url or path.<br>Also called if a stream or file times out/errors.
 
 You can use this function for coding a playlist.<br>Use `connecttohost()` or `connecttofile()` inside this function to start the next item.
 
