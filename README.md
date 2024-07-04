@@ -146,8 +146,7 @@ Do not forget to switch WiFi out of power save mode:
 WiFi.begin(SSID, PSK);
 WiFi.setSleep(false); 
 ...
-```
-
+``
 <hr>
 
 ### Prevent reboots while playing
@@ -177,172 +176,103 @@ Source: [esp-idf api guide on external ram](https://docs.espressif.com/projects/
 In PIO you can find out what hardware revision you have by running `esptool.py flash_id` in a terminal.
 
 In Arduino IDE go to `File->Preferences` and find the `Show verbose output during` option. Check the box marked `upload`.<br>You can now see the hardware revision when you upload a sketch.
-<hr>
 
 # Functions
-
 ### Initialize the VS1053 codec
 
 ```c++
 bool startDecoder(CS, DCS, DREQ)
 ```
-
-<hr>
-
 ### Check if VS1053 is responding
-
 ```c++
 bool isChipConnected()
 ```
-
-<hr>
-
 ### Start or resume a stream
 
 ```c++
 bool connecttohost(url)
 ```
-
 ```c++
 bool connecttohost(url, offset)
 ```
-
 ```c++
 bool connecttohost(url, user, pwd)
 ```
-
 ```c++
 bool connecttohost(url, user, pwd, offset)
 ```
-
-<hr>
-
 ### Start or resume a local file
-
 ```c++
 bool connecttofile(filesystem, filename)
 ```
-
 ```c++
 bool connecttofile(filesystem, filename, offset)
 ```
-
-<hr>
-
 ### Stop a running stream
-
 ```c++
 void stopSong()
 ```
-
-<hr>
-
 ### Feed the decoder
-
 ```c++
 void loop()
 ```
-
 This function has to called every couple of ms to feed the decoder with data.<br>For bitrates up to 320kbps somewhere between 5-25 ms is about right.
-
-<hr>
-
 ### Check if stream is running
-
 ```c++
 bool isRunning()
 ```
-
-<hr>
-
 ### Get the current volume
-
 ```c++
 uint8_t getVolume()
 ```
-
-<hr>
-
 ### Set the volume
-
 ```c++
 void setVolume(uint8_t volume)
 ```
-
 Value should be between 0-100.
-
-<hr>
-
 ### Set bass and treble
-
 ```c++
 uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};
 void setTone(rtone)
 ```
-
 Values for `rtone`:
-
 ```c++
 toneha       = <0..15>        // Setting treble gain (0 off, 1.5dB steps)
 tonehf       = <0..15>        // Setting treble frequency lower limit x 1000 Hz
 tonela       = <0..15>        // Setting bass gain (0 = off, 1dB steps)
 tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 ```
-
-<hr>
-
 ### Get the current used codec
-
 ```c++
 const char* currentCodec()
 ```
-
 Returns `STOPPED` if no stream is running.
-
-<hr>
-
 ### Get the current stream url
-
 ```c++
 const char* lastUrl()
 ```
-
 The current stream url might differ from the request url if the request url points to a playlist.
-
-<hr>
-
 ### Get the filesize
-
 ```c++
 size_t size()
 ```
 Returns `0` if the stream is a radio stream.
-
-<hr>
-
 ### Get the current position in the file
 ```c++
 size_t position()
 ```
 Returns `0` if the stream is a radio stream.
-
-<hr>
-
 ### Get the buffer fill status
 ```c++
 const char *bufferStatus()
 ```
-
 Returns `0/0` if there is no buffer.<br>Otherwise returns something like `4096/65536` which means 4kB waiting in a 64kB buffer.
-
 ```c++
 void bufferStatus(size_t &used, size_t &capacity)
 ```
-
 This version takes two `size_t` variables by reference.<br>Works the same as the `const char *` version.
 
 NOTE: A buffer will only be allocated if there is enough free psram.
-<hr>
 
 # Event callbacks
 
@@ -351,28 +281,19 @@ NOTE: A buffer will only be allocated if there is enough free psram.
 ```c++
 void audio_showstation(const char* info)
 ```
-<hr>
-
 ### Stream information callback.
 
 ```c++
 void audio_showstreamtitle(const char* info)
 ```
-
-<hr>
-
 ### End of file callback.
 
 ```c++
 void audio_eof_stream(const char* info)
 ```
-
 Returns the eof url or path.<br>Also called if a stream or file times out/errors.
 
 You can use this function for coding a playlist.<br>Use `connecttohost()` or `connecttofile()` inside this function to start the next item.
-
-<hr>
-
 ## License
 
 MIT License
