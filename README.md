@@ -134,6 +134,8 @@ void audio_eof_stream(const char* info) {
     Serial.printf("eof: %s\n", info);
 }
 ```
+## Known issues
+Ogg files can not be started with an offset without first playing a couple of seconds from the start of the file. 
 
 ## Tips for troublefree streaming
 
