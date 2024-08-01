@@ -228,11 +228,17 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         }
     }
 
-    char buffer[30];
-    snprintf(buffer, sizeof(buffer), "bytes=%zu-", offset);
-    _http->addHeader("Range", buffer);
+    if (offset)
+    {
+        char buffer[30];
+        snprintf(buffer, sizeof(buffer), "bytes=%zu-", offset);
+        _http->addHeader("Range", buffer);
+    }
+
+    if (strlen(username) || strlen(pwd))
+        _http->setAuthorization(username, pwd);
+
     _http->addHeader("Icy-MetaData", VS1053_ICY_METADATA ? "1" : "0");
-    _http->setAuthorization(username, pwd);
 
     const char *header[] = {CONTENT_TYPE, ICY_NAME, ICY_METAINT,
                             ENCODING, BITRATE, LOCATION};
@@ -866,9 +872,9 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 {
     if (!_filesystem->exists(_url))
     {
-       log_e("fs error - bailing out");
-       _eofStream();
-       return;
+        log_e("fs error - bailing out");
+        _eofStream();
+        return;
     }
 
     /* this loop is IO driven where -some- transactions take a serious amount of time */
