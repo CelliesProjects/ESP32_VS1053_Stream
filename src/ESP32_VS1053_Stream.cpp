@@ -819,7 +819,7 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename)
 
 bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const size_t offset)
 {
-    if (_playingFile || _http)
+    if (!_vs1053 || _playingFile || _http)
         return false;
 
     _file = fs.open(filename, FILE_READ, false);
