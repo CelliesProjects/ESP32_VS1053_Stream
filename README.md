@@ -18,13 +18,14 @@ Take care to install the master branch of the VS1053 library or at least a versi
 
 Use the [2.0.17 Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/tag/2.0.17).
 
-## Example code
 
+
+## Example: play a stream
 ```c++
 #include <Arduino.h>
-#include <SD.h>
-#include <VS1053.h>               /* https://github.com/baldram/ESP_VS1053_Library */
+#include <VS1053.h>               // https://github.com/baldram/ESP_VS1053_Library
 #include <ESP32_VS1053_Stream.h>
+#include <WiFi.h>
 
 #define SPI_CLK_PIN 18
 #define SPI_MISO_PIN 19
@@ -34,106 +35,153 @@ Use the [2.0.17 Arduino ESP32 core version](https://github.com/espressif/arduino
 #define VS1053_DCS 21
 #define VS1053_DREQ 22
 
-#define SDREADER_CS 26
-
 ESP32_VS1053_Stream stream;
 
 const char* SSID = "xxx";
 const char* PSK = "xxx";
 
-bool mountSDcard()
-{
-    if (!SD.begin(SDREADER_CS))
-    {
-        Serial.println("Card Mount Failed");
+void setup() {
+    Serial.begin(115200);
+    Serial.println("\n\nVS1053 Radio Streaming Example\n");
+
+    // Connect to Wi-Fi
+    Serial.printf("Connecting to WiFi network: %s\n", SSID);
+    WiFi.begin(SSID, PSK);  
+    WiFi.setSleep(false);  // Important to disable sleep to ensure stable connection
+
+    while (!WiFi.isConnected()) {
+        delay(10);
+    }
+    Serial.println("WiFi connected");
+
+    // Start SPI bus
+    SPI.setHwCs(true);
+    SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);
+
+    // Initialize the VS1053 decoder
+    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected()) {
+        Serial.println("Decoder not running - system halted");
+        while (1) delay(100);
+    }
+    Serial.println("VS1053 running - starting radio stream");
+
+    // Connect to the radio stream
+    stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
+
+    if (!stream.isRunning()) {
+        Serial.println("Stream not running - system halted");
+        while (1) delay(100);
+    }
+
+    Serial.print("Codec: ");
+    Serial.println(stream.currentCodec());
+
+    Serial.print("Bitrate: ");
+    Serial.print(stream.bitrate());
+    Serial.println(" kbps");
+}
+
+void loop() {
+    stream.loop();
+    delay(5);
+}
+
+void audio_showstation(const char* info) {
+    Serial.printf("Station: %s\n", info);
+}
+
+void audio_showstreamtitle(const char* info) {
+    Serial.printf("Stream title: %s\n", info);
+}
+
+void audio_eof_stream(const char* info) {
+    Serial.printf("End of stream: %s\n", info);
+}
+```
+
+## Example: play from SD card
+```c++
+#include <Arduino.h>
+#include <SD.h>
+#include <VS1053.h>               // https://github.com/baldram/ESP_VS1053_Library
+#include <ESP32_VS1053_Stream.h>
+
+#define SPI_CLK_PIN 18
+#define SPI_MISO_PIN 19
+#define SPI_MOSI_PIN 23
+
+#define VS1053_CS 5
+#define VS1053_DCS 21
+#define VS1053_DREQ 22
+#define SDREADER_CS 26
+
+ESP32_VS1053_Stream stream;
+
+bool mountSDcard() {
+    if (!SD.begin(SDREADER_CS)) {
+        Serial.println("Card mount failed"); 
         return false;
     }
-    uint8_t cardType = SD.cardType();
 
-    if (cardType == CARD_NONE)
-    {
+    uint8_t cardType = SD.cardType();
+    if (cardType == CARD_NONE) {
         Serial.println("No SD card attached");
         return false;
     }
 
     uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-    Serial.println("SD Card Size: %lluMB\n", cardSize);
+    Serial.printf("SD Card Size: %lluMB\n", cardSize);
     return true;
 }
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("\n\nsimple vs1053 streaming example.\n");
+    Serial.println("\n\nVS1053 SD Card Playback Example\n");
 
-    Serial.printf("connecting to wifi network %s\n", SSID);
-
-    WiFi.begin(SSID, PSK);  
-    WiFi.setSleep(false);  /* important to set this right! See issue #15 */
-
-    while (!WiFi.isConnected())
-        delay(10);
-
-    Serial.println("wifi connected - starting spi bus");
-
+    // Start SPI bus
     SPI.setHwCs(true);
-    SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);  /* start SPI before starting decoder or sdcard*/
+    SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);
 
-    Serial.println("spi running - mounting sd card");
-
-    if (!mountSDcard())
-    {
-        Serial.println("sdcard not mounted - system halted");
-        while (1)
-            delay(100);
+    // Mount SD card
+    if (!mountSDcard()) {
+        Serial.println("SD card not mounted - system halted");
+        while (1) delay(100);
     }
 
-    Serial.println("card mounted - starting vs1053");
-
-    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected())
-    {
+    // Initialize the VS1053 decoder
+    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected()) {
         Serial.println("Decoder not running - system halted");
-        while (1) 
-            delay(100);
+        while (1) delay(100);
     }
 
-    Serial.println("vs1053 running - starting playback");
+    Serial.println("VS1053 running - starting SD playback");
 
-    //stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
+    // Start playback from an SD file
     stream.connecttofile(SD, "/test.mp3");
 
-    if (!stream.isRunning())
-    {
-        Serial.println("no stream running - system halted");
-        while (1)
-            delay(100);
+    if (!stream.isRunning()) {
+        Serial.println("No file running - system halted");
+        while (1) delay(100);
     }
 
-    Serial.print("codec: ");
+    Serial.print("Codec: ");
     Serial.println(stream.currentCodec());
 
-    Serial.print("bitrate: ");
+    Serial.print("Bitrate: ");
     Serial.print(stream.bitrate());
-    Serial.println("kbps");
+    Serial.println(" kbps");
 }
 
 void loop() {
     stream.loop();
-    //Serial.printf("Buffer status: %s\n", stream.bufferStatus());
     delay(5);
 }
 
-void audio_showstation(const char* info) {
-    Serial.printf("showstation: %s\n", info);
-}
-
-void audio_showstreamtitle(const char* info) {
-    Serial.printf("streamtitle: %s\n", info);
-}
-
 void audio_eof_stream(const char* info) {
-    Serial.printf("eof: %s\n", info);
+    Serial.printf("End of file: %s\n", info);
 }
 ```
+
 ## Known issues
 Ogg files can not be started with an offset without first playing a couple of seconds from the start of the file. 
 
