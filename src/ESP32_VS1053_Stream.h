@@ -2,6 +2,8 @@
 #define __ESP32_VS1053_Stream__
 
 #include <Arduino.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
 #include <HTTPClient.h>
 #include <FS.h>
 #include <freertos/ringbuf.h>
