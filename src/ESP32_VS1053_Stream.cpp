@@ -694,12 +694,6 @@ void ESP32_VS1053_Stream::loop()
         }
     }
 
-    if (stream)
-    {
-        stream->setTimeout(0);
-        stream->setNoDelay(true);
-    }
-
     if (_remainingBytes && _vs1053->data_request())
     {
         if (_chunkedResponse)
