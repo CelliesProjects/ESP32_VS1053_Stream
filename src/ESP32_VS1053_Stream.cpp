@@ -115,14 +115,6 @@ void ESP32_VS1053_Stream::_eofStream()
         audio_eof_stream(_url);
 }
 
-inline __attribute__((always_inline)) bool
-ESP32_VS1053_Stream::_networkIsActive()
-{
-    if (WiFi.isConnected())
-        return true;
-    return false;
-}
-
 bool ESP32_VS1053_Stream::_canRedirect()
 {
     if (_redirectCount < VS1053_MAX_REDIRECT_COUNT)
@@ -174,7 +166,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                                         const char *pwd, size_t offset)
 {
-    if (!_vs1053 || _http || _playingFile || !_networkIsActive() ||
+    if (!_vs1053 || _http || _playingFile || !WiFi.isConnected() ||
         tolower(url[0]) != 'h' ||
         tolower(url[1]) != 't' ||
         tolower(url[2]) != 't' ||
