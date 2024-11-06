@@ -5,10 +5,8 @@
 A streaming library for esp32, esp32-wrover, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.<br>
 This library plays mp3, ogg, aac, aac+ and <strike>flac</strike> files and streams and uses [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
-This library plays http, https (insecure mode) and chunked audio files and streams.
-Also plays mp3 and ogg files from sdcard.
-
-Visit [eStreamPlayer32_VS1053 for PIO](https://github.com/CelliesProjects/eStreamplayer32-vs1053-pio) to see a [PlatformIO](https://platformio.org/platformio) project using this library.
+This library plays http, https (insecure mode) and chunked audio files and streams.<br>
+Also plays mp3 and ogg files from sdcard or any mounted filesystem.
 
 ## How to install and use
 
@@ -41,6 +39,10 @@ const char* PSK = "xxx";
 
 void setup() {
     Serial.begin(115200);
+
+    while (!Serial)
+        delay(10);
+
     Serial.println("\n\nVS1053 Radio Streaming Example\n");
 
     // Connect to Wi-Fi
@@ -48,10 +50,10 @@ void setup() {
     WiFi.begin(SSID, PSK);  
     WiFi.setSleep(false);  // Important to disable sleep to ensure stable connection
 
-    while (!WiFi.isConnected()) {
+    while (!WiFi.isConnected())
         delay(10);
-    }
-    Serial.println("WiFi connected");
+
+    Serial.println("WiFi connected - starting decoder...");
 
     // Start SPI bus
     SPI.setHwCs(true);
@@ -135,6 +137,10 @@ bool mountSDcard() {
 
 void setup() {
     Serial.begin(115200);
+
+    while (!Serial)
+        delay(10);
+
     Serial.println("\n\nVS1053 SD Card Playback Example\n");
 
     // Start SPI bus
@@ -146,6 +152,8 @@ void setup() {
         Serial.println("SD card not mounted - system halted");
         while (1) delay(100);
     }
+
+    Serial.println("SD card mounted - starting decoder...");
 
     // Initialize the VS1053 decoder
     if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected()) {
@@ -256,6 +264,7 @@ bool connecttofile(filesystem, filename)
 ```c++
 bool connecttofile(filesystem, filename, offset)
 ```
+`filesystem` has to be mounted.
 ### Stop a running stream
 ```c++
 void stopSong()
@@ -275,9 +284,9 @@ uint8_t getVolume()
 ```
 ### Set the volume
 ```c++
-void setVolume(uint8_t volume)
+void setVolume(newVolume)
 ```
-Value should be between 0-100.
+`newVolume` should be in the range 0-100.
 ### Set bass and treble
 ```c++
 uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};
