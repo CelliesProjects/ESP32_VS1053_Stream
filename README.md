@@ -21,9 +21,10 @@ Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino
 ## Example: play a stream
 ```c++
 #include <Arduino.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
 #include <VS1053.h>               // https://github.com/baldram/ESP_VS1053_Library
 #include <ESP32_VS1053_Stream.h>
-#include <WiFi.h>
 
 #define SPI_CLK_PIN 18
 #define SPI_MISO_PIN 19
