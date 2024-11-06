@@ -721,12 +721,6 @@ void ESP32_VS1053_Stream::stopSong()
 
     if (_http)
     {
-        if (_http->connected())
-        {
-            WiFiClient *const stream = _http->getStreamPtr();
-            if (stream)
-                stream->stop();
-        }
         _http->end();
         delete _http;
         _http = nullptr;
