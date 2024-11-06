@@ -115,15 +115,6 @@ void ESP32_VS1053_Stream::_eofStream()
         audio_eof_stream(_url);
 }
 
-inline __attribute__((always_inline)) bool
-ESP32_VS1053_Stream::_networkIsActive()
-{
-    for (int i = TCPIP_ADAPTER_IF_STA; i < TCPIP_ADAPTER_IF_MAX; i++)
-        if (tcpip_adapter_is_netif_up((tcpip_adapter_if_t)i))
-            return true;
-    return false;
-}
-
 bool ESP32_VS1053_Stream::_canRedirect()
 {
     if (_redirectCount < VS1053_MAX_REDIRECT_COUNT)
@@ -175,7 +166,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                                         const char *pwd, size_t offset)
 {
-    if (!_vs1053 || _http || _playingFile || !_networkIsActive() ||
+    if (!_vs1053 || _http || _playingFile || !WiFi.isConnected() ||
         tolower(url[0]) != 'h' ||
         tolower(url[1]) != 't' ||
         tolower(url[2]) != 't' ||
@@ -513,7 +504,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
     while (stream && stream->available() && _bytesLeftInChunk &&
            _musicDataPosition < _metaDataStart && millis() - START_TIME_MS < MAX_TIME_MS)
     {
-        const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
+        const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, size_t(_metaDataStart - _musicDataPosition));
         const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, sizeof(_localbuffer));
         const size_t BYTES_SAFE_TO_MOVE = min(BYTES_TO_READ, xRingbufferGetCurFreeSize(_ringbuffer_handle));
         const size_t BYTES_IN_BUFFER = stream->readBytes(_localbuffer, min((size_t)stream->available(), BYTES_SAFE_TO_MOVE));
@@ -565,9 +556,9 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         while (stream && stream->available() && _bytesLeftInChunk && _vs1053->data_request() &&
                _musicDataPosition < _metaDataStart && millis() - START_TIME_MS < MAX_TIME_MS)
         {
-            const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, (size_t)_metaDataStart - _musicDataPosition);
+            const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, size_t(_metaDataStart - _musicDataPosition));
             const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PLAYBUFFER_SIZE);
-            const size_t BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, min((size_t)stream->available(), BYTES_TO_READ));
+            const size_t BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, min(size_t(stream->available()), BYTES_TO_READ));
             _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
             _bytesLeftInChunk -= BYTES_IN_BUFFER;
             _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
@@ -695,12 +686,6 @@ void ESP32_VS1053_Stream::loop()
         }
     }
 
-    if (stream)
-    {
-        stream->setTimeout(0);
-        stream->setNoDelay(true);
-    }
-
     if (_remainingBytes && _vs1053->data_request())
     {
         if (_chunkedResponse)
@@ -728,7 +713,8 @@ void ESP32_VS1053_Stream::stopSong()
 
     if (_playingFile)
     {
-        _file.close();
+        if (_file)
+            _file.close();
         _playingFile = false;
         return;
     }

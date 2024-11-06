@@ -2,6 +2,8 @@
 #define __ESP32_VS1053_Stream__
 
 #include <Arduino.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
 #include <HTTPClient.h>
 #include <FS.h>
 #include <freertos/ringbuf.h>
@@ -86,7 +88,6 @@ private:
     bool _checkSync(WiFiClient *const stream);
     void _handleMetadata(char *data, const size_t len);
     void _eofStream();
-    bool _networkIsActive();
     bool _canRedirect();
     void _handleStream(WiFiClient *const stream);
     void _handleChunkedStream(WiFiClient *const stream);
