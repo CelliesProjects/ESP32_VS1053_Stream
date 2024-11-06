@@ -16,9 +16,7 @@ Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and 
 
 Take care to install the master branch of the VS1053 library or at least a version from commit [ba1803f](https://github.com/baldram/ESP_VS1053_Library/commit/ba1803f75722a36f3e9f539129e885bea3c60f71) or later because the `getChipVersion()` call that is needed is not included in the latest release.<br>See https://github.com/CelliesProjects/ESP32_VS1053_Stream/issues/23
 
-Use the [2.0.17 Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/tag/2.0.17).
-
-
+Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest).
 
 ## Example: play a stream
 ```c++
