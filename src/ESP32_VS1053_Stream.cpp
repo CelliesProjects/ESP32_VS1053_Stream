@@ -70,16 +70,27 @@ void ESP32_VS1053_Stream::_deallocateRingbuffer()
 
 size_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient *const stream)
 {
-    constexpr const auto BUFFER_SIZE = 8;
+    constexpr const auto BUFFER_SIZE = 12;
     char buffer[BUFFER_SIZE];
-    auto cnt = 0;
-    char currentChar = (char)stream->read();
-    while (currentChar != '\n' && cnt < BUFFER_SIZE)
+    int cnt = 0;
+
+    while (cnt < BUFFER_SIZE - 1)
     {
-        buffer[cnt++] = currentChar;
-        currentChar = (char)stream->read();
+        int currentChar = stream->read();
+        if (currentChar == -1)
+            return 0; // Handle read error or end of stream
+
+        if (currentChar == '\r')
+            continue; // Skip carriage return
+
+        if (currentChar == '\n')
+            break; // End of the chunk size line
+
+        buffer[cnt++] = (char)currentChar;
     }
-    return strtol(buffer, NULL, 16);
+    buffer[cnt] = '\0';
+
+    return strtol(buffer, nullptr, 16); 
 }
 
 bool ESP32_VS1053_Stream::_checkSync(WiFiClient *const stream)
@@ -384,7 +395,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     {
         size_t size = 0;
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
-        static auto emptyBufferStartTimeMs = 0;
+        static unsigned long emptyBufferStartTimeMs = 0;
         if (!data)
         {
             if (!emptyBufferStartTimeMs)
@@ -501,7 +512,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
     const auto START_TIME_MS = millis();
     const auto MAX_TIME_MS = 5;
     // size_t bytesToRingBuffer = 0;
-    while (stream && stream->available() && _bytesLeftInChunk &&
+    while (stream && stream->available() && _bytesLeftInChunk && xRingbufferGetCurFreeSize(_ringbuffer_handle) &&
            _musicDataPosition < _metaDataStart && millis() - START_TIME_MS < MAX_TIME_MS)
     {
         const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, size_t(_metaDataStart - _musicDataPosition));
@@ -607,10 +618,13 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         _musicDataPosition = 0;
     }
 
-    if (stream && !_bytesLeftInChunk && stream->available() < 20) /* make sure we dont run out of data in the next test*/
+    if (!stream)
         return;
 
-    if (stream && !_bytesLeftInChunk && !_checkSync(stream))
+    if (!_bytesLeftInChunk && stream->available() < 20) /* make sure we dont run out of data in the next test*/
+        return;
+
+    if (!_bytesLeftInChunk && !_checkSync(stream))
     {
         _remainingBytes = 0;
         return;
