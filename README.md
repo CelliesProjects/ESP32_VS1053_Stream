@@ -173,10 +173,6 @@ void setup() {
 
     Serial.print("Codec: ");
     Serial.println(stream.currentCodec());
-
-    Serial.print("Bitrate: ");
-    Serial.print(stream.bitrate());
-    Serial.println(" kbps");
 }
 
 void loop() {
