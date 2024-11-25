@@ -5,7 +5,7 @@
 A streaming library for esp32, esp32-wrover, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.<br>
 This library plays mp3, ogg, aac, aac+ and <strike>flac</strike> files and streams and uses [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
-This library plays http, https (insecure mode) and chunked audio files and streams.<br>
+Supported stream methods are http and -insecure mode- https. Streams can be chunked.<br>
 Also plays mp3 and ogg files from sdcard or any mounted filesystem.
 
 ## How to install and use
