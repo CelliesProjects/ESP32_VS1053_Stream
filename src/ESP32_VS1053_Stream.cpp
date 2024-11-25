@@ -727,8 +727,7 @@ void ESP32_VS1053_Stream::stopSong()
 
     if (_playingFile)
     {
-        if (_file)
-            _file.close();
+        _file.close();
         _playingFile = false;
         return;
     }
