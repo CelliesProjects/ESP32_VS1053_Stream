@@ -81,16 +81,16 @@ size_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient *const stream)
             return 0; // Handle read error or end of stream
 
         if (currentChar == '\r')
-            continue; // Skip carriage return
+            continue;
 
         if (currentChar == '\n')
-            break; // End of the chunk size line
+            break;
 
         buffer[cnt++] = (char)currentChar;
     }
     buffer[cnt] = '\0';
 
-    return strtol(buffer, nullptr, 16); 
+    return strtol(buffer, nullptr, 16);
 }
 
 bool ESP32_VS1053_Stream::_checkSync(WiFiClient *const stream)
@@ -733,18 +733,15 @@ void ESP32_VS1053_Stream::stopSong()
         return;
     }
 
-    if (_http)
-    {
-        _http->end();
-        delete _http;
-        _http = nullptr;
-        _deallocateRingbuffer();
-        _ringbuffer_filled = false;
-        _bytesLeftInChunk = 0;
-        _dataSeen = false;
-        _remainingBytes = 0;
-        _offset = 0;
-    }
+    _http->end();
+    delete _http;
+    _http = nullptr;
+    _deallocateRingbuffer();
+    _ringbuffer_filled = false;
+    _bytesLeftInChunk = 0;
+    _dataSeen = false;
+    _remainingBytes = 0;
+    _offset = 0;
 }
 
 uint8_t ESP32_VS1053_Stream::getVolume()
