@@ -246,7 +246,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                             ENCODING, BITRATE, LOCATION};
     _http->collectHeaders(header, sizeof(header) / sizeof(char *));
     _http->setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
-    _http->setConnectTimeout(url[4] == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
+    _http->setConnectTimeout(tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
                                            : VS1053_CONNECT_TIMEOUT_MS);
 
     const int result = _http->GET();
