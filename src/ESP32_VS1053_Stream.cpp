@@ -198,16 +198,20 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     [[maybe_unused]] const auto startTime = millis();
 
     {
+        auto length = strlen(url);
         auto cnt = 0;
-        auto index = 0;
-        while (index < strlen(url))
-            cnt += (url[index++] == ' ') ? 1 : 0;
-        char escapedUrl[cnt ? strlen(url) + (3 * cnt) + 1 : 0];
+        for (size_t i = 0; i < length; ++i)
+            if (url[i] == ' ')
+                ++cnt;
+
+        char escapedUrl[cnt ? length + (3 * cnt) + 1 : 1]; // At least 1 to avoid zero-sized array
+
         if (cnt)
         {
-            auto in = 0;
-            auto out = 0;
-            while (in < strlen(url))
+            size_t in = 0;
+            size_t out = 0;
+
+            while (in < length)
             {
                 if (url[in] == ' ')
                 {
@@ -217,11 +221,10 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 }
                 else
                     escapedUrl[out++] = url[in];
-                in++;
+                ++in;
             }
-            escapedUrl[out] = 0;
+            escapedUrl[out] = '\0';
         }
-
         if (!_http->begin(cnt ? escapedUrl : url))
         {
             log_w("Could not connect to %s", url);
@@ -247,7 +250,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     _http->collectHeaders(header, sizeof(header) / sizeof(char *));
     _http->setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
     _http->setConnectTimeout(tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
-                                           : VS1053_CONNECT_TIMEOUT_MS);
+                                                    : VS1053_CONNECT_TIMEOUT_MS);
 
     const int result = _http->GET();
     log_d("Time elapsed during connect: %i", millis() - startTime);
