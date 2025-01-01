@@ -158,6 +158,11 @@ bool ESP32_VS1053_Stream::isChipConnected()
     return _vs1053 ? _vs1053->isChipConnected() : false;
 }
 
+void setConnectTimeout(const uint32_t timeout)
+{
+    _connectTimeout = timeout;
+}
+
 bool ESP32_VS1053_Stream::connecttohost(const char *url)
 {
     return connecttohost(url, "", "", 0);
@@ -194,6 +199,13 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     _http = new HTTPClient;
     if (!_http)
         return false;
+
+    const uint32_t timeout = _connectTimeout ? _connectTimeout : tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
+                                                                                        : VS1053_CONNECT_TIMEOUT_MS;
+
+    _http->customConnectTimeout(timeout);
+
+    log_i("connect timeout %i", timeout);
 
     [[maybe_unused]] const auto startTime = millis();
 
@@ -249,8 +261,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                             ENCODING, BITRATE, LOCATION};
     _http->collectHeaders(header, sizeof(header) / sizeof(char *));
     _http->setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
-    _http->setConnectTimeout(tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
-                                                    : VS1053_CONNECT_TIMEOUT_MS);
 
     const int result = _http->GET();
     log_d("Time elapsed during connect: %i", millis() - startTime);
