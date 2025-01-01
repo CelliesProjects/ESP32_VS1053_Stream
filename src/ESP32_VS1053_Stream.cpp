@@ -203,9 +203,11 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     const uint32_t timeout = _connectTimeout ? _connectTimeout : tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
                                                                                         : VS1053_CONNECT_TIMEOUT_MS;
 
-    _http->customConnectTimeout(timeout);
+    _http->setConnectTimeout(timeout);
 
     log_i("connect timeout %i", timeout);
+
+    _connectTimeout = 0;
 
     [[maybe_unused]] const auto startTime = millis();
 
