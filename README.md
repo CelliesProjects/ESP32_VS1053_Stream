@@ -5,7 +5,7 @@
 A streaming library for esp32, esp32-wrover, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.<br>
 This library plays mp3, ogg, aac, aac+ and <strike>flac</strike> files and streams and uses [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
-Supported stream methods are http and -insecure mode- https. Streams can be chunked.<br>
+Supported stream methods are http and insecure https. Streams can be chunked.<br>
 Also plays mp3 and ogg files from sdcard or any mounted filesystem.
 
 ## How to install and use
@@ -244,7 +244,7 @@ bool isChipConnected()
 void setConnectTimeout(timeout)
 ```
 Sets the connection timeout in ms.<br>
-Setting it to anything other than `0` sets a custom timeout.<br>
+Setting it to anything other than `0` sets a custom timeout.(for both http and https)<br>
 Setting it to `0` restores the default timeouts.<br>
 You can change the default timeouts by opening<br>
 `ESP32_VS1053_Stream.h` and adjust the values of<br>
