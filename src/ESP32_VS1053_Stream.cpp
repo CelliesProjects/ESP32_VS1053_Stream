@@ -158,7 +158,7 @@ bool ESP32_VS1053_Stream::isChipConnected()
     return _vs1053 ? _vs1053->isChipConnected() : false;
 }
 
-void ESP32_VS1053_Stream::setConnectTimeout(const uint32_t timeout)
+void ESP32_VS1053_Stream::customConnectTimeout(const uint32_t timeout)
 {
     _connectTimeout = timeout;
 }

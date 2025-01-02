@@ -241,16 +241,16 @@ bool isChipConnected()
 ```
 ### Set a custom connection timeout
 ```c++
-void setConnectTimeout(timeout)
+void customConnectTimeout(timeout)
 ```
-Sets the connection timeout in ms.<br>
-Setting it to anything other than `0` sets a custom timeout.(for both http and https)<br>
-Setting it to `0` restores the default timeouts.<br>
-You can change the default timeouts by opening<br>
-`ESP32_VS1053_Stream.h` and adjust the values of<br>
-`VS1053_CONNECT_TIMEOUT_MS_SSL` or<br>
-`VS1053_CONNECT_TIMEOUT_MS`.<br>
-Default values are `250`ms for http and `750`ms for https.
+Set this to > `0` to set a custom timeout.(for both http and https)<br>
+Set this to `0` to restore the default timeouts.<br>
+If you need the default timeouts changed you can do this in<br>
+`ESP32_VS1053_Stream.h` by adjusting these values:<br>
+```c++
+#define VS1053_CONNECT_TIMEOUT_MS 250
+#define VS1053_CONNECT_TIMEOUT_MS_SSL 750
+```
 
 ### Start or resume a stream
 ```c++

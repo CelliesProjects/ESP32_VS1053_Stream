@@ -40,7 +40,7 @@ public:
     bool startDecoder(const uint8_t CS, const uint8_t DCS, const uint8_t DREQ);
     bool isChipConnected();
 
-    void setConnectTimeout(const uint32_t timeout);
+    void customConnectTimeout(const uint32_t timeout);
 
     bool connecttohost(const char *url);
     bool connecttohost(const char *url, const size_t offset);
