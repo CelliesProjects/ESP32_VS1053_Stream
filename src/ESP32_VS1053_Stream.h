@@ -40,8 +40,6 @@ public:
     bool startDecoder(const uint8_t CS, const uint8_t DCS, const uint8_t DREQ);
     bool isChipConnected();
 
-    void customConnectTimeout(const uint32_t timeout);
-
     bool connecttohost(const char *url);
     bool connecttohost(const char *url, const size_t offset);
     bool connecttohost(const char *url, const char *username, const char *pwd);
@@ -74,7 +72,6 @@ public:
 private:
     VS1053 *_vs1053;
     HTTPClient *_http;
-    uint32_t _connectTimeout = 0;
     uint8_t _vs1053Buffer[VS1053_PLAYBUFFER_SIZE];
     uint8_t _localbuffer[VS1053_PSRAM_MAX_MOVE];
     char _url[VS1053_MAX_URL_LENGTH];

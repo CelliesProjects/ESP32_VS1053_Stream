@@ -158,11 +158,6 @@ bool ESP32_VS1053_Stream::isChipConnected()
     return _vs1053 ? _vs1053->isChipConnected() : false;
 }
 
-void ESP32_VS1053_Stream::customConnectTimeout(const uint32_t timeout)
-{
-    _connectTimeout = timeout;
-}
-
 bool ESP32_VS1053_Stream::connecttohost(const char *url)
 {
     return connecttohost(url, "", "", 0);
@@ -200,12 +195,8 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     if (!_http)
         return false;
 
-    const uint32_t timeout = _connectTimeout ? _connectTimeout : tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
-                                                                                        : VS1053_CONNECT_TIMEOUT_MS;
-
-    _http->setConnectTimeout(timeout);
-
-    log_d("connection timeout %ims", timeout);
+    _http->setConnectTimeout(tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
+                                                    : VS1053_CONNECT_TIMEOUT_MS);
 
     [[maybe_unused]] const auto startTime = millis();
 

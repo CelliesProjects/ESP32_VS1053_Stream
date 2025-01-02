@@ -239,19 +239,6 @@ bool startDecoder(CS, DCS, DREQ)
 ```c++
 bool isChipConnected()
 ```
-### Set a custom connection timeout
-```c++
-void customConnectTimeout(timeout_ms)
-```
-Set this to > `0` to set a custom timeout.(for both http and https)<br>
-Set this to `0` to restore the default timeouts.<br>
-If you need the default timeouts changed you can do this in<br>
-`ESP32_VS1053_Stream.h` by adjusting these values:<br>
-```c++
-#define VS1053_CONNECT_TIMEOUT_MS 250
-#define VS1053_CONNECT_TIMEOUT_MS_SSL 750
-```
-
 ### Start or resume a stream
 ```c++
 bool connecttohost(url)
@@ -264,6 +251,13 @@ bool connecttohost(url, user, pwd)
 ```
 ```c++
 bool connecttohost(url, user, pwd, offset)
+```
+Note: When a stream does not start in this library but it does play on your desktop or laptop you can try increasing the connection timeout.<br>
+You can do this in 
+`ESP32_VS1053_Stream.h` by increasing these values:<br>
+```c++
+#define VS1053_CONNECT_TIMEOUT_MS 250
+#define VS1053_CONNECT_TIMEOUT_MS_SSL 750
 ```
 ### Start or resume a local file
 ```c++
