@@ -241,7 +241,7 @@ bool isChipConnected()
 ```
 ### Set a custom connection timeout
 ```c++
-void customConnectTimeout(timeout)
+void customConnectTimeout(timeout_ms)
 ```
 Set this to > `0` to set a custom timeout.(for both http and https)<br>
 Set this to `0` to restore the default timeouts.<br>
