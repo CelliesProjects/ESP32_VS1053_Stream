@@ -198,8 +198,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     _http->setConnectTimeout(tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
                                                     : VS1053_CONNECT_TIMEOUT_MS);
 
-    [[maybe_unused]] const auto startTime = millis();
-
     {
         auto length = strlen(url);
         auto cnt = 0;
@@ -254,7 +252,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     _http->setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
 
     const int result = _http->GET();
-    log_d("Time elapsed during connect: %i", millis() - startTime);
 
     switch (result)
     {
