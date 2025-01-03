@@ -27,6 +27,15 @@
 #define VS1053_PLAYBUFFER_SIZE size_t(32) /* do not change */
 
 // Support for old callback names will be dropped with 3.0.0
+// Deprecated function names (old definitions)
+[[deprecated("Use audioShowStation instead")]]
+extern void audio_showstation(const char *)  __attribute__((weak));
+[[deprecated("Use audioEOFStream instead")]]
+extern void audio_eof_stream(const char *)  __attribute__((weak));
+[[deprecated("Use audioShowStreamTitle instead")]]
+extern void audio_showstreamtitle(const char *) __attribute__((weak));
+
+// New function names (preferred)
 extern void audioShowStation(const char *) __attribute__((weak));
 extern void audioEOFStream(const char *) __attribute__((weak));
 extern void audioShowStreamTitle(const char *) __attribute__((weak));
@@ -166,15 +175,5 @@ private:
     const char *BITRATE = "icy-br";
     const char *LOCATION = "Location";
 };
-
-// Deprecated function names with warnings
-[[deprecated("Use audioShowStation instead")]]
-extern void audio_showstation(const char *) __attribute__((weak));
-
-[[deprecated("Use audioEOFStream instead")]]
-extern void audio_eof_stream(const char *) __attribute__((weak));
-
-[[deprecated("Use audioShowStreamTitle instead")]]
-extern void audio_showstreamtitle(const char *) __attribute__((weak));
 
 #endif
