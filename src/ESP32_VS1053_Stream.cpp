@@ -116,14 +116,14 @@ void ESP32_VS1053_Stream::_handleMetadata(char *data, const size_t len)
         if (index++ == data + len)
             return;
     index[0] = 0;
-    audioShowStreamTitle(pch);
+    audio_showstreamtitle(pch);
 }
 
 void ESP32_VS1053_Stream::_eofStream()
 {
     stopSong();
-    if (audioEOFStream)
-        audioEOFStream(_url);
+    if (audio_eof_stream)
+        audio_eof_stream(_url);
 }
 
 bool ESP32_VS1053_Stream::_canRedirect()
