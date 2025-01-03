@@ -116,14 +116,14 @@ void ESP32_VS1053_Stream::_handleMetadata(char *data, const size_t len)
         if (index++ == data + len)
             return;
     index[0] = 0;
-    audio_showstreamtitle(pch);
+    audioShowStreamTitle(pch);
 }
 
 void ESP32_VS1053_Stream::_eofStream()
 {
     stopSong();
-    if (audio_eof_stream)
-        audio_eof_stream(_url);
+    if (audioEOFStream)
+        audioEOFStream(_url);
 }
 
 bool ESP32_VS1053_Stream::_canRedirect()
@@ -362,7 +362,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
             snprintf(newurl, sizeof(newurl), "%s", _http->header(LOCATION).c_str());
             stopSong();
             log_d("%i redirection to: %s", result, newurl);
-            return connecttohost(newurl, username, pwd, 0);
+            return connectToHost(newurl, username, pwd, 0);
         }
         log_e("Something went wrong redirecting from %s", url);
         _redirectCount = 0;

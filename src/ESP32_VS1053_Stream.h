@@ -26,9 +26,10 @@
 #define VS1053_MAXVOLUME uint8_t(100)     /* do not change */
 #define VS1053_PLAYBUFFER_SIZE size_t(32) /* do not change */
 
-extern void audio_showstation(const char *) __attribute__((weak));
-extern void audio_eof_stream(const char *) __attribute__((weak));
-extern void audio_showstreamtitle(const char *) __attribute__((weak));
+// Support for old callback names will be dropped with 3.0.0
+extern void audioShowStation(const char *) __attribute__((weak));
+extern void audioEOFStream(const char *) __attribute__((weak));
+extern void audioShowStreamTitle(const char *) __attribute__((weak));
 
 class ESP32_VS1053_Stream
 {
@@ -69,25 +70,43 @@ public:
     const char *bufferStatus();
     void bufferStatus(size_t &used, size_t &capacity);
 
-
     // Compatibility with old function names (deprecated)
+    // Support for old names will be dropped with 3.0.0
     [[deprecated("Use connectToHost instead")]]
-    inline bool connecttohost(const char *url) { return connectToHost(url); }
+    inline bool connecttohost(const char *url)
+    {
+        return connectToHost(url);
+    }
 
     [[deprecated("Use connectToHost instead")]]
-    inline bool connecttohost(const char *url, const size_t offset) { return connectToHost(url, offset); }
+    inline bool connecttohost(const char *url, const size_t offset)
+    {
+        return connectToHost(url, offset);
+    }
 
     [[deprecated("Use connectToHost instead")]]
-    inline bool connecttohost(const char *url, const char *username, const char *pwd) { return connectToHost(url, username, pwd); }
+    inline bool connecttohost(const char *url, const char *username, const char *pwd)
+    {
+        return connectToHost(url, username, pwd);
+    }
 
     [[deprecated("Use connectToHost instead")]]
-    inline bool connecttohost(const char *url, const char *username, const char *pwd, const size_t offset) { return connectToHost(url, username, pwd, offset); }
+    inline bool connecttohost(const char *url, const char *username, const char *pwd, const size_t offset)
+    {
+        return connectToHost(url, username, pwd, offset);
+    }
 
     [[deprecated("Use connectToFile instead")]]
-    inline bool connecttofile(fs::FS &fs, const char *filename) { return connectToFile(fs, filename); }
+    inline bool connecttofile(fs::FS &fs, const char *filename)
+    {
+        return connectToFile(fs, filename);
+    }
 
     [[deprecated("Use connectToFile instead")]]
-    inline bool connecttofile(fs::FS &fs, const char *filename, const size_t offset) { return connectToFile(fs, filename, offset); }
+    inline bool connecttofile(fs::FS &fs, const char *filename, const size_t offset)
+    {
+        return connectToFile(fs, filename, offset);
+    }
 
 private:
     VS1053 *_vs1053;
@@ -145,7 +164,17 @@ private:
     const char *ICY_METAINT = "icy-metaint";
     const char *ENCODING = "Transfer-Encoding";
     const char *BITRATE = "icy-br";
-    const char *LOCATION = "Location";    
+    const char *LOCATION = "Location";
 };
+
+// Deprecated function names with warnings
+[[deprecated("Use audioShowStation instead")]]
+extern void audio_showstation(const char *) __attribute__((weak));
+
+[[deprecated("Use audioEOFStream instead")]]
+extern void audio_eof_stream(const char *) __attribute__((weak));
+
+[[deprecated("Use audioShowStreamTitle instead")]]
+extern void audio_showstreamtitle(const char *) __attribute__((weak));
 
 #endif
