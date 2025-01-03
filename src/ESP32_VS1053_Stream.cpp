@@ -158,23 +158,23 @@ bool ESP32_VS1053_Stream::isChipConnected()
     return _vs1053 ? _vs1053->isChipConnected() : false;
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const char *url)
+bool ESP32_VS1053_Stream::connectToHost(const char *url)
 {
-    return connecttohost(url, "", "", 0);
+    return connectToHost(url, "", "", 0);
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const char *url, const size_t offset)
+bool ESP32_VS1053_Stream::connectToHost(const char *url, const size_t offset)
 {
-    return connecttohost(url, "", "", offset);
+    return connectToHost(url, "", "", offset);
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
+bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                                         const char *pwd)
 {
-    return connecttohost(url, username, pwd, 0);
+    return connectToHost(url, username, pwd, 0);
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
+bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                                         const char *pwd, size_t offset)
 {
     if (!_vs1053 || _http || _playingFile || !WiFi.isConnected() ||
@@ -303,7 +303,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             strtok(newurl, "\r\n;?");
             stopSong();
             log_d("playlist reconnects to: %s", newurl);
-            return connecttohost(newurl, username, pwd, offset);
+            return connectToHost(newurl, username, pwd, offset);
         }
 
         else if (CONTENT.equals("audio/mpeg"))
@@ -809,12 +809,12 @@ void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
     capacity = _ringbuffer_handle ? VS1053_PSRAM_BUFFER_SIZE : 0;
 }
 
-bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename)
+bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename)
 {
-    return connecttofile(fs, filename, 0);
+    return connectToFile(fs, filename, 0);
 }
 
-bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const size_t offset)
+bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const size_t offset)
 {
     if (!_vs1053 || _playingFile || _http)
         return false;
