@@ -333,7 +333,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         _chunkedResponse = _http->header(ENCODING).equalsIgnoreCase("chunked") ? true : false;
         _offset = (_remainingBytes == -1) ? 0 : offset;
         _metaDataStart = _http->header(ICY_METAINT).toInt();
-        _musicDataPosition = _metaDataStart ? 0 : -100;
+        _musicDataPosition = _metaDataStart ? 0 : -1;
         if (strcmp(_url, url))
         {
             _vs1053->stopSong();
@@ -516,7 +516,8 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
     while (stream && stream->available() && _bytesLeftInChunk && xRingbufferGetCurFreeSize(_ringbuffer_handle) &&
            _musicDataPosition < _metaDataStart && millis() - START_TIME_MS < MAX_TIME_MS)
     {
-        const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, size_t(_metaDataStart - _musicDataPosition));
+        const size_t BYTES_BEFORE_META_DATA = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
+        const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, BYTES_BEFORE_META_DATA);
         const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, sizeof(_localbuffer));
         const size_t BYTES_SAFE_TO_MOVE = min(BYTES_TO_READ, xRingbufferGetCurFreeSize(_ringbuffer_handle));
         const size_t BYTES_IN_BUFFER = stream->readBytes(_localbuffer, min((size_t)stream->available(), BYTES_SAFE_TO_MOVE));
@@ -568,7 +569,8 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
         while (stream && stream->available() && _bytesLeftInChunk && _vs1053->data_request() &&
                _musicDataPosition < _metaDataStart && millis() - START_TIME_MS < MAX_TIME_MS)
         {
-            const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, size_t(_metaDataStart - _musicDataPosition));
+            const size_t BYTES_BEFORE_META_DATA = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
+            const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, BYTES_BEFORE_META_DATA);
             const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PLAYBUFFER_SIZE);
             const size_t BYTES_IN_BUFFER = stream->readBytes(_vs1053Buffer, min(size_t(stream->available()), BYTES_TO_READ));
             _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
