@@ -337,7 +337,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         if (strcmp(_url, url))
         {
             _vs1053->stopSong();
-            snprintf(_url, sizeof(_url), "%s", url);
+            snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", url);
         }
         _streamStalledTime = 0;
         log_d("redirected %i times", _redirectCount);
@@ -438,7 +438,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
     while (stream && stream->available() && _musicDataPosition < _metaDataStart && millis() - START_TIME_MS < MAX_TIME_MS)
     {
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
-        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, sizeof(_localbuffer));
+        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PSRAM_MAX_MOVE);
         const size_t BYTES_SAFE_TO_MOVE = min(BYTES_TO_READ, xRingbufferGetCurFreeSize(_ringbuffer_handle));
         const size_t BYTES_IN_BUFFER = stream->readBytes(_localbuffer, min((size_t)stream->available(), BYTES_SAFE_TO_MOVE));
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
@@ -518,7 +518,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
     {
         const size_t BYTES_BEFORE_META_DATA = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
         const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, BYTES_BEFORE_META_DATA);
-        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, sizeof(_localbuffer));
+        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PSRAM_MAX_MOVE);
         const size_t BYTES_SAFE_TO_MOVE = min(BYTES_TO_READ, xRingbufferGetCurFreeSize(_ringbuffer_handle));
         const size_t BYTES_IN_BUFFER = stream->readBytes(_localbuffer, min((size_t)stream->available(), BYTES_SAFE_TO_MOVE));
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
@@ -852,7 +852,7 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
     if (strcmp(filename, _url))
     {
         _vs1053->stopSong();
-        snprintf(_url, sizeof(_url), "%s", filename);
+        snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", filename);
         _vs1053->startSong();
     }
     _filesystem = &fs;
