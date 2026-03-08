@@ -153,7 +153,7 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     setVolume(_volume);
 
     if (!_ringbuffer_handle)
-         _allocateRingbuffer();
+        _allocateRingbuffer();
     return true;
 }
 
@@ -742,6 +742,13 @@ void ESP32_VS1053_Stream::stopSong()
     _http->end();
     delete _http;
     _http = nullptr;
+    if (_ringbuffer_handle)
+    {
+        size_t item_size;
+        void *item;
+        while ((item = xRingbufferReceive(_ringbuffer_handle, &item_size, 0)) != nullptr)
+            vRingbufferReturnItem(_ringbuffer_handle, item);
+    }
     _ringbuffer_filled = false;
     _bytesLeftInChunk = 0;
     _dataSeen = false;
