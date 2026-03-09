@@ -427,7 +427,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         _vs1053->playChunk(data, size);
         vRingbufferReturnItem(_ringbuffer_handle, data);
         // bytesToDecoder += size;
-        _remainingBytes -= _remainingBytes > 0 ? size : 0;
+        _remainingBytes = (_remainingBytes > size) ? _remainingBytes - size : 0;
     }
     // log_d("spend %lu ms stuffing %i bytes in decoder", millis() - START_TIME_MS, bytesToDecoder);
 }
@@ -866,31 +866,41 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
     _filesystem = &fs;
     _playingFile = true;
     _vs1053->setVolume(_volume);
+    _remainingBytes = _file.size() - offset;
+
+    log_i("remaining bytes at open: %lu", _remainingBytes);
     return true;
 }
 
 void ESP32_VS1053_Stream::_handleLocalFile()
 {
-    if (!_filesystem->exists(_url))
+    if (!_file)
     {
-        log_e("fs error - bailing out");
         _eofStream();
         return;
     }
 
-    /* this loop is IO driven where -some- transactions take a serious amount of time */
-    /* and because of that -sometimes- it takes much longer to finish a loop than MAX_MS suggests */
-    /* sometimes up to 13-15 ms */
-    const auto START_MS = millis();
-    const auto MAX_MS = 5;
+    log_i("file pos: %lu", _file.position());
+    log_i("remaining bytes: %lu", _remainingBytes);
 
-    while (millis() - START_MS < MAX_MS && _file.available() && _vs1053->data_request())
+    if (_remainingBytes)
     {
-        const size_t BYTES_IN_BUFFER =
-            _file.readBytes((char *)_vs1053Buffer, min((size_t)_file.available(), VS1053_PLAYBUFFER_SIZE));
-        _vs1053->playChunk(_vs1053Buffer, BYTES_IN_BUFFER);
+        size_t free = xRingbufferGetCurFreeSize(_ringbuffer_handle);
+        if (free > 1024)
+        {
+            size_t toRead = min(sizeof(_localbuffer), free);
+            size_t bytes = _file.read(_localbuffer, toRead);
+
+            if (bytes)
+                xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0);
+        }
     }
 
-    if (!_file.available() && _file.position() == _file.size())
+    _playFromRingBuffer();
+
+    if (!_remainingBytes && xRingbufferGetCurFreeSize(_ringbuffer_handle) == VS1053_PSRAM_BUFFER_SIZE)
+    {
+        log_i("end of local file");
         _eofStream();
+    }
 }
