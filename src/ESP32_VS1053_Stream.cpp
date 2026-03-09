@@ -730,6 +730,17 @@ void ESP32_VS1053_Stream::stopSong()
     _vs1053->setVolume(0);
     _currentCodec = STOPPED;
 
+    if (_ringbuffer_handle)
+    {
+        size_t item_size;
+        void *item;
+        while ((item = xRingbufferReceive(_ringbuffer_handle, &item_size, 0)) != nullptr)
+            vRingbufferReturnItem(_ringbuffer_handle, item);
+    }    
+    _ringbuffer_filled = false;
+    _remainingBytes = 0;
+    _offset = 0;
+
     if (_playingFile)
     {
         _file.close();
@@ -740,18 +751,9 @@ void ESP32_VS1053_Stream::stopSong()
     _http->end();
     delete _http;
     _http = nullptr;
-    if (_ringbuffer_handle)
-    {
-        size_t item_size;
-        void *item;
-        while ((item = xRingbufferReceive(_ringbuffer_handle, &item_size, 0)) != nullptr)
-            vRingbufferReturnItem(_ringbuffer_handle, item);
-    }
-    _ringbuffer_filled = false;
+
     _bytesLeftInChunk = 0;
     _dataSeen = false;
-    _remainingBytes = 0;
-    _offset = 0;
 }
 
 uint8_t ESP32_VS1053_Stream::getVolume()
@@ -868,7 +870,6 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
     _vs1053->setVolume(_volume);
     _remainingBytes = _file.size() - offset;
 
-    log_i("remaining bytes at open: %lu", _remainingBytes);
     return true;
 }
 
@@ -876,6 +877,7 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 {
     if (!_file)
     {
+        log_e("file error");
         _eofStream();
         return;
     }
@@ -899,8 +901,5 @@ void ESP32_VS1053_Stream::_handleLocalFile()
     _playFromRingBuffer();
 
     if (!_remainingBytes && xRingbufferGetCurFreeSize(_ringbuffer_handle) == VS1053_PSRAM_BUFFER_SIZE)
-    {
-        log_i("end of local file");
         _eofStream();
-    }
 }
