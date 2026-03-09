@@ -7,6 +7,7 @@ ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
     stopSong();
+    _deallocateRingbuffer();
     delete _vs1053;
 }
 
@@ -17,9 +18,8 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
 
     if (_buffer_struct || _buffer_storage || _ringbuffer_handle)
     {
-        log_e("fatal error! Ringbuffer pointers not NULL on allocate!");
-        while (true)
-            delay(1000);
+        log_e("Ringbuffer pointers not NULL on allocate");
+        return;
     }
 
     _buffer_struct = (StaticRingbuffer_t *)heap_caps_malloc(sizeof(StaticRingbuffer_t), MALLOC_CAP_SPIRAM);
@@ -150,6 +150,8 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     if (_vs1053->getChipVersion() == 4)
         _vs1053->loadDefaultVs1053Patches();
     setVolume(_volume);
+    if (!_ringbuffer_handle)
+        _allocateRingbuffer();
     return true;
 }
 
@@ -343,7 +345,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         _streamStalledTime = 0;
         log_d("redirected %i times", _redirectCount);
         _redirectCount = 0;
-        _allocateRingbuffer();
         return true;
     }
 
@@ -739,7 +740,13 @@ void ESP32_VS1053_Stream::stopSong()
     _http->end();
     delete _http;
     _http = nullptr;
-    _deallocateRingbuffer();
+    if (_ringbuffer_handle)
+    {
+        size_t item_size;
+        void *item;
+        while ((item = xRingbufferReceive(_ringbuffer_handle, &item_size, 0)) != nullptr)
+            vRingbufferReturnItem(_ringbuffer_handle, item);
+    }
     _ringbuffer_filled = false;
     _bytesLeftInChunk = 0;
     _dataSeen = false;
