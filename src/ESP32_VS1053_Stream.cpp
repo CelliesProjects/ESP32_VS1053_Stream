@@ -18,9 +18,8 @@ void ESP32_VS1053_Stream::_allocateRingbuffer()
 
     if (_buffer_struct || _buffer_storage || _ringbuffer_handle)
     {
-        log_e("fatal error! Ringbuffer pointers not NULL on allocate!");
-        while (true)
-            delay(1000);
+        log_e("Ringbuffer pointers not NULL on allocate");
+        return;
     }
 
     _buffer_struct = (StaticRingbuffer_t *)heap_caps_malloc(sizeof(StaticRingbuffer_t), MALLOC_CAP_SPIRAM);
@@ -151,7 +150,6 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     if (_vs1053->getChipVersion() == 4)
         _vs1053->loadDefaultVs1053Patches();
     setVolume(_volume);
-
     if (!_ringbuffer_handle)
         _allocateRingbuffer();
     return true;
