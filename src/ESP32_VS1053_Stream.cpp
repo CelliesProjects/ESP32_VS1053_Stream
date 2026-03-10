@@ -848,12 +848,17 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
         return false;
     }
 
-    _currentCodec = (_file.read() == 0xFF && _file.read() == 0xFB) ? MP3 : _currentCodec;
-    _file.seek(0);
-    _currentCodec = (_file.read() == 0x49 && _file.read() == 0x44 && _file.read() == 0x33) ? MP3 : _currentCodec;
+    uint8_t header[8];
+    _file.read(header, sizeof(header));
 
-    _file.seek(0);
-    _currentCodec = (_file.read() == 0x4F && _file.read() == 0x67 && _file.read() == 0x67) ? OGG : _currentCodec;
+    if (!memcmp(header, "OggS", 4))
+        _currentCodec = OGG;
+
+    else if (!memcmp(header, "ID3", 3))
+        _currentCodec = MP3;
+
+    else if (header[0] == 0xFF && (header[1] & 0xE0) == 0xE0)
+        _currentCodec = MP3;
 
     if (_currentCodec == STOPPED)
     {
