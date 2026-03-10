@@ -392,7 +392,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
     const auto START_TIME_MS = millis();
     const auto MAX_TIME_MS = 5;
-    // size_t bytesToDecoder = 0;
+    size_t bytesToDecoder = 0;
     while (_remainingBytes && _vs1053->data_request() && millis() - START_TIME_MS < MAX_TIME_MS)
     {
         size_t size = 0;
@@ -425,10 +425,10 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
         _vs1053->playChunk(data, size);
         vRingbufferReturnItem(_ringbuffer_handle, data);
-        // bytesToDecoder += size;
+        bytesToDecoder += size;
         _remainingBytes = (_remainingBytes > size) ? _remainingBytes - size : 0;
     }
-    // log_d("spend %lu ms stuffing %i bytes in decoder", millis() - START_TIME_MS, bytesToDecoder);
+    log_d("spend %lu ms stuffing %i bytes in decoder", millis() - START_TIME_MS, bytesToDecoder);
 }
 
 void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
@@ -834,13 +834,13 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
         log_e("psram buffer required for local file decoding");
         return false;
     }
-
     _file = fs.open(filename, FILE_READ, false);
     if (!_file)
     {
         log_e("could not open file");
         return false;
     }
+    _file.setBufferSize(2048);
 
     if (offset >= _file.size())
     {
@@ -890,8 +890,10 @@ void ESP32_VS1053_Stream::_handleLocalFile()
         return;
     }
 
-    log_i("file pos: %lu", _file.position());
-    log_i("remaining bytes: %lu", _remainingBytes);
+    log_d("file pos: %lu", _file.position());
+    log_d("remaining bytes: %lu", _remainingBytes);
+
+    const auto startTimeMS = millis();
 
     if (_remainingBytes)
     {
@@ -902,12 +904,15 @@ void ESP32_VS1053_Stream::_handleLocalFile()
             size_t bytes = _file.read(_localbuffer, toRead);
 
             if (bytes)
+            {
                 xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0);
+                log_d("spend %lu ms stuffing %i bytes in ringbuffer", millis() - startTimeMS, bytes);
+            }
         }
     }
 
     _playFromRingBuffer();
 
-    if (!_remainingBytes && xRingbufferGetCurFreeSize(_ringbuffer_handle) == VS1053_PSRAM_BUFFER_SIZE)
+    if (!_remainingBytes)
         _eofStream();
 }
