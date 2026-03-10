@@ -1,8 +1,7 @@
 #include "ESP32_VS1053_Stream.h"
 
 ESP32_VS1053_Stream::ESP32_VS1053_Stream() : _vs1053(nullptr), _http(nullptr), _vs1053Buffer{0}, _localbuffer{0}, _url{0},
-                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr),
-                                             _filesystem(nullptr) {}
+                                             _ringbuffer_handle(nullptr), _buffer_struct(nullptr), _buffer_storage(nullptr) {}
 
 ESP32_VS1053_Stream::~ESP32_VS1053_Stream()
 {
@@ -732,11 +731,11 @@ void ESP32_VS1053_Stream::stopSong()
 
     if (_ringbuffer_handle)
     {
-        size_t item_size;
+        size_t size;
         void *item;
-        while ((item = xRingbufferReceive(_ringbuffer_handle, &item_size, 0)) != nullptr)
+        while ((item = xRingbufferReceive(_ringbuffer_handle, &size, 0)) != nullptr)
             vRingbufferReturnItem(_ringbuffer_handle, item);
-    }    
+    }
     _ringbuffer_filled = false;
     _remainingBytes = 0;
     _offset = 0;
@@ -751,7 +750,6 @@ void ESP32_VS1053_Stream::stopSong()
     _http->end();
     delete _http;
     _http = nullptr;
-
     _bytesLeftInChunk = 0;
     _dataSeen = false;
 }
@@ -831,6 +829,12 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
     if (!_vs1053 || _playingFile || _http)
         return false;
 
+    if (!_ringbuffer_handle)
+    {
+        log_e("psram buffer required for local file decoding");
+        return false;
+    }
+
     _file = fs.open(filename, FILE_READ, false);
     if (!_file)
     {
@@ -865,7 +869,6 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
         snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", filename);
         _vs1053->startSong();
     }
-    _filesystem = &fs;
     _playingFile = true;
     _vs1053->setVolume(_volume);
     _remainingBytes = _file.size() - offset;
