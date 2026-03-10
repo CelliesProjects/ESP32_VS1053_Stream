@@ -21,7 +21,7 @@
 
 #define VS1053_PSRAM_BUFFER_ENABLED true
 #define VS1053_PSRAM_BUFFER_SIZE size_t(1024 * 64)
-#define VS1053_PSRAM_MAX_MOVE size_t(1024 * 4)
+#define VS1053_PSRAM_MAX_MOVE size_t(1024 * 2)
 
 #define VS1053_MAXVOLUME uint8_t(100)     /* do not change */
 #define VS1053_PLAYBUFFER_SIZE size_t(32) /* do not change */
