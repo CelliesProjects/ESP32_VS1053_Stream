@@ -637,7 +637,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
 
 void ESP32_VS1053_Stream::loop()
 {
-    if (_playingFile && _file && _vs1053->data_request())
+    if (_playingFile)
     {
         _handleLocalFile();
         return;
@@ -704,7 +704,7 @@ void ESP32_VS1053_Stream::loop()
         }
     }
 
-    if (_remainingBytes && _vs1053->data_request())
+    if (_remainingBytes)
     {
         if (_chunkedResponse)
             _handleChunkedStream(stream);
