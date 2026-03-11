@@ -67,7 +67,7 @@ void ESP32_VS1053_Stream::_deallocateRingbuffer()
     }
 }
 
-size_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient *const stream)
+size_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient *stream)
 {
     constexpr const auto BUFFER_SIZE = 12;
     char buffer[BUFFER_SIZE];
@@ -92,7 +92,7 @@ size_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient *const stream)
     return strtol(buffer, nullptr, 16);
 }
 
-bool ESP32_VS1053_Stream::_checkSync(WiFiClient *const stream)
+bool ESP32_VS1053_Stream::_checkSync(WiFiClient *stream)
 {
     if ((char)stream->read() != '\r' || (char)stream->read() != '\n')
     {
@@ -431,7 +431,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     log_d("spend %lu ms stuffing %i bytes in decoder", millis() - startTimeMS, bytesToDecoder);
 }
 
-void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
+void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
 {
     [[maybe_unused]] const auto startTimeMS = millis();
     const auto maxTimeMS = 5;
@@ -456,7 +456,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *const stream)
     log_d("spend %lu ms stuffing %i bytes in ringbuffer", millis() - startTimeMS, bytesToRingBuffer);
 }
 
-void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
+void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
 {
     if (!_dataSeen)
     {
@@ -509,7 +509,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *const stream)
     }
 }
 
-void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
+void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *stream)
 {
     [[maybe_unused]] const auto startTimeMS = millis();
     const auto maxTimeMS = 5;
@@ -537,7 +537,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *const stream)
     log_d("spend %lu ms stuffing %i bytes in ringbuffer", millis() - startTimeMS, bytesToRingBuffer);
 }
 
-void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
+void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 {
     if (!_bytesLeftInChunk)
     {
@@ -635,6 +635,17 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *const stream)
     }
 }
 
+void ESP32_VS1053_Stream::_feedDecoder(WiFiClient *stream)
+{
+    if (_chunkedResponse)
+        _handleChunkedStream(stream);
+    else
+        _handleStream(stream);
+        
+    if (!_remainingBytes)
+        _eofStream();
+}
+
 void ESP32_VS1053_Stream::loop()
 {
     if (_playingFile)
@@ -653,40 +664,34 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    WiFiClient *const stream = _http->getStreamPtr(); /* this WILL be a NULL ptr at the end of real files -in psram buffer mode- when al stream data is read but not yet in the decoder */
-    if (!_ringbuffer_handle && !stream)
+    WiFiClient *stream = _http->getStreamPtr();
+    if (!stream)
     {
         log_e("Stream connection lost");
         _eofStream();
         return;
     }
 
-    if (!_ringbuffer_handle && !stream->available())
+    const bool data = stream->available();
+
+    if (_streamStalledTime && !data && !_ringbuffer_handle &&
+        millis() - _streamStalledTime > VS1053_NOBUFFER_TIMEOUT_MS)
     {
-        if (!_streamStalledTime)
-        {
-            _streamStalledTime = millis();
-            _streamStalledTime += _streamStalledTime ? 0 : 1;
-            return;
-        }
-        if (millis() - _streamStalledTime > VS1053_NOBUFFER_TIMEOUT_MS)
-        {
-            log_e("Stream timeout %lu ms", VS1053_NOBUFFER_TIMEOUT_MS);
-            _eofStream();
-            return;
-        }
+        log_e("Stream timeout %lu ms", VS1053_NOBUFFER_TIMEOUT_MS);
+        _eofStream();
         return;
     }
 
-    if (_ringbuffer_handle && stream && !stream->available() && !_streamStalledTime)
+    if (!_streamStalledTime && !data)
     {
-        _streamStalledTime = millis();
-        _streamStalledTime += _streamStalledTime ? 0 : 1;
+        _streamStalledTime = millis() ?: 1;
+        if (!_ringbuffer_handle)
+            return;
     }
 
-    if (stream && stream->available() && _streamStalledTime)
+    if (_streamStalledTime && data)
     {
-        log_d("Stream stalled for %lu ms", millis() - _streamStalledTime);
+        log_i("Stream stalled for %lu ms", millis() - _streamStalledTime);
         _streamStalledTime = 0;
     }
 
@@ -703,17 +708,7 @@ void ESP32_VS1053_Stream::loop()
             _startMute = 0;
         }
     }
-
-    if (_remainingBytes)
-    {
-        if (_chunkedResponse)
-            _handleChunkedStream(stream);
-        else
-            _handleStream(stream);
-    }
-
-    if (!_remainingBytes)
-        _eofStream();
+    _feedDecoder(stream);
 }
 
 bool ESP32_VS1053_Stream::isRunning()
