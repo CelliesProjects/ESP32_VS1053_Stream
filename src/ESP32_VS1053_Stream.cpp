@@ -661,7 +661,9 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    if (_streamStalledTime && !stream->available() && !_ringbuffer_handle &&
+    const bool available = stream->available();
+
+    if (_streamStalledTime && !available && !_ringbuffer_handle &&
         millis() - _streamStalledTime > VS1053_NOBUFFER_TIMEOUT_MS)
     {
         log_e("Stream timeout %lu ms", VS1053_NOBUFFER_TIMEOUT_MS);
@@ -669,7 +671,7 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    if (!_streamStalledTime && !stream->available())
+    if (!_streamStalledTime && !available)
     {
         _streamStalledTime = millis();
         _streamStalledTime += _streamStalledTime ? 0 : 1;
@@ -677,7 +679,7 @@ void ESP32_VS1053_Stream::loop()
             return;
     }
 
-    if (stream->available() && _streamStalledTime)
+    if (available && _streamStalledTime)
     {
         log_i("Stream stalled for %lu ms", millis() - _streamStalledTime);
         _streamStalledTime = 0;
