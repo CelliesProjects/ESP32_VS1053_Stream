@@ -661,17 +661,15 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    if (!_ringbuffer_handle && !stream->available() && _streamStalledTime)
+    if (_streamStalledTime && !stream->available() && !_ringbuffer_handle &&
+        millis() - _streamStalledTime > VS1053_NOBUFFER_TIMEOUT_MS)
     {
-        if (millis() - _streamStalledTime > VS1053_NOBUFFER_TIMEOUT_MS)
-        {
-            log_e("Stream timeout %lu ms", VS1053_NOBUFFER_TIMEOUT_MS);
-            _eofStream();
-            return;
-        }
+        log_e("Stream timeout %lu ms", VS1053_NOBUFFER_TIMEOUT_MS);
+        _eofStream();
+        return;
     }
 
-    if (!stream->available() && !_streamStalledTime)
+    if (!_streamStalledTime && !stream->available())
     {
         _streamStalledTime = millis();
         _streamStalledTime += _streamStalledTime ? 0 : 1;
