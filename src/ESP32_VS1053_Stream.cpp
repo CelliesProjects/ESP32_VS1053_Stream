@@ -678,7 +678,7 @@ void ESP32_VS1053_Stream::loop()
             return;
     }
 
-    if (data && _streamStalledTime)
+    if (_streamStalledTime && data)
     {
         log_i("Stream stalled for %lu ms", millis() - _streamStalledTime);
         _streamStalledTime = 0;
