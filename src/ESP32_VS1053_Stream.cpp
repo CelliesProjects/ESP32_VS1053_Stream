@@ -653,40 +653,35 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    WiFiClient *const stream = _http->getStreamPtr(); /* this WILL be a NULL ptr at the end of real files -in psram buffer mode- when al stream data is read but not yet in the decoder */
-    if (!_ringbuffer_handle && !stream)
+    WiFiClient *stream = _http->getStreamPtr();
+    if (!stream)
     {
         log_e("Stream connection lost");
         _eofStream();
         return;
     }
 
-    if (!_ringbuffer_handle && !stream->available())
+    if (!_ringbuffer_handle && !stream->available() && _streamStalledTime)
     {
-        if (!_streamStalledTime)
-        {
-            _streamStalledTime = millis();
-            _streamStalledTime += _streamStalledTime ? 0 : 1;
-            return;
-        }
         if (millis() - _streamStalledTime > VS1053_NOBUFFER_TIMEOUT_MS)
         {
             log_e("Stream timeout %lu ms", VS1053_NOBUFFER_TIMEOUT_MS);
             _eofStream();
             return;
         }
-        return;
     }
 
-    if (_ringbuffer_handle && stream && !stream->available() && !_streamStalledTime)
+    if (!stream->available() && !_streamStalledTime)
     {
         _streamStalledTime = millis();
         _streamStalledTime += _streamStalledTime ? 0 : 1;
+        if (!_ringbuffer_handle)
+            return;
     }
 
-    if (stream && stream->available() && _streamStalledTime)
+    if (stream->available() && _streamStalledTime)
     {
-        log_d("Stream stalled for %lu ms", millis() - _streamStalledTime);
+        log_i("Stream stalled for %lu ms", millis() - _streamStalledTime);
         _streamStalledTime = 0;
     }
 
