@@ -14,12 +14,13 @@
 #define VS1053_ICY_METADATA true
 #define VS1053_CONNECT_TIMEOUT_MS 250
 #define VS1053_CONNECT_TIMEOUT_MS_SSL 750
-#define VS1053_NOBUFFER_TIMEOUT_MS 900
+#define VS1053_STREAM_TIMEOUT_MS 900
 #define VS1053_MAX_PLAYLIST_READ 1024
 #define VS1053_MAX_URL_LENGTH 256
 #define VS1053_MAX_REDIRECT_COUNT 3
 
 #define VS1053_PSRAM_BUFFER_ENABLED true
+#define VS1053_PSRAM_BUFFER_TIMEOUT_MS 900
 #define VS1053_PSRAM_BUFFER_SIZE size_t(1024 * 64)
 #define VS1053_PSRAM_MAX_MOVE size_t(1024 * 2)
 
@@ -108,7 +109,7 @@ private:
     bool _chunkedResponse = false;
     bool _dataSeen = false;
     bool _ringbuffer_filled = false;
-    unsigned long _streamStalledTime = 0;
+    unsigned long _stallStartMS = 0;
     uint8_t _redirectCount = 0;
 
     enum codec_t

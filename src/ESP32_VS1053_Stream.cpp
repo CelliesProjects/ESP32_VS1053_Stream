@@ -341,7 +341,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             _vs1053->stopSong();
             snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", url);
         }
-        _streamStalledTime = 0;
+        _stallStartMS = 0;
         log_d("redirected %i times", _redirectCount);
         _redirectCount = 0;
         return true;
@@ -397,30 +397,29 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     {
         size_t size = 0;
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
-        static unsigned long emptyBufferStartTimeMs = 0;
+        static unsigned long emptyStartMS = 0;
         if (!data)
         {
-            if (!emptyBufferStartTimeMs)
+            if (!emptyStartMS)
             {
-                emptyBufferStartTimeMs = millis();
-                emptyBufferStartTimeMs += emptyBufferStartTimeMs ? 0 : 1;
+                emptyStartMS = millis() ?: 1;
                 log_e("no buffer data available");
                 return;
             }
-            const auto BAILOUT_MS = 2000;
-            if (millis() - emptyBufferStartTimeMs > BAILOUT_MS)
+
+            if (millis() - emptyStartMS > VS1053_PSRAM_BUFFER_TIMEOUT_MS)
             {
-                log_e("buffer empty for %i ms, bailing out...", BAILOUT_MS);
-                emptyBufferStartTimeMs = 0;
+                log_e("buffer empty for %i ms, bailing out...", VS1053_PSRAM_BUFFER_TIMEOUT_MS);
+                emptyStartMS = 0;
                 _remainingBytes = 0;
                 return;
             }
             return;
         }
-        if (emptyBufferStartTimeMs)
+        if (emptyStartMS)
         {
-            log_e("buffer empty for %i ms", millis() - emptyBufferStartTimeMs);
-            emptyBufferStartTimeMs = 0;
+            log_e("buffer empty for %i ms", millis() - emptyStartMS);
+            emptyStartMS = 0;
         }
 
         _vs1053->playChunk(data, size);
@@ -641,7 +640,7 @@ void ESP32_VS1053_Stream::_feedDecoder(WiFiClient *stream)
         _handleChunkedStream(stream);
     else
         _handleStream(stream);
-        
+
     if (!_remainingBytes)
         _eofStream();
 }
@@ -673,26 +672,29 @@ void ESP32_VS1053_Stream::loop()
     }
 
     const bool data = stream->available();
+    const auto now = millis();
+    const auto currentStallTimeMS = now - _stallStartMS;
 
-    if (_streamStalledTime && !data && !_ringbuffer_handle &&
-        millis() - _streamStalledTime > VS1053_NOBUFFER_TIMEOUT_MS)
+    if (_stallStartMS && !data && !_ringbuffer_handle &&
+        currentStallTimeMS > VS1053_STREAM_TIMEOUT_MS)
     {
-        log_e("Stream timeout %lu ms", VS1053_NOBUFFER_TIMEOUT_MS);
+        log_e("Stream timeout %lu ms", VS1053_STREAM_TIMEOUT_MS);
         _eofStream();
         return;
     }
 
-    if (!_streamStalledTime && !data)
+    if (!_stallStartMS && !data)
     {
-        _streamStalledTime = millis() ?: 1;
+        _stallStartMS = now ?: 1;
         if (!_ringbuffer_handle)
             return;
     }
 
-    if (_streamStalledTime && data)
+    if (_stallStartMS && data)
     {
-        log_i("Stream stalled for %lu ms", millis() - _streamStalledTime);
-        _streamStalledTime = 0;
+        if (!_ringbuffer_handle)
+            log_w("Stream stalled for %lu ms", currentStallTimeMS);
+        _stallStartMS = 0;
     }
 
     if (_startMute)
