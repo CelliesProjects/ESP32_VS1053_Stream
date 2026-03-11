@@ -83,19 +83,20 @@ private:
     File _file;
     bool _playingFile = false;
 
-    size_t _nextChunkSize(WiFiClient *const stream);
-    bool _checkSync(WiFiClient *const stream);
+    size_t _nextChunkSize(WiFiClient *stream);
+    bool _checkSync(WiFiClient *stream);
     void _handleMetadata(char *data, const size_t len);
     void _eofStream();
     bool _canRedirect();
-    void _handleStream(WiFiClient *const stream);
-    void _handleChunkedStream(WiFiClient *const stream);
+    void _handleStream(WiFiClient *stream);
+    void _handleChunkedStream(WiFiClient *stream);
     void _allocateRingbuffer();
     void _deallocateRingbuffer();
     void _playFromRingBuffer();
-    void _streamToRingBuffer(WiFiClient *const stream);
-    void _chunkedStreamToRingBuffer(WiFiClient *const stream);
+    void _streamToRingBuffer(WiFiClient *stream);
+    void _chunkedStreamToRingBuffer(WiFiClient *stream);
     void _handleLocalFile();
+    void _feedDecoder(WiFiClient *stream);
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
@@ -124,7 +125,7 @@ private:
     const char *ICY_METAINT = "icy-metaint";
     const char *ENCODING = "Transfer-Encoding";
     const char *BITRATE = "icy-br";
-    const char *LOCATION = "Location";    
+    const char *LOCATION = "Location";
 };
 
 #endif
