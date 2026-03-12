@@ -326,7 +326,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         if (audio_showstation && !_http->header(ICY_NAME).equals(""))
             audio_showstation(_http->header(ICY_NAME).c_str());
 
-        _remainingBytes = _http->getSize(); // -1 when Server sends no contentType-Length header (chunked streams)
+        _remainingBytes = _http->getSize(); // -1 when Server sends no Content-Length header (chunked streams)
         _chunkedResponse = _http->header(ENCODING).equalsIgnoreCase("chunked") ? true : false;
         _offset = (_remainingBytes == -1) ? 0 : offset;
         _metaDataStart = _http->header(ICY_METAINT).toInt();
