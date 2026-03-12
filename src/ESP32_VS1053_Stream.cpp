@@ -725,6 +725,8 @@ void ESP32_VS1053_Stream::stopSong()
 
     _vs1053->setVolume(0);
     _currentCodec = STOPPED;
+   _remainingBytes = 0;
+    _offset = 0;
 
     if (_ringbuffer_handle)
     {
@@ -734,9 +736,6 @@ void ESP32_VS1053_Stream::stopSong()
             vRingbufferReturnItem(_ringbuffer_handle, item);
         _ringbuffer_filled = false;
     }
-
-    _remainingBytes = 0;
-    _offset = 0;
 
     if (_playingFile)
     {
