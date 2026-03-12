@@ -252,9 +252,9 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     _http->collectHeaders(header, sizeof(header) / sizeof(char *));
     _http->setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
 
-    const int result = _http->GET();
+    const int HTTPresult = _http->GET();
 
-    switch (result)
+    switch (HTTPresult)
     {
     case 206:
         log_d("server can resume");
@@ -296,7 +296,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 {
                     strtok(newUrl, "\r\n;?");
                     stopSong();
-                    log_i("playlist %s reconnects to: %s", newUrl);
+                    log_d("playlist %s reconnects to: %s", url, newUrl);
                     return connecttohost(newUrl, username, pwd, offset);
                 }
             }
@@ -374,12 +374,12 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         }
 
         stopSong();
-        log_d("%i redirection to: %s", result, location.c_str());
+        log_d("%i redirection to: %s", HTTPresult, location.c_str());
         return connecttohost(location.c_str(), username, pwd, 0);
     }
 
     default:
-        log_d("error %i %s", result, _http->errorToString(result).c_str());
+        log_d("error %i %s", HTTPresult, _http->errorToString(HTTPresult).c_str());
         _redirectCount = 0;
         stopSong();
         return false;
