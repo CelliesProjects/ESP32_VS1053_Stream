@@ -261,19 +261,18 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         [[fallthrough]];
     case 200:
     {
-        String CONTENT = _http->header(CONTENT_TYPE);
-        CONTENT.toLowerCase();
-        if (CONTENT.indexOf("audio/scpls") != -1 ||
-            CONTENT.indexOf("audio/x-scpls") != -1 ||
-            CONTENT.indexOf("audio/mpegurl") != -1 ||
-            CONTENT.indexOf("audio/x-mpegurl") != -1 ||
-            CONTENT.indexOf("application/x-mpegurl") != -1 ||
-            CONTENT.indexOf("application/pls+xml") != -1 ||
-            CONTENT.indexOf("application/vnd.apple.mpegurl") != -1)
+        const String contentType = _http->header(CONTENT_TYPE);
+        const char *ct = contentType.c_str();
+        if (strcasestr(ct, "audio/x-scpls") ||
+            strcasestr(ct, "audio/scpls") ||
+            strcasestr(ct, "audio/x-mpegurl") ||
+            strcasestr(ct, "application/x-mpegurl") ||
+            strcasestr(ct, "audio/mpegurl"))
         {
             log_d("url %s is a playlist", url);
             if (!_canRedirect())
             {
+                _redirectCount = 0;
                 stopSong();
                 return false;
             }
@@ -284,46 +283,42 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                 stopSong();
                 return false;
             }
-            const auto BYTES_TO_READ = min(stream->available(), VS1053_MAX_PLAYLIST_READ);
-            if (!BYTES_TO_READ)
+
+            char line[256];
+
+            while (stream->connected() && stream->available())
             {
-                log_e("playlist contains no data");
-                stopSong();
-                return false;
+                size_t len = stream->readBytesUntil('\n', line, sizeof(line) - 1);
+                line[len] = 0;
+
+                char *newUrl = strstr(line, "http");
+                if (newUrl)
+                {
+                    strtok(newUrl, "\r\n;?");
+                    stopSong();
+                    log_i("playlist %s reconnects to: %s", newUrl);
+                    return connecttohost(newUrl, username, pwd, offset);
+                }
             }
-            char file[BYTES_TO_READ + 1];
-            stream->readBytes(file, BYTES_TO_READ);
-            file[BYTES_TO_READ] = 0;
-            char *newurl = strstr(file, "http");
-            if (!newurl)
-            {
-                log_e("playlist contains no url");
-                stopSong();
-                return false;
-            }
-            strtok(newurl, "\r\n;?");
-            stopSong();
-            log_d("playlist reconnects to: %s", newurl);
-            return connecttohost(newurl, username, pwd, offset);
         }
 
-        else if (CONTENT.equals("audio/mpeg") ||
-                 CONTENT.equals("audio/mp3"))
+        else if (strcasestr(ct, "audio/mpeg") ||
+                 strcasestr(ct, "audio/mp3"))
             _currentCodec = MP3;
 
-        else if (CONTENT.equals("audio/ogg") ||
-                 CONTENT.equals("application/ogg"))
+        else if (strcasestr(ct, "audio/ogg") ||
+                 strcasestr(ct, "application/ogg"))
             _currentCodec = OGG;
 
-        else if (CONTENT.equals("audio/aac"))
+        else if (strcasestr(ct, "audio/aac"))
             _currentCodec = AAC;
 
-        else if (CONTENT.equals("audio/aacp"))
+        else if (strcasestr(ct, "audio/aacp"))
             _currentCodec = AACP;
 
         else
         {
-            log_e("closing - unsupported mimetype: '%s'", CONTENT.c_str());
+            log_e("closing - unsupported mimetype: '%s'", ct);
             stopSong();
             return false;
         }
@@ -331,7 +326,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         if (audio_showstation && !_http->header(ICY_NAME).equals(""))
             audio_showstation(_http->header(ICY_NAME).c_str());
 
-        _remainingBytes = _http->getSize(); // -1 when Server sends no Content-Length header (chunked streams)
+        _remainingBytes = _http->getSize(); // -1 when Server sends no contentType-Length header (chunked streams)
         _chunkedResponse = _http->header(ENCODING).equalsIgnoreCase("chunked") ? true : false;
         _offset = (_remainingBytes == -1) ? 0 : offset;
         _metaDataStart = _http->header(ICY_METAINT).toInt();
@@ -342,7 +337,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", url);
         }
         _stallStartMS = 0;
-        log_d("redirected %i times", _redirectCount);
+        log_i("redirected %i times", _redirectCount);
         _redirectCount = 0;
         return true;
     }
@@ -350,28 +345,42 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     case 301:
         [[fallthrough]];
     case 302:
+    {
         if (!_canRedirect())
         {
+            _redirectCount = 0;
             stopSong();
             return false;
         }
-        if (_http->hasHeader(LOCATION) && _http->header(LOCATION).indexOf("./") == -1)
-        { // hacky solution: some items on radio-browser.info
-          // has non resolving names that contain './' in their
-          // hostname
-            char newurl[_http->header(LOCATION).length() + 1];
-            snprintf(newurl, sizeof(newurl), "%s", _http->header(LOCATION).c_str());
+
+        if (!_http->hasHeader(LOCATION))
+        {
+            log_e("No location header redirecting from %s", url);
+            _redirectCount = 0;
             stopSong();
-            log_d("%i redirection to: %s", result, newurl);
-            return connecttohost(newurl, username, pwd, 0);
+            return false;
         }
-        log_e("Something went wrong redirecting from %s", url);
-        _redirectCount = 0;
+
+        const String location = _http->header(LOCATION);
+
+        // hacky solution: some items on radio-browser.info
+        // have non-resolving names containing "./" in the hostname
+        if (location.indexOf("./") != -1)
+        {
+            log_e("Invalid url %s redirecting from %s", location, url);
+            _redirectCount = 0;
+            stopSong();
+            return false;
+        }
+
         stopSong();
-        return false;
+        log_d("%i redirection to: %s", result, location.c_str());
+        return connecttohost(location.c_str(), username, pwd, 0);
+    }
 
     default:
-        log_e("error %i %s", result, _http->errorToString(result).c_str());
+        log_d("error %i %s", result, _http->errorToString(result).c_str());
+        _redirectCount = 0;
         stopSong();
         return false;
     }
