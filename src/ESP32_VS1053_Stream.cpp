@@ -887,7 +887,7 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
     [[maybe_unused]] const auto startTimeMS = millis();
 
-    if (_remainingBytes)
+    if (_remainingBytes && _file.position() < _file.size())
     {
         size_t free = xRingbufferGetCurFreeSize(_ringbuffer_handle);
         if (free > 1024)
@@ -897,8 +897,7 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
             if (bytes)
             {
-                const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0);
-                if (result == pdFALSE)
+                if (xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0) == pdFALSE)
                 {
                     log_e("ringbuffer failed to receive %i bytes. Closing stream.", bytes);
                     _remainingBytes = 0;
