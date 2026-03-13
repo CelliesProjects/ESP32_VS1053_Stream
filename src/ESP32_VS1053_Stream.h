@@ -90,13 +90,13 @@ private:
     bool _canRedirect();
     void _handleStream(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
+    void _handleLocalFile();
+    void _feedDecoder(WiFiClient *stream);
     void _allocateRingbuffer();
     void _deallocateRingbuffer();
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *stream);
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
-    void _handleLocalFile();
-    void _feedDecoder(WiFiClient *stream);
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
@@ -108,7 +108,8 @@ private:
     bool _chunkedResponse = false;
     bool _dataSeen = false;
     bool _ringbuffer_filled = false;
-    unsigned long _stallStartMS = 0;
+    unsigned long _streamStallStartMS = 0;
+    unsigned long _bufferStallStartMS = 0;
     uint8_t _redirectCount = 0;
 
     enum codec_t

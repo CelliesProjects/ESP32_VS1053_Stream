@@ -336,7 +336,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             _vs1053->stopSong();
             snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", url);
         }
-        _stallStartMS = 0;
+        _streamStallStartMS = 0;
         log_i("redirected %i times to %s", _redirectCount, url);
         _redirectCount = 0;
         return true;
@@ -405,29 +405,28 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     {
         size_t size = 0;
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
-        static unsigned long emptyStartMS = 0;
         if (!data)
         {
-            if (!emptyStartMS)
+            if (!_bufferStallStartMS)
             {
-                emptyStartMS = millis() ?: 1;
-                log_e("no buffer data available");
+                _bufferStallStartMS = millis() ?: 1;
+                log_w("no buffer data available");
                 return;
             }
 
-            if (millis() - emptyStartMS > VS1053_PSRAM_BUFFER_TIMEOUT_MS)
+            if (millis() - _bufferStallStartMS > VS1053_PSRAM_BUFFER_TIMEOUT_MS)
             {
                 log_e("buffer empty for %i ms, bailing out...", VS1053_PSRAM_BUFFER_TIMEOUT_MS);
-                emptyStartMS = 0;
+                _bufferStallStartMS = 0;
                 _remainingBytes = 0;
                 return;
             }
             return;
         }
-        if (emptyStartMS)
+        if (_bufferStallStartMS)
         {
-            log_e("buffer empty for %i ms", millis() - emptyStartMS);
-            emptyStartMS = 0;
+            log_e("buffer empty for %i ms", millis() - _bufferStallStartMS);
+            _bufferStallStartMS = 0;
         }
 
         _vs1053->playChunk(data, size);
@@ -476,7 +475,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
 
     if (_ringbuffer_handle)
     {
-        if (stream->available())
+        if (stream->available() && xRingbufferGetCurFreeSize(_ringbuffer_handle))
             _streamToRingBuffer(stream);
         _playFromRingBuffer();
     }
@@ -565,7 +564,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 
     if (_ringbuffer_handle)
     {
-        if (stream->available())
+        if (stream->available() && xRingbufferGetCurFreeSize(_ringbuffer_handle))
             _chunkedStreamToRingBuffer(stream);
         _playFromRingBuffer();
     }
@@ -677,9 +676,9 @@ void ESP32_VS1053_Stream::loop()
 
     const bool data = stream->available();
     const auto now = millis();
-    const auto currentStallTimeMS = now - _stallStartMS;
+    const auto currentStallTimeMS = now - _streamStallStartMS;
 
-    if (_stallStartMS && !data && !_ringbuffer_handle &&
+    if (_streamStallStartMS && !data && !_ringbuffer_handle &&
         currentStallTimeMS > VS1053_STREAM_TIMEOUT_MS)
     {
         log_e("Stream timeout %lu ms", VS1053_STREAM_TIMEOUT_MS);
@@ -687,18 +686,18 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    if (!_stallStartMS && !data)
+    if (!_streamStallStartMS && !data)
     {
-        _stallStartMS = now ?: 1;
+        _streamStallStartMS = now ?: 1;
         if (!_ringbuffer_handle)
             return;
     }
 
-    if (_stallStartMS && data)
+    if (_streamStallStartMS && data)
     {
         if (!_ringbuffer_handle)
             log_w("Stream stalled for %lu ms", currentStallTimeMS);
-        _stallStartMS = 0;
+        _streamStallStartMS = 0;
     }
 
     if (_startMute)
@@ -739,6 +738,7 @@ void ESP32_VS1053_Stream::stopSong()
         while ((item = xRingbufferReceive(_ringbuffer_handle, &size, 0)) != nullptr)
             vRingbufferReturnItem(_ringbuffer_handle, item);
         _ringbuffer_filled = false;
+        _bufferStallStartMS = 0;
     }
 
     if (_playingFile)
