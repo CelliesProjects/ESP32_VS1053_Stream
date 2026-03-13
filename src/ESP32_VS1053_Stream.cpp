@@ -431,7 +431,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         bytesToDecoder += size;
         _remainingBytes = (_remainingBytes > size) ? _remainingBytes - size : 0;
     }
-    log_i("%lu ms moving %i bytes ringbuffer->decoder", millis() - startTimeMS, bytesToDecoder);
+    log_d("%lu ms moving %i bytes ringbuffer->decoder", millis() - startTimeMS, bytesToDecoder);
 }
 
 void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
@@ -456,7 +456,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
         bytesToRingBuffer += BYTES_IN_BUFFER;
         _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
     }
-    log_i("%lu ms moving %i bytes stream->ringbuffer", millis() - startTimeMS, bytesToRingBuffer);
+    log_d("%lu ms moving %i bytes stream->ringbuffer", millis() - startTimeMS, bytesToRingBuffer);
 }
 
 void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
@@ -491,7 +491,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
             _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
             bytesToDecoder += BYTES_IN_BUFFER;
         }
-        log_i("%lu ms moving %i bytes stream->decoder", millis() - startTimeMS, bytesToDecoder);
+        log_d("%lu ms moving %i bytes stream->decoder", millis() - startTimeMS, bytesToDecoder);
     }
 
     if (stream->available() && _metaDataStart && _musicDataPosition == _metaDataStart)
@@ -537,7 +537,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *stream)
         bytesToRingBuffer += BYTES_IN_BUFFER;
         _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
     }
-    log_i("%lu ms moving %i bytes chunked->ringbuffer", millis() - startTimeMS, bytesToRingBuffer);
+    log_d("%lu ms moving %i bytes chunked->ringbuffer", millis() - startTimeMS, bytesToRingBuffer);
 }
 
 void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
@@ -582,7 +582,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             _musicDataPosition += _metaDataStart ? BYTES_IN_BUFFER : 0;
             bytesToDecoder += BYTES_IN_BUFFER;
         }
-        log_i("%lu ms moving %i bytes chunked->decoder", millis() - startTimeMS, bytesToDecoder);
+        log_d("%lu ms moving %i bytes chunked->decoder", millis() - startTimeMS, bytesToDecoder);
     }
 
     if (stream->available() && _metaDataStart && _musicDataPosition == _metaDataStart && _bytesLeftInChunk)
