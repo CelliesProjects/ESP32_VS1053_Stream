@@ -326,7 +326,7 @@ Returns `0` if the stream is a radio stream.
 void bufferStatus(size_t &used, size_t &capacity)
 ```
 
-NOTE: A buffer will only be allocated if there is enough free psram.
+Note: A buffer will only be allocated if there is enough free psram.
 
 # Event callbacks
 
