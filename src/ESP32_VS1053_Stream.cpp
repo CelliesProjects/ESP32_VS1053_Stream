@@ -911,7 +911,6 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
     if (_remainingBytes)
         _playFromRingBuffer();
-
-    if (!_remainingBytes)
+    else
         _eofStream();
 }
