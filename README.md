@@ -2,17 +2,18 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7571166c872e4dc8a899382389b73f8e)](https://app.codacy.com/gh/CelliesProjects/ESP32_VS1053_Stream?utm_source=github.com&utm_medium=referral&utm_content=CelliesProjects/ESP32_VS1053_Stream&utm_campaign=Badge_Grade_Settings)
 
-A streaming library for esp32, esp32-wrover, esp32-c3, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.<br>
+A streaming library for esp32, esp32-wrover, esp32-c3, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.  
 This library plays mp3, ogg, aac, aac+ and <strike>flac</strike> files and streams and uses [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
-Supported stream methods are http and insecure https. Streams can be chunked.<br>
+Supported stream methods are http and insecure https. Streams can be chunked.  
 Also plays mp3 and ogg files from sdcard or any mounted filesystem.
 
 ## How to install and use
 
 Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and this library in your Arduino library folder.
 
-Take care to install the master branch of the VS1053 library or at least a version from commit [ba1803f](https://github.com/baldram/ESP_VS1053_Library/commit/ba1803f75722a36f3e9f539129e885bea3c60f71) or later because the `getChipVersion()` call that is needed is not included in the latest release.<br>See https://github.com/CelliesProjects/ESP32_VS1053_Stream/issues/23
+Take care to install the master branch of the VS1053 library or at least a version from commit [ba1803f](https://github.com/baldram/ESP_VS1053_Library/commit/ba1803f75722a36f3e9f539129e885bea3c60f71) or later because the `getChipVersion()` call that is needed is not included in the latest release.  
+See https://github.com/CelliesProjects/ESP32_VS1053_Stream/issues/23
 
 Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest).
 
@@ -202,7 +203,8 @@ WiFi.setSleep(false);
 ```
 
 ### Prevent reboots while playing
-Early version of the esp32 have issues with the external psram cache, resulting in reboots.<br>Workarounds are possible depending on the hardware revision.
+Early version of the esp32 have issues with the external psram cache, resulting in reboots.  
+Workarounds are possible depending on the hardware revision.
 
 #### Revision V0.0
 No workarounds are possible for this revision other than not using the psram.
@@ -227,7 +229,8 @@ Source: [esp-idf api guide on external ram](https://docs.espressif.com/projects/
 
 In PIO you can find out what hardware revision you have by running `esptool.py flash_id` in a terminal.
 
-In Arduino IDE go to `File->Preferences` and find the `Show verbose output during` option. Check the box marked `upload`.<br>You can now see the hardware revision when you upload a sketch.
+In Arduino IDE go to `File->Preferences` and find the `Show verbose output during` option. Check the box marked `upload`.  
+You can now see the hardware revision when you upload a sketch.
 
 # Functions
 ### Initialize the VS1053 codec
@@ -252,9 +255,8 @@ bool connecttohost(url, user, pwd)
 ```c++
 bool connecttohost(url, user, pwd, offset)
 ```
-Note: When a stream does not start in this library but it does play on your desktop or laptop you can try increasing the connection timeout.<br>
-You can do this in 
-`ESP32_VS1053_Stream.h` by increasing these values:<br>
+Note: When a stream does not start in this library but it does play on your desktop or laptop you can try increasing the connection timeout.  
+You can do this in `ESP32_VS1053_Stream.h` by increasing these values:  
 ```c++
 #define VS1053_CONNECT_TIMEOUT_MS 250
 #define VS1053_CONNECT_TIMEOUT_MS_SSL 750
@@ -266,7 +268,8 @@ bool connecttofile(filesystem, filename)
 ```c++
 bool connecttofile(filesystem, filename, offset)
 ```
-`filesystem` has to be mounted.
+`filesystem` has to be mounted.  
+Note: Local file playbacks requires psram   
 ### Stop a running stream
 ```c++
 void stopSong()
@@ -275,7 +278,8 @@ void stopSong()
 ```c++
 void loop()
 ```
-This function has to called every couple of ms to feed the decoder with data.<br>For bitrates up to 320kbps somewhere between 5-25 ms is about right.
+This function has to called every couple of ms to feed the decoder with data.  
+For bitrates up to 320kbps somewhere between 5-10 ms is about right.
 ### Check if stream is running
 ```c++
 bool isRunning()
@@ -345,9 +349,11 @@ void audio_showstreamtitle(const char* info)
 ```c++
 void audio_eof_stream(const char* info)
 ```
-Returns the eof url or path.<br>Also called if a stream or file times out/errors.
+Returns the eof url or path.  
+Also called if a stream or file times out/errors.
 
-You can use this function for coding a playlist.<br>Use `connecttohost()` or `connecttofile()` inside this function to start the next item.
+You can use this function for coding a playlist.  
+Use `connecttohost()` or `connecttofile()` inside this function to start the next item.
 ## License
 
 MIT License
