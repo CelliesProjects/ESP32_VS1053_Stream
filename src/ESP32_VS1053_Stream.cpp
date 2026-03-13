@@ -179,10 +179,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                                         const char *pwd, size_t offset)
 {
     if (!_vs1053 || _http || _playingFile || !WiFi.isConnected() ||
-        tolower(url[0]) != 'h' ||
-        tolower(url[1]) != 't' ||
-        tolower(url[2]) != 't' ||
-        tolower(url[3]) != 'p')
+        strncasecmp(url, "http", 4) != 0)
         return false;
 
     if (strstr(url, "./"))
