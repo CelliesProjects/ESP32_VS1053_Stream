@@ -15,17 +15,16 @@
 #define VS1053_CONNECT_TIMEOUT_MS 250
 #define VS1053_CONNECT_TIMEOUT_MS_SSL 750
 #define VS1053_STREAM_TIMEOUT_MS 900
-#define VS1053_MAX_PLAYLIST_READ 1024
 #define VS1053_MAX_URL_LENGTH 256
 #define VS1053_MAX_REDIRECT_COUNT 3
 
 #define VS1053_PSRAM_BUFFER_ENABLED true
 #define VS1053_PSRAM_BUFFER_TIMEOUT_MS 900
 #define VS1053_PSRAM_BUFFER_SIZE size_t(1024 * 64)
-#define VS1053_PSRAM_MAX_MOVE size_t(1024 * 2)
 
-#define VS1053_MAXVOLUME uint8_t(100)     /* do not change */
-#define VS1053_PLAYBUFFER_SIZE size_t(32) /* do not change */
+constexpr size_t VS1053_PSRAM_MAX_MOVE = 2048;
+constexpr uint8_t VS1053_MAXVOLUME = 100;
+constexpr size_t VS1053_PLAYBUFFER_SIZE = 32;
 
 extern void audio_showstation(const char *) __attribute__((weak));
 extern void audio_eof_stream(const char *) __attribute__((weak));
@@ -67,7 +66,6 @@ public:
     size_t size();
     size_t position();
     uint32_t bitrate();
-    const char *bufferStatus();
     void bufferStatus(size_t &used, size_t &capacity);
 
 private:
@@ -91,13 +89,13 @@ private:
     bool _canRedirect();
     void _handleStream(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
+    void _handleLocalFile();
+    void _feedDecoder(WiFiClient *stream);
     void _allocateRingbuffer();
     void _deallocateRingbuffer();
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *stream);
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
-    void _handleLocalFile();
-    void _feedDecoder(WiFiClient *stream);
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
@@ -109,7 +107,8 @@ private:
     bool _chunkedResponse = false;
     bool _dataSeen = false;
     bool _ringbuffer_filled = false;
-    unsigned long _stallStartMS = 0;
+    unsigned long _streamStallStartMS = 0;
+    unsigned long _bufferStallStartMS = 0;
     uint8_t _redirectCount = 0;
 
     enum codec_t
