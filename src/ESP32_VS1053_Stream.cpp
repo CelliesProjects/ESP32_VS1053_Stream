@@ -531,7 +531,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *stream)
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
         if (result == pdFALSE)
         {
-            log_e("ringbuffer failed to receive %i bytes. Closing stream.");
+            log_e("ringbuffer failed to receive %i bytes. Closing stream.", BYTES_IN_BUFFER);
             _remainingBytes = 0;
             return;
         }
