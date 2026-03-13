@@ -506,7 +506,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
             stream->readBytes(_localbuffer, METALENGTH);
 
             if (audio_showstreamtitle)
-                _handleMetadata((char *)_localbuffer, METALENGTH);
+                _handleMetadata(reinterpret_cast<char *>(_localbuffer), METALENGTH);
         }
 
         _musicDataPosition = 0;
@@ -596,13 +596,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 
         if (METALENGTH)
         {
-            if (METALENGTH > sizeof(_localbuffer))
-            {
-                log_w("metadata too large: %u bytes", METALENGTH);
-                _remainingBytes = 0;
-                return;
-            }
-
             size_t cnt = 0;
 
             while (cnt < METALENGTH)
@@ -628,7 +621,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             }
 
             if (audio_showstreamtitle)
-                _handleMetadata((char *)_localbuffer, METALENGTH);
+                _handleMetadata(reinterpret_cast<char *>(_localbuffer), METALENGTH);
         }
 
         _musicDataPosition = 0;

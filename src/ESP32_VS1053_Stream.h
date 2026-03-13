@@ -21,10 +21,10 @@
 #define VS1053_PSRAM_BUFFER_ENABLED true
 #define VS1053_PSRAM_BUFFER_TIMEOUT_MS 900
 #define VS1053_PSRAM_BUFFER_SIZE size_t(1024 * 64)
-#define VS1053_PSRAM_MAX_MOVE size_t(1024 * 2)
 
-#define VS1053_MAXVOLUME uint8_t(100)     /* do not change */
-#define VS1053_PLAYBUFFER_SIZE size_t(32) /* do not change */
+constexpr size_t VS1053_PSRAM_MAX_MOVE = 2048;
+constexpr uint8_t VS1053_MAXVOLUME = 100;
+constexpr size_t VS1053_PLAYBUFFER_SIZE = 32;
 
 extern void audio_showstation(const char *) __attribute__((weak));
 extern void audio_eof_stream(const char *) __attribute__((weak));
