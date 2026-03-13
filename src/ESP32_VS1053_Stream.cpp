@@ -448,7 +448,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
         const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PSRAM_MAX_MOVE);
         const size_t BYTES_SAFE_TO_MOVE = min(BYTES_TO_READ, xRingbufferGetCurFreeSize(_ringbuffer_handle));
         const size_t BYTES_IN_BUFFER = stream->readBytes(_localbuffer, min((size_t)stream->available(), BYTES_SAFE_TO_MOVE));
-        const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
+        const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, 0);
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.", BYTES_IN_BUFFER);
@@ -527,7 +527,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *stream)
         const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PSRAM_MAX_MOVE);
         const size_t BYTES_SAFE_TO_MOVE = min(BYTES_TO_READ, xRingbufferGetCurFreeSize(_ringbuffer_handle));
         const size_t BYTES_IN_BUFFER = stream->readBytes(_localbuffer, min((size_t)stream->available(), BYTES_SAFE_TO_MOVE));
-        const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, pdMS_TO_TICKS(0));
+        const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, 0);
         if (result == pdFALSE)
         {
             log_e("ringbuffer failed to receive %i bytes. Closing stream.", BYTES_IN_BUFFER);
@@ -897,13 +897,20 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
             if (bytes)
             {
-                xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0);
+                const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0);
+                if (result == pdFALSE)
+                {
+                    log_e("ringbuffer failed to receive %i bytes. Closing stream.", bytes);
+                    _remainingBytes = 0;
+                }
+
                 log_d("%lu ms moving %i bytes localfile->ringbuffer", millis() - startTimeMS, bytes);
             }
         }
     }
 
-    _playFromRingBuffer();
+    if (_remainingBytes)
+        _playFromRingBuffer();
 
     if (!_remainingBytes)
         _eofStream();
