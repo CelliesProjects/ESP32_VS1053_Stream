@@ -805,15 +805,6 @@ uint32_t ESP32_VS1053_Stream::bitrate()
     return _http ? _http->header(BITRATE).toInt() : 0;
 }
 
-const char *ESP32_VS1053_Stream::bufferStatus()
-{
-    if (!_ringbuffer_handle)
-        return "0/0";
-    static char ringbuffer_status[24];
-    snprintf(ringbuffer_status, sizeof(ringbuffer_status), "%u/%u", VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle), VS1053_PSRAM_BUFFER_SIZE);
-    return ringbuffer_status;
-}
-
 void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
 {
     used = _ringbuffer_handle ? VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle) : 0;
