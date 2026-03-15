@@ -87,7 +87,6 @@ public:
     const char *lastUrl();
     size_t size();
     size_t position();
-    uint32_t bitrate();
     void bufferStatus(size_t &used, size_t &capacity);
 
 private:

@@ -813,11 +813,6 @@ size_t ESP32_VS1053_Stream::position()
     return size() ? (size() - _remainingBytes) : 0;
 }
 
-uint32_t ESP32_VS1053_Stream::bitrate()
-{
-    return _bitrate;
-}
-
 void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
 {
     used = _ringbuffer_handle ? VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle) : 0;
