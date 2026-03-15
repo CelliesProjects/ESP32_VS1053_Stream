@@ -394,6 +394,13 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
             return;
 
         _ringbuffer_filled = true;
+        _bitrateTimer = millis() ?: 1;
+    }
+
+    if (millis() - _bitrateTimer > 250)
+    {
+        _readBitRate();
+        _bitrateTimer = millis() ?: 1;
     }
 
     [[maybe_unused]] const auto startTimeMS = millis();
@@ -464,10 +471,10 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
     if (!_dataSeen)
     {
         _dataSeen = true;
-        _startMute = millis();
-        _startMute += _startMute ? 0 : 1;
+        _startMute = millis() ?: 1;
         _vs1053->setVolume(0);
         _vs1053->startSong();
+        _bitrateTimer = millis() ?: 1;
     }
 
     if (_ringbuffer_handle)
@@ -478,6 +485,12 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
     }
     else
     {
+        if (millis() - _bitrateTimer > 250)
+        {
+            _readBitRate();
+            _bitrateTimer = millis() ?: 1;
+        }
+
         [[maybe_unused]] const auto startTimeMS = millis();
         size_t bytesToDecoder = 0;
         while (stream->available() && _vs1053->data_request() &&
@@ -553,10 +566,10 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         if (!_dataSeen)
         {
             _dataSeen = true;
-            _startMute = millis();
-            _startMute += _startMute ? 0 : 1;
+            _startMute = millis() ?: 1;
             _vs1053->setVolume(0);
             _vs1053->startSong();
+            _bitrateTimer = millis() ?: 1;
         }
     }
 
@@ -568,6 +581,12 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
     }
     else
     {
+        if (millis() - _bitrateTimer > 250)
+        {
+            _readBitRate();
+            _bitrateTimer = millis() ?: 1;
+        }
+
         [[maybe_unused]] const auto startTimeMS = millis();
         size_t bytesToDecoder = 0;
         while (stream->available() && _vs1053->data_request() &&
@@ -730,6 +749,10 @@ void ESP32_VS1053_Stream::stopSong()
     _currentCodec = STOPPED;
     _remainingBytes = 0;
     _offset = 0;
+    _bitrateTimer = 0;
+    _codec = CODEC_UNKNOWN;
+    //_codecFound = false;
+    //_lastCodec = 0;
 
     if (_ringbuffer_handle)
     {
@@ -912,4 +935,96 @@ void ESP32_VS1053_Stream::_handleLocalFile()
         _playFromRingBuffer();
     else
         _eofStream();
+}
+
+void ESP32_VS1053_Stream::_readBitRate()
+{
+    const uint8_t SCI_HDAT0 = 0x08;
+    const uint8_t SCI_HDAT1 = 0x09;
+
+    uint16_t hdat1 = _vs1053->readRegister(SCI_HDAT1);
+    uint16_t hdat0 = _vs1053->readRegister(SCI_HDAT0);
+
+    if (hdat1 == 0 && hdat0 == 0) // decoder not locked yet
+        return;
+
+    uint32_t bitrate = (hdat0 * 8) / 1000; // default for non-MP3
+
+    if (_codec == CODEC_UNKNOWN)
+    {
+        switch (hdat1)
+        {
+        case 0x4154:
+            _codec = CODEC_AAC;
+            log_i("codec: AAC (ADTS)");
+            break;
+
+        case 0x4144:
+            _codec = CODEC_AAC;
+            log_i("codec: AAC (ADIF)");
+            break;
+
+        case 0x4D34:
+            _codec = CODEC_AAC;
+            log_i("codec: AAC (MP4/M4A)");
+            break;
+
+        case 0x7665:
+            _codec = CODEC_WAV;
+            log_i("codec: WAV");
+            break;
+
+        case 0x574D:
+            _codec = CODEC_WMA;
+            log_i("codec: WMA");
+            break;
+
+        case 0x4D54:
+            _codec = CODEC_MIDI;
+            log_i("codec: MIDI");
+            break;
+
+        case 0x4F67:
+            _codec = CODEC_OGG;
+            log_i("codec: OGG Vorbis");
+            break;
+
+        default:
+        {
+            if ((hdat1 & 0xFFE0) == 0xFFE0)
+            {
+                _codec = CODEC_MP3;
+                log_i("codec: MP3");
+            }
+        }
+        }
+    }
+
+    if (_codec == CODEC_MP3)
+    {
+        uint8_t version = (hdat1 >> 3) & 0x03;
+        uint8_t layer = (hdat1 >> 1) & 0x03;
+        uint8_t brIndex = (hdat0 >> 12) & 0x0F;
+
+        static const uint16_t bitrateTable[2][16] =
+            {
+                {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0},
+                {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0}};
+
+        if (layer == 1)
+        {
+            if (version == 3)
+                bitrate = bitrateTable[0][brIndex];
+            else
+                bitrate = bitrateTable[1][brIndex];
+        }
+    }
+
+    uint32_t newBitrate = bitrate;
+
+    if (newBitrate != _bitrate)
+    {
+        _bitrate = newBitrate;
+        log_i("bitrate: %lu kbps", _bitrate);
+    }
 }

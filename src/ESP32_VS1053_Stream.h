@@ -97,6 +97,21 @@ private:
     void _streamToRingBuffer(WiFiClient *stream);
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
 
+    void _readBitRate();
+    unsigned long _bitrateTimer = 0;
+    uint8_t _codec = CODEC_UNKNOWN;
+    uint32_t _bitrate = 0;
+    enum Codec
+    {
+        CODEC_UNKNOWN,
+        CODEC_MP3,
+        CODEC_AAC,
+        CODEC_OGG,
+        CODEC_WAV,
+        CODEC_WMA,
+        CODEC_MIDI
+    };
+
     unsigned long _startMute = 0;
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
