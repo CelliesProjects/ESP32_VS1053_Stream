@@ -1012,12 +1012,7 @@ void ESP32_VS1053_Stream::_readBitRate()
                 {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0}};
 
         if (layer == 1)
-        {
-            if (version == 3)
-                bitrate = bitrateTable[0][brIndex];
-            else
-                bitrate = bitrateTable[1][brIndex];
-        }
+            bitrate = bitrateTable[version == 3 ? 0 : 1][brIndex];
     }
 
     uint32_t newBitrate = bitrate;
