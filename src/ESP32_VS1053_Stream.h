@@ -30,6 +30,8 @@ extern void audio_showstation(const char *) __attribute__((weak));
 extern void audio_eof_stream(const char *) __attribute__((weak));
 extern void audio_showstreamtitle(const char *) __attribute__((weak));
 
+typedef void (*codec_callback_t)(const char *codec);
+
 class ESP32_VS1053_Stream
 {
 
@@ -47,6 +49,16 @@ public:
 
     bool connecttofile(fs::FS &fs, const char *filename);
     bool connecttofile(fs::FS &fs, const char *filename, const size_t offset);
+
+    void setCodecCallback(codec_callback_t cb)
+    {
+        _codecCallback = cb;
+    }
+
+    void clearCodecCallback()
+    {
+        _codecCallback = nullptr;
+    }
 
     void loop();
     bool isRunning();
@@ -97,20 +109,26 @@ private:
     void _streamToRingBuffer(WiFiClient *stream);
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
 
+    codec_callback_t _codecCallback = nullptr;
     void _readBitRate();
+    const char *_codecName(uint8_t codec);
     unsigned long _bitrateTimer = 0;
     uint8_t _codec = CODEC_UNKNOWN;
     uint32_t _bitrate = 0;
     enum Codec
     {
         CODEC_UNKNOWN,
-        CODEC_MP3,
-        CODEC_AAC,
-        CODEC_OGG,
+        CODEC_AAC_ADTS,
+        CODEC_AAC_ADIF,
+        CODEC_AAC_MP4,
         CODEC_WAV,
         CODEC_WMA,
-        CODEC_MIDI
+        CODEC_MIDI,
+        CODEC_MP3,
+        CODEC_OGG,
     };
+
+    const char *_names[9] = {"UNKNOWN", "AAC ADTS", "AAC ADIF", "AAC MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
 
     unsigned long _startMute = 0;
     size_t _offset = 0;
@@ -125,15 +143,6 @@ private:
     unsigned long _streamStallStartMS = 0;
     unsigned long _bufferStallStartMS = 0;
     uint8_t _redirectCount = 0;
-
-    enum codec_t
-    {
-        STOPPED,
-        MP3,
-        OGG,
-        AAC,
-        AACP
-    } _currentCodec = STOPPED;
 
     const char *CONTENT_TYPE = "Content-Type";
     const char *ICY_NAME = "icy-name";

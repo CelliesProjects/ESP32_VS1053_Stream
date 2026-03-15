@@ -301,17 +301,17 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 
         else if (strcasestr(ct, "audio/mpeg") ||
                  strcasestr(ct, "audio/mp3"))
-            _currentCodec = MP3;
+            _codec = CODEC_UNKNOWN;
 
         else if (strcasestr(ct, "audio/ogg") ||
                  strcasestr(ct, "application/ogg"))
-            _currentCodec = OGG;
+            _codec = CODEC_UNKNOWN;
 
         else if (strcasestr(ct, "audio/aac"))
-            _currentCodec = AAC;
+            _codec = CODEC_UNKNOWN;
 
         else if (strcasestr(ct, "audio/aacp"))
-            _currentCodec = AACP;
+            _codec = CODEC_UNKNOWN;
 
         else
         {
@@ -722,7 +722,7 @@ void ESP32_VS1053_Stream::loop()
     if (_startMute)
     {
         const auto WAIT_TIME_MS = ((!bitrate() && _remainingBytes == -1) ||
-                                   _currentCodec == AAC || _currentCodec == AACP || _currentCodec == OGG)
+                                   _codec != CODEC_MP3)
                                       ? 380
                                       : 80;
         if (millis() - _startMute > WAIT_TIME_MS)
@@ -746,13 +746,10 @@ void ESP32_VS1053_Stream::stopSong()
         return;
 
     _vs1053->setVolume(0);
-    _currentCodec = STOPPED;
     _remainingBytes = 0;
     _offset = 0;
     _bitrateTimer = 0;
     _codec = CODEC_UNKNOWN;
-    //_codecFound = false;
-    //_lastCodec = 0;
 
     if (_ringbuffer_handle)
     {
@@ -798,8 +795,8 @@ void ESP32_VS1053_Stream::setTone(uint8_t *rtone)
 
 const char *ESP32_VS1053_Stream::currentCodec()
 {
-    const char *name[] = {"STOPPED", "MP3", "OGG", "AAC", "AAC+"};
-    return name[_currentCodec];
+    const char *name[] = {"unknown", "AAC ADTS", "AAC MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
+    return name[_codec];
 }
 
 const char *ESP32_VS1053_Stream::lastUrl()
@@ -867,15 +864,15 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
     _file.read(header, sizeof(header));
 
     if (!memcmp(header, "OggS", 4))
-        _currentCodec = OGG;
+        _codec = CODEC_OGG;
 
     else if (!memcmp(header, "ID3", 3))
-        _currentCodec = MP3;
+        _codec = CODEC_MP3;
 
     else if (header[0] == 0xFF && (header[1] & 0xE0) == 0xE0)
-        _currentCodec = MP3;
+        _codec = CODEC_MP3;
 
-    if (_currentCodec == STOPPED)
+    if (_codec == CODEC_UNKNOWN)
     {
         log_w("unsupported file");
         _file.close();
@@ -948,57 +945,51 @@ void ESP32_VS1053_Stream::_readBitRate()
     if (hdat1 == 0 && hdat0 == 0) // decoder not locked yet
         return;
 
-    uint32_t bitrate = (hdat0 * 8) / 1000; // default for non-MP3
-
     if (_codec == CODEC_UNKNOWN)
     {
         switch (hdat1)
         {
         case 0x4154:
-            _codec = CODEC_AAC;
-            log_i("codec: AAC (ADTS)");
+            _codec = CODEC_AAC_ADTS;
             break;
 
         case 0x4144:
-            _codec = CODEC_AAC;
-            log_i("codec: AAC (ADIF)");
+            _codec = CODEC_AAC_ADIF;
             break;
 
         case 0x4D34:
-            _codec = CODEC_AAC;
-            log_i("codec: AAC (MP4/M4A)");
+            _codec = CODEC_AAC_MP4;
             break;
 
         case 0x7665:
             _codec = CODEC_WAV;
-            log_i("codec: WAV");
             break;
 
         case 0x574D:
             _codec = CODEC_WMA;
-            log_i("codec: WMA");
             break;
 
         case 0x4D54:
             _codec = CODEC_MIDI;
-            log_i("codec: MIDI");
             break;
 
         case 0x4F67:
             _codec = CODEC_OGG;
-            log_i("codec: OGG Vorbis");
             break;
 
         default:
-        {
             if ((hdat1 & 0xFFE0) == 0xFFE0)
-            {
                 _codec = CODEC_MP3;
-                log_i("codec: MP3");
-            }
         }
+        
+        if (_codec != CODEC_UNKNOWN && _codecCallback)
+        {
+            _codecCallback(_codecName(_codec));
+            return; 
         }
     }
+
+    uint32_t bitrate = 0;
 
     if (_codec == CODEC_MP3)
     {
@@ -1014,12 +1005,17 @@ void ESP32_VS1053_Stream::_readBitRate()
         if (layer == 1)
             bitrate = bitrateTable[version == 3 ? 0 : 1][brIndex];
     }
+    else
+        bitrate = (hdat0 * 8) / 1000; // default for non-MP3
 
-    uint32_t newBitrate = bitrate;
-
-    if (newBitrate != _bitrate)
+    if (bitrate != _bitrate)
     {
-        _bitrate = newBitrate;
+        _bitrate = bitrate;
         log_i("bitrate: %lu kbps", _bitrate);
     }
+}
+
+const char *ESP32_VS1053_Stream::_codecName(uint8_t codec)
+{
+    return _names[codec];
 }
