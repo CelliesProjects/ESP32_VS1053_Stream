@@ -84,7 +84,6 @@ public:
         tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
         e.g. uint8_t rtone[4]  = {12, 15, 15, 15}; // initialize bass & treble
         See https://www.vlsi.fi/fileadmin/datasheets/vs1053.pdf section 9.6.3 */
-    const char *currentCodec();
     const char *lastUrl();
     size_t size();
     size_t position();

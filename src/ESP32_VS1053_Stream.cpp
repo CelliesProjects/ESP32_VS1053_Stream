@@ -748,6 +748,7 @@ void ESP32_VS1053_Stream::stopSong()
     _vs1053->setVolume(0);
     _remainingBytes = 0;
     _offset = 0;
+    _bitrate = 0;
     _bitrateTimer = 0;
     _codec = CODEC_UNKNOWN;
 
@@ -793,12 +794,6 @@ void ESP32_VS1053_Stream::setTone(uint8_t *rtone)
         _vs1053->setTone(rtone);
 }
 
-const char *ESP32_VS1053_Stream::currentCodec()
-{
-    const char *name[] = {"unknown", "AAC ADTS", "AAC MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
-    return name[_codec];
-}
-
 const char *ESP32_VS1053_Stream::lastUrl()
 {
     return (_http || _playingFile) ? _url : "";
@@ -820,9 +815,7 @@ size_t ESP32_VS1053_Stream::position()
 
 uint32_t ESP32_VS1053_Stream::bitrate()
 {
-    if (_playingFile)
-        return 0;
-    return _http ? _http->header(BITRATE).toInt() : 0;
+    return _bitrate;
 }
 
 void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
@@ -1026,6 +1019,6 @@ void ESP32_VS1053_Stream::_readBitRate()
 const char *ESP32_VS1053_Stream::_codecName(uint8_t codec)
 {
     if (codec >= sizeof(_names) / sizeof(_names[0]))
-        return "UNKNOWN";
+        return _names[CODEC_UNKNOWN];
     return _names[codec];
 }
