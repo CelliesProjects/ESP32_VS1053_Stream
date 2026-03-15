@@ -31,6 +31,7 @@ extern void audio_eof_stream(const char *) __attribute__((weak));
 extern void audio_showstreamtitle(const char *) __attribute__((weak));
 
 typedef void (*codec_callback_t)(const char *codec);
+typedef void (*bitrate_callback_t)(uint32_t bitrate);
 
 class ESP32_VS1053_Stream
 {
@@ -58,6 +59,16 @@ public:
     void clearCodecCallback()
     {
         _codecCallback = nullptr;
+    }
+
+    void setBitrateCallback(bitrate_callback_t cb)
+    {
+        _bitrateCallback = cb;
+    }
+
+    void clearBitrateCallback()
+    {
+        _bitrateCallback = nullptr;
     }
 
     void loop();
@@ -110,6 +121,7 @@ private:
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
 
     codec_callback_t _codecCallback = nullptr;
+    bitrate_callback_t _bitrateCallback = nullptr;
     void _readBitRate();
     const char *_codecName(uint8_t codec);
     unsigned long _bitrateTimer = 0;

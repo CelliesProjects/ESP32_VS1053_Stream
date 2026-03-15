@@ -859,26 +859,26 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
         _file.close();
         return false;
     }
+    /*
+        uint8_t header[8];
+        _file.read(header, sizeof(header));
 
-    uint8_t header[8];
-    _file.read(header, sizeof(header));
+        if (!memcmp(header, "OggS", 4))
+            _codec = CODEC_OGG;
 
-    if (!memcmp(header, "OggS", 4))
-        _codec = CODEC_OGG;
+        else if (!memcmp(header, "ID3", 3))
+            _codec = CODEC_MP3;
 
-    else if (!memcmp(header, "ID3", 3))
-        _codec = CODEC_MP3;
+        else if (header[0] == 0xFF && (header[1] & 0xE0) == 0xE0)
+            _codec = CODEC_MP3;
 
-    else if (header[0] == 0xFF && (header[1] & 0xE0) == 0xE0)
-        _codec = CODEC_MP3;
-
-    if (_codec == CODEC_UNKNOWN)
-    {
-        log_w("unsupported file");
-        _file.close();
-        return false;
-    }
-
+        if (_codec == CODEC_UNKNOWN)
+        {
+            log_w("unsupported file");
+            _file.close();
+            return false;
+        }
+    */
     _file.seek(offset);
     if (strcmp(filename, _url))
     {
@@ -936,6 +936,9 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
 void ESP32_VS1053_Stream::_readBitRate()
 {
+    if (_codec != CODEC_UNKNOWN && !_bitrateCallback)
+        return;
+
     const uint8_t SCI_HDAT0 = 0x08;
     const uint8_t SCI_HDAT1 = 0x09;
 
@@ -981,13 +984,16 @@ void ESP32_VS1053_Stream::_readBitRate()
             if ((hdat1 & 0xFFE0) == 0xFFE0)
                 _codec = CODEC_MP3;
         }
-        
+
         if (_codec != CODEC_UNKNOWN && _codecCallback)
         {
             _codecCallback(_codecName(_codec));
-            return; 
+            return;
         }
     }
+
+    if (!_bitrateCallback)
+        return;
 
     uint32_t bitrate = 0;
 
@@ -1002,20 +1008,24 @@ void ESP32_VS1053_Stream::_readBitRate()
                 {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0},
                 {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0}};
 
-        if (layer == 1)
+        constexpr uint8_t MPEG_LAYER_III = 1;
+
+        if (layer == MPEG_LAYER_III)
             bitrate = bitrateTable[version == 3 ? 0 : 1][brIndex];
     }
     else
-        bitrate = (hdat0 * 8) / 1000; // default for non-MP3
+        bitrate = (hdat0 * 8) / 1000;
 
     if (bitrate != _bitrate)
     {
         _bitrate = bitrate;
-        log_i("bitrate: %lu kbps", _bitrate);
+        _bitrateCallback(bitrate);
     }
 }
 
 const char *ESP32_VS1053_Stream::_codecName(uint8_t codec)
 {
+    if (codec >= sizeof(_names) / sizeof(_names[0]))
+        return "UNKNOWN";
     return _names[codec];
 }
