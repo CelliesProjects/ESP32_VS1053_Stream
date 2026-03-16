@@ -12,9 +12,10 @@ Also plays mp3 and ogg files from sdcard or any mounted filesystem.
 
 ~~Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and this library in your Arduino library folder.~~
 
-While this [PR](https://github.com/baldram/ESP_VS1053_Library/pull/119) is waiting to be merged in the `baldram/ESP_VS1053_Library` repo, you have to use the this [fork](baldram/ESP_VS1053_Library) to be able to compile the `master` branch.
+Version 3.0.0 needs reads access to the vs1053 registers which the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) does not do. (yet)  
+While a [PR](https://github.com/baldram/ESP_VS1053_Library/pull/119) fixing this issue is waiting to be merged in the ESP_VS1053_Library repo, you can use the this [fork](baldram/ESP_VS1053_Library) to compile the 3.0.0 release or the `master` branch.
 
-Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest) for Arduino IDE or the corresponding [PIOArduino release](https://github.com/pioarduino/platform-espressif32/releases/latest) if yuou use PlatformIO in VSCode.
+Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest) for Arduino IDE or the corresponding [PIOArduino release](https://github.com/pioarduino/platform-espressif32/releases/latest) if you use PlatformIO in VSCode.
 
 ## Example: play a stream
 ```c++
