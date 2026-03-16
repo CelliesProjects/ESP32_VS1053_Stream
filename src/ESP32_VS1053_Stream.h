@@ -106,13 +106,7 @@ private:
 
     codec_callback_t _codecCallback = nullptr;
     bitrate_callback_t _bitrateCallback = nullptr;
-    void _updateBitRate();
-    void _readBitRate();
-    const char *_codecName(uint8_t codec);
-    unsigned long _bitrateTimer = 0;
-    uint8_t _codec = CODEC_UNKNOWN;
-    uint8_t _decoderSyncAttempts = 0;
-    uint32_t _bitrate = 0;
+
     enum Codec
     {
         CODEC_UNKNOWN,
@@ -125,6 +119,14 @@ private:
         CODEC_MP3,
         CODEC_OGG,
     };
+
+    uint8_t _codec = CODEC_UNKNOWN;
+    void _updateBitRate();
+    void _readBitRate();
+    const char *_codecName(uint8_t codec);
+    unsigned long _bitrateTimer = 0;
+    uint8_t _decoderSyncAttempts = 0;
+    uint32_t _bitrate = 0;
 
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
