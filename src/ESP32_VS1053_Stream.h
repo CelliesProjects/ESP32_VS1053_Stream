@@ -42,28 +42,28 @@ public:
     bool startDecoder(const uint8_t CS, const uint8_t DCS, const uint8_t DREQ);
     bool isChipConnected();
 
-    bool connecttohost(const char *url);
-    bool connecttohost(const char *url, const size_t offset);
-    bool connecttohost(const char *url, const char *username, const char *pwd);
-    bool connecttohost(const char *url, const char *username, const char *pwd, const size_t offset);
+    bool connectToHost(const char *url);
+    bool connectToHost(const char *url, const size_t offset);
+    bool connectToHost(const char *url, const char *username, const char *pwd);
+    bool connectToHost(const char *url, const char *username, const char *pwd, const size_t offset);
 
-    bool connecttofile(fs::FS &fs, const char *filename);
-    bool connecttofile(fs::FS &fs, const char *filename, const size_t offset);
+    bool connectToFile(fs::FS &fs, const char *filename);
+    bool connectToFile(fs::FS &fs, const char *filename, const size_t offset);
 
-    void setCodecCallback(codec_callback_t cb);
-    void clearCodecCallback();
+    void setCodecCB(codec_callback_t cb);
+    void clearCodecCB();
 
-    void setBitrateCallback(bitrate_callback_t cb);
-    void clearBitrateCallback();
+    void setBitrateCB(bitrate_callback_t cb);
+    void clearBitrateCB();
 
-    void setStationCallback(station_callback_t cb);
-    void clearStationCallback();
+    void setStationCB(station_callback_t cb);
+    void clearStationCB();
 
-    void setInfoCallback(streaminfo_callback_t cb);
-    void clearInfoCallback();    
+    void setInfoCB(streaminfo_callback_t cb);
+    void clearInfoCB();    
 
-    void setEofCallback(eof_callback_t cb);
-    void clearEofCallback();
+    void setEofCB(eof_callback_t cb);
+    void clearEofCB();
 
     void loop();
     bool isRunning();
