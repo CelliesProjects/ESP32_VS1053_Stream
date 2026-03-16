@@ -952,7 +952,7 @@ void ESP32_VS1053_Stream::_readBitRate()
 
 const char *ESP32_VS1053_Stream::_codecName(uint8_t codec)
 {
-    const char *_names[9] = {"UNKNOWN", "AAC ADTS", "AAC ADIF", "AAC MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
+    const char *_names[9] = {"UNKNOWN", "ADTS", "ADIF", "MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
 
     if (codec >= sizeof(_names) / sizeof(_names[0]))
         return _names[CODEC_UNKNOWN];
