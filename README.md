@@ -37,26 +37,31 @@ ESP32_VS1053_Stream stream;
 const char* SSID = "xxx";
 const char* PSK = "xxx";
 
+// Called when codec is detected
 void codecCallBack(const char *codec)
 {
     Serial.printf("codec: %s\n", codec);
 }
 
+// Called when bitrate is detected (cbr) and changes (vbr)
 void bitrateCallback(uint32_t bitrate)
 {
     Serial.printf("bitrate: %lu kbps\n", bitrate);
 }
 
+// Called when a stream has an ICY name header set
 void stationCallback(const char *name)
 {
     Serial.printf("station: %s\n", name);
 }
 
+// Called when stream metadata is available
 void infoCallback(const char *info)
 {
     Serial.printf("info: %s\n", info);
 }
 
+// Called on end-of-file
 void eofCallback(const char *url)
 {
     Serial.printf("eof: %s\n", url);
