@@ -38,6 +38,18 @@ ESP32_VS1053_Stream stream;
 const char* SSID = "xxx";
 const char* PSK = "xxx";
 
+// called when codec is detected
+void codecCallBack(const char *codec)
+{
+    Serial.printf("codec: %s\n", codec);
+}
+
+// called when bitrate is detected (cbr) and changes (vbr)
+void bitrateCallback(uint32_t bitrate)
+{
+    Serial.printf("bitrate: %lu kbps\n", bitrate);
+}
+
 void setup() {
     Serial.begin(115200);
 
@@ -67,6 +79,12 @@ void setup() {
     }
     Serial.println("VS1053 running - starting radio stream");
 
+    // Setup the codec callback
+    stream.setCodecCallback(codecCallBack);
+
+    // Setup the bitrate callback
+    stream.setBitrateCallback(bitrateCallback);   
+
     // Connect to the radio stream
     stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
 
@@ -74,13 +92,6 @@ void setup() {
         Serial.println("Stream not running - system halted");
         while (1) delay(100);
     }
-
-    Serial.print("Codec: ");
-    Serial.println(stream.currentCodec());
-
-    Serial.print("Bitrate: ");
-    Serial.print(stream.bitrate());
-    Serial.println(" kbps");
 }
 
 void loop() {
@@ -118,6 +129,18 @@ void audio_eof_stream(const char* info) {
 #define SDREADER_CS 26
 
 ESP32_VS1053_Stream stream;
+
+// called when codec is detected
+void codecCallBack(const char *codec)
+{
+    Serial.printf("codec: %s\n", codec);
+}
+
+// called when bitrate is detected (cbr) and changes (vbr)
+void bitrateCallback(uint32_t bitrate)
+{
+    Serial.printf("bitrate: %lu kbps\n", bitrate);
+}
 
 bool mountSDcard() {
     if (!SD.begin(SDREADER_CS)) {
@@ -164,6 +187,12 @@ void setup() {
 
     Serial.println("VS1053 running - starting SD playback");
 
+    // Setup the codec callback
+    stream.setCodecCallback(codecCallBack);
+
+    // Setup the bitrate callback
+    stream.setBitrateCallback(bitrateCallback);       
+
     // Start playback from an SD file
     stream.connecttofile(SD, "/test.mp3");
 
@@ -171,9 +200,6 @@ void setup() {
         Serial.println("No file running - system halted");
         while (1) delay(100);
     }
-
-    Serial.print("Codec: ");
-    Serial.println(stream.currentCodec());
 }
 
 void loop() {
