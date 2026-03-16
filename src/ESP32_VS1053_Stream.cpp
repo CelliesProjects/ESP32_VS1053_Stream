@@ -446,8 +446,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
 
     if (_ringbuffer_handle)
     {
-        if (stream->available() && xRingbufferGetCurFreeSize(_ringbuffer_handle))
-            _streamToRingBuffer(stream);
+        _streamToRingBuffer(stream);
         _playFromRingBuffer();
     }
     else
@@ -536,8 +535,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 
     if (_ringbuffer_handle)
     {
-        if (stream->available() && xRingbufferGetCurFreeSize(_ringbuffer_handle))
-            _chunkedStreamToRingBuffer(stream);
+        _chunkedStreamToRingBuffer(stream);
         _playFromRingBuffer();
     }
     else
