@@ -125,9 +125,6 @@ private:
         CODEC_OGG,
     };
 
-    const char *_names[9] = {"UNKNOWN", "AAC ADTS", "AAC ADIF", "AAC MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
-
-    //unsigned long _startMute = 0;
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
     size_t _bytesLeftInChunk = 0;
@@ -145,7 +142,6 @@ private:
     const char *ICY_NAME = "icy-name";
     const char *ICY_METAINT = "icy-metaint";
     const char *ENCODING = "Transfer-Encoding";
-    const char *BITRATE = "icy-br";
     const char *LOCATION = "Location";
 };
 

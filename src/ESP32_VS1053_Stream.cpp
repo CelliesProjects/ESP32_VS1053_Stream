@@ -245,7 +245,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     _http->addHeader("Icy-MetaData", VS1053_ICY_METADATA ? "1" : "0");
 
     const char *header[] = {CONTENT_TYPE, ICY_NAME, ICY_METAINT,
-                            ENCODING, BITRATE, LOCATION};
+                            ENCODING, LOCATION};
     _http->collectHeaders(header, sizeof(header) / sizeof(char *));
     _http->setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
 
@@ -269,7 +269,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             log_d("url %s is a playlist", url);
             if (!_canRedirect())
             {
-                _redirectCount = 0;
                 stopSong();
                 return false;
             }
@@ -299,27 +298,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             }
         }
 
-        else if (strcasestr(ct, "audio/mpeg") ||
-                 strcasestr(ct, "audio/mp3"))
-            _codec = CODEC_UNKNOWN;
-
-        else if (strcasestr(ct, "audio/ogg") ||
-                 strcasestr(ct, "application/ogg"))
-            _codec = CODEC_UNKNOWN;
-
-        else if (strcasestr(ct, "audio/aac"))
-            _codec = CODEC_UNKNOWN;
-
-        else if (strcasestr(ct, "audio/aacp"))
-            _codec = CODEC_UNKNOWN;
-
-        else
-        {
-            log_e("closing - unsupported mimetype: '%s'", ct);
-            stopSong();
-            return false;
-        }
-
         if (audio_showstation && !_http->header(ICY_NAME).equals(""))
             audio_showstation(_http->header(ICY_NAME).c_str());
 
@@ -335,7 +313,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         }
         _streamStallStartMS = 0;
         log_i("redirected %i times to %s", _redirectCount, url);
-        _redirectCount = 0;
         return true;
     }
 
@@ -345,7 +322,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
     {
         if (!_canRedirect())
         {
-            _redirectCount = 0;
             stopSong();
             return false;
         }
@@ -353,7 +329,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         if (!_http->hasHeader(LOCATION))
         {
             log_e("No location header redirecting from %s", url);
-            _redirectCount = 0;
             stopSong();
             return false;
         }
@@ -365,7 +340,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
         if (location.indexOf("./") != -1)
         {
             log_e("Invalid url %s redirecting from %s", location, url);
-            _redirectCount = 0;
             stopSong();
             return false;
         }
@@ -377,7 +351,6 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 
     default:
         log_d("error %i %s", HTTPresult, _http->errorToString(HTTPresult).c_str());
-        _redirectCount = 0;
         stopSong();
         return false;
     }
@@ -693,7 +666,7 @@ void ESP32_VS1053_Stream::loop()
     const auto now = millis();
     const auto currentStallTimeMS = now - _streamStallStartMS;
 
-    if (_streamStallStartMS && !data && !_ringbuffer_handle &&
+    if (!data && _streamStallStartMS && !_ringbuffer_handle &&
         currentStallTimeMS > VS1053_STREAM_TIMEOUT_MS)
     {
         log_e("Stream timeout %lu ms", VS1053_STREAM_TIMEOUT_MS);
@@ -701,14 +674,14 @@ void ESP32_VS1053_Stream::loop()
         return;
     }
 
-    if (!_streamStallStartMS && !data)
+    if (!data && !_streamStallStartMS)
     {
         _streamStallStartMS = now ?: 1;
         if (!_ringbuffer_handle)
             return;
     }
 
-    if (_streamStallStartMS && data)
+    if (data && _streamStallStartMS)
     {
         if (!_ringbuffer_handle)
             log_w("Stream stalled for %lu ms", currentStallTimeMS);
@@ -756,6 +729,7 @@ void ESP32_VS1053_Stream::stopSong()
     delete _http;
     _http = nullptr;
     _bytesLeftInChunk = 0;
+    _redirectCount = 0;
     _dataSeen = false;
 }
 
@@ -983,6 +957,8 @@ void ESP32_VS1053_Stream::_readBitRate()
 
 const char *ESP32_VS1053_Stream::_codecName(uint8_t codec)
 {
+    const char *_names[9] = {"UNKNOWN", "AAC ADTS", "AAC ADIF", "AAC MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
+
     if (codec >= sizeof(_names) / sizeof(_names[0]))
         return _names[CODEC_UNKNOWN];
     return _names[codec];
