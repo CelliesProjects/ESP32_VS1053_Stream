@@ -30,6 +30,9 @@ extern void audio_showstation(const char *) __attribute__((weak));
 extern void audio_eof_stream(const char *) __attribute__((weak));
 extern void audio_showstreamtitle(const char *) __attribute__((weak));
 
+typedef void (*codec_callback_t)(const char *codec);
+typedef void (*bitrate_callback_t)(uint32_t bitrate);
+
 class ESP32_VS1053_Stream
 {
 
@@ -48,6 +51,12 @@ public:
     bool connecttofile(fs::FS &fs, const char *filename);
     bool connecttofile(fs::FS &fs, const char *filename, const size_t offset);
 
+    void setCodecCallback(codec_callback_t cb);
+    void clearCodecCallback();
+
+    void setBitrateCallback(bitrate_callback_t cb);
+    void clearBitrateCallback();
+
     void loop();
     bool isRunning();
     void stopSong();
@@ -61,11 +70,9 @@ public:
         tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
         e.g. uint8_t rtone[4]  = {12, 15, 15, 15}; // initialize bass & treble
         See https://www.vlsi.fi/fileadmin/datasheets/vs1053.pdf section 9.6.3 */
-    const char *currentCodec();
     const char *lastUrl();
     size_t size();
     size_t position();
-    uint32_t bitrate();
     void bufferStatus(size_t &used, size_t &capacity);
 
 private:
@@ -97,7 +104,30 @@ private:
     void _streamToRingBuffer(WiFiClient *stream);
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
 
-    unsigned long _startMute = 0;
+    codec_callback_t _codecCallback = nullptr;
+    bitrate_callback_t _bitrateCallback = nullptr;
+
+    enum Codec
+    {
+        CODEC_UNKNOWN,
+        CODEC_AAC_ADTS,
+        CODEC_AAC_ADIF,
+        CODEC_AAC_MP4,
+        CODEC_WAV,
+        CODEC_WMA,
+        CODEC_MIDI,
+        CODEC_MP3,
+        CODEC_OGG,
+    };
+
+    uint8_t _codec = CODEC_UNKNOWN;
+    void _updateBitRate();
+    void _readBitRate();
+    const char *_codecName(uint8_t codec);
+    unsigned long _bitrateTimer = 0;
+    uint8_t _decoderSyncAttempts = 0;
+    uint32_t _bitrate = 0;
+
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
     size_t _bytesLeftInChunk = 0;
@@ -111,20 +141,10 @@ private:
     unsigned long _bufferStallStartMS = 0;
     uint8_t _redirectCount = 0;
 
-    enum codec_t
-    {
-        STOPPED,
-        MP3,
-        OGG,
-        AAC,
-        AACP
-    } _currentCodec = STOPPED;
-
     const char *CONTENT_TYPE = "Content-Type";
     const char *ICY_NAME = "icy-name";
     const char *ICY_METAINT = "icy-metaint";
     const char *ENCODING = "Transfer-Encoding";
-    const char *BITRATE = "icy-br";
     const char *LOCATION = "Location";
 };
 
