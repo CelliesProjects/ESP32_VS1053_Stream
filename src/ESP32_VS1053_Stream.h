@@ -106,6 +106,7 @@ private:
 
     codec_callback_t _codecCallback = nullptr;
     bitrate_callback_t _bitrateCallback = nullptr;
+    void _updateBitRate();
     void _readBitRate();
     const char *_codecName(uint8_t codec);
     unsigned long _bitrateTimer = 0;

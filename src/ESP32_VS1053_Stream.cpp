@@ -370,11 +370,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         _bitrateTimer = millis() ?: 1;
     }
 
-    if (millis() - _bitrateTimer > 250)
-    {
-        _readBitRate();
-        _bitrateTimer = millis() ?: 1;
-    }
+    _updateBitRate();
 
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToDecoder = 0;
@@ -456,11 +452,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
     }
     else
     {
-        if (millis() - _bitrateTimer > 250)
-        {
-            _readBitRate();
-            _bitrateTimer = millis() ?: 1;
-        }
+        _updateBitRate();
 
         [[maybe_unused]] const auto startTimeMS = millis();
         size_t bytesToDecoder = 0;
@@ -550,11 +542,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
     }
     else
     {
-        if (millis() - _bitrateTimer > 250)
-        {
-            _readBitRate();
-            _bitrateTimer = millis() ?: 1;
-        }
+        _updateBitRate();
 
         [[maybe_unused]] const auto startTimeMS = millis();
         size_t bytesToDecoder = 0;
@@ -857,6 +845,15 @@ void ESP32_VS1053_Stream::_handleLocalFile()
         _playFromRingBuffer();
     else
         _eofStream();
+}
+
+void ESP32_VS1053_Stream::_updateBitRate()
+{
+    if (millis() - _bitrateTimer > 250)
+    {
+        _readBitRate();
+        _bitrateTimer = millis() ?: 1;
+    }
 }
 
 void ESP32_VS1053_Stream::_readBitRate()
