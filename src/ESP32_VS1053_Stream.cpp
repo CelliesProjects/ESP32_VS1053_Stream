@@ -115,14 +115,14 @@ void ESP32_VS1053_Stream::_handleMetadata(char *data, const size_t len)
         if (index++ == data + len)
             return;
     index[0] = 0;
-    audio_showstreamtitle(pch);
+    _infoCallback(pch);
 }
 
 void ESP32_VS1053_Stream::_eofStream()
 {
     stopSong();
-    if (audio_eof_stream)
-        audio_eof_stream(_url);
+    if (_eofCallback)
+        _eofCallback(_url);
 }
 
 bool ESP32_VS1053_Stream::_canRedirect()
@@ -159,23 +159,23 @@ bool ESP32_VS1053_Stream::isChipConnected()
     return _vs1053 ? _vs1053->isChipConnected() : false;
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const char *url)
+bool ESP32_VS1053_Stream::connectToHost(const char *url)
 {
-    return connecttohost(url, "", "", 0);
+    return connectToHost(url, "", "", 0);
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const char *url, const size_t offset)
+bool ESP32_VS1053_Stream::connectToHost(const char *url, const size_t offset)
 {
-    return connecttohost(url, "", "", offset);
+    return connectToHost(url, "", "", offset);
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
+bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                                         const char *pwd)
 {
-    return connecttohost(url, username, pwd, 0);
+    return connectToHost(url, username, pwd, 0);
 }
 
-bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
+bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                                         const char *pwd, size_t offset)
 {
     if (!_vs1053 || _http || _playingFile || !WiFi.isConnected() ||
@@ -293,13 +293,13 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
                     strtok(newUrl, "\r\n;?");
                     stopSong();
                     log_d("playlist %s reconnects to: %s", url, newUrl);
-                    return connecttohost(newUrl, username, pwd, offset);
+                    return connectToHost(newUrl, username, pwd, offset);
                 }
             }
         }
 
-        if (audio_showstation && !_http->header(ICY_NAME).equals(""))
-            audio_showstation(_http->header(ICY_NAME).c_str());
+        if (_stationCallback && !_http->header(ICY_NAME).equals(""))
+            _stationCallback(_http->header(ICY_NAME).c_str());
 
         _remainingBytes = _http->getSize(); // -1 when Server sends no Content-Length header (chunked streams)
         _chunkedResponse = _http->header(ENCODING).equalsIgnoreCase("chunked") ? true : false;
@@ -312,7 +312,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", url);
         }
         _streamStallStartMS = 0;
-        log_i("redirected %i times to %s", _redirectCount, url);
+        log_d("redirected %i times to %s", _redirectCount, url);
         return true;
     }
 
@@ -346,7 +346,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
 
         stopSong();
         log_d("%i redirection to: %s", HTTPresult, location.c_str());
-        return connecttohost(location.c_str(), username, pwd, 0);
+        return connectToHost(location.c_str(), username, pwd, 0);
     }
 
     default:
@@ -480,7 +480,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
         {
             stream->readBytes(_localbuffer, METALENGTH);
 
-            if (audio_showstreamtitle)
+            if (_infoCallback)
                 _handleMetadata(reinterpret_cast<char *>(_localbuffer), METALENGTH);
         }
 
@@ -594,7 +594,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
                 _bytesLeftInChunk--;
             }
 
-            if (audio_showstreamtitle)
+            if (_infoCallback)
                 _handleMetadata(reinterpret_cast<char *>(_localbuffer), METALENGTH);
         }
 
@@ -762,12 +762,12 @@ void ESP32_VS1053_Stream::bufferStatus(size_t &used, size_t &capacity)
     capacity = _ringbuffer_handle ? VS1053_PSRAM_BUFFER_SIZE : 0;
 }
 
-bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename)
+bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename)
 {
-    return connecttofile(fs, filename, 0);
+    return connectToFile(fs, filename, 0);
 }
 
-bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const size_t offset)
+bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const size_t offset)
 {
     if (!_vs1053 || _playingFile || _http)
         return false;
@@ -952,29 +952,59 @@ void ESP32_VS1053_Stream::_readBitRate()
 
 const char *ESP32_VS1053_Stream::_codecName(uint8_t codec)
 {
-    const char *_names[9] = {"UNKNOWN", "AAC ADTS", "AAC ADIF", "AAC MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
+    const char *_names[9] = {"UNKNOWN", "ADTS", "ADIF", "MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
 
     if (codec >= sizeof(_names) / sizeof(_names[0]))
         return _names[CODEC_UNKNOWN];
     return _names[codec];
 }
 
-void ESP32_VS1053_Stream::setCodecCallback(codec_callback_t cb)
+void ESP32_VS1053_Stream::setCodecCB(codec_callback_t cb)
 {
     _codecCallback = cb;
 }
 
-void ESP32_VS1053_Stream::clearCodecCallback()
+void ESP32_VS1053_Stream::clearCodecCB()
 {
     _codecCallback = nullptr;
 }
 
-void ESP32_VS1053_Stream::setBitrateCallback(bitrate_callback_t cb)
+void ESP32_VS1053_Stream::setBitrateCB(bitrate_callback_t cb)
 {
     _bitrateCallback = cb;
 }
 
-void ESP32_VS1053_Stream::clearBitrateCallback()
+void ESP32_VS1053_Stream::clearBitrateCB()
 {
     _bitrateCallback = nullptr;
+}
+
+void ESP32_VS1053_Stream::setStationCB(station_callback_t cb)
+{
+    _stationCallback = cb;
+}
+
+void ESP32_VS1053_Stream::clearStationCB()
+{
+    _stationCallback = nullptr;
+}
+
+void ESP32_VS1053_Stream::setInfoCB(streaminfo_callback_t cb)
+{
+    _infoCallback = cb;
+}
+
+void ESP32_VS1053_Stream::clearInfoCB()
+{
+    _infoCallback = nullptr;
+}
+
+void ESP32_VS1053_Stream::setEofCB(eof_callback_t cb)
+{
+    _eofCallback = cb;
+}
+
+void ESP32_VS1053_Stream::clearEofCB()
+{
+    _eofCallback = nullptr;
 }

@@ -26,12 +26,11 @@ constexpr size_t VS1053_PSRAM_MAX_MOVE = 2048;
 constexpr uint8_t VS1053_MAXVOLUME = 100;
 constexpr size_t VS1053_PLAYBUFFER_SIZE = 32;
 
-extern void audio_showstation(const char *) __attribute__((weak));
-extern void audio_eof_stream(const char *) __attribute__((weak));
-extern void audio_showstreamtitle(const char *) __attribute__((weak));
-
+typedef void (*station_callback_t)(const char *name);
 typedef void (*codec_callback_t)(const char *codec);
 typedef void (*bitrate_callback_t)(uint32_t bitrate);
+typedef void (*streaminfo_callback_t)(const char *info);
+typedef void (*eof_callback_t)(const char *url);
 
 class ESP32_VS1053_Stream
 {
@@ -43,25 +42,47 @@ public:
     bool startDecoder(const uint8_t CS, const uint8_t DCS, const uint8_t DREQ);
     bool isChipConnected();
 
-    bool connecttohost(const char *url);
-    bool connecttohost(const char *url, const size_t offset);
-    bool connecttohost(const char *url, const char *username, const char *pwd);
-    bool connecttohost(const char *url, const char *username, const char *pwd, const size_t offset);
+    bool connectToHost(const char *url);
+    bool connectToHost(const char *url, const size_t offset);
+    bool connectToHost(const char *url, const char *username, const char *pwd);
+    bool connectToHost(const char *url, const char *username, const char *pwd, const size_t offset);
 
-    bool connecttofile(fs::FS &fs, const char *filename);
-    bool connecttofile(fs::FS &fs, const char *filename, const size_t offset);
+    bool connectToFile(fs::FS &fs, const char *filename);
+    bool connectToFile(fs::FS &fs, const char *filename, const size_t offset);
 
-    void setCodecCallback(codec_callback_t cb);
-    void clearCodecCallback();
+    void setCodecCB(codec_callback_t cb);
+    void clearCodecCB();
 
-    void setBitrateCallback(bitrate_callback_t cb);
-    void clearBitrateCallback();
+    void setBitrateCB(bitrate_callback_t cb);
+    void clearBitrateCB();
+
+    void setStationCB(station_callback_t cb);
+    void clearStationCB();
+
+    void setInfoCB(streaminfo_callback_t cb);
+    void clearInfoCB();
+
+    void setEofCB(eof_callback_t cb);
+    void clearEofCB();
 
     void loop();
+
     bool isRunning();
+
     void stopSong();
+
     uint8_t getVolume();
+
     void setVolume(const uint8_t newVolume); /* 0-100 */
+
+    const char *lastUrl();
+
+    size_t size();
+
+    size_t position();
+
+    void bufferStatus(size_t &used, size_t &capacity);
+
     void setTone(uint8_t *rtone);
     /*  Bass/Treble: void setTone(uint8_t *rtone);
         toneha       = <0..15>        // Setting treble gain (0 off, 1.5dB steps)
@@ -70,10 +91,6 @@ public:
         tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
         e.g. uint8_t rtone[4]  = {12, 15, 15, 15}; // initialize bass & treble
         See https://www.vlsi.fi/fileadmin/datasheets/vs1053.pdf section 9.6.3 */
-    const char *lastUrl();
-    size_t size();
-    size_t position();
-    void bufferStatus(size_t &used, size_t &capacity);
 
 private:
     VS1053 *_vs1053;
@@ -106,6 +123,9 @@ private:
 
     codec_callback_t _codecCallback = nullptr;
     bitrate_callback_t _bitrateCallback = nullptr;
+    station_callback_t _stationCallback = nullptr;
+    streaminfo_callback_t _infoCallback = nullptr;
+    eof_callback_t _eofCallback = nullptr;
 
     enum Codec
     {

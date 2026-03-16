@@ -14,7 +14,7 @@ Also plays mp3 and ogg files from sdcard or any mounted filesystem.
 
 While this [PR](https://github.com/baldram/ESP_VS1053_Library/pull/119) is waiting to be merged in the `baldram/ESP_VS1053_Library` repo, you have to use the this [fork](baldram/ESP_VS1053_Library) to be able to compile the `master` branch.
 
-Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest).
+Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest) for Arduino IDE or the corresponding [PIOArduino release](https://github.com/pioarduino/platform-espressif32/releases/latest) if yuou use PlatformIO in VSCode.
 
 ## Example: play a stream
 ```c++
@@ -37,24 +37,38 @@ ESP32_VS1053_Stream stream;
 const char* SSID = "xxx";
 const char* PSK = "xxx";
 
-// called when codec is detected
+// Called when codec is detected
 void codecCallBack(const char *codec)
 {
     Serial.printf("codec: %s\n", codec);
 }
 
-// called when bitrate is detected (cbr) and changes (vbr)
+// Called when bitrate is detected (cbr) and changes (vbr)
 void bitrateCallback(uint32_t bitrate)
 {
     Serial.printf("bitrate: %lu kbps\n", bitrate);
 }
 
+// Called when a stream has an ICY name header set
+void stationCallback(const char *name)
+{
+    Serial.printf("station: %s\n", name);
+}
+
+// Called when stream metadata is available
+void infoCallback(const char *info)
+{
+    Serial.printf("info: %s\n", info);
+}
+
+// Called on end-of-file
+void eofCallback(const char *url)
+{
+    Serial.printf("eof: %s\n", url);
+}
+
 void setup() {
     Serial.begin(115200);
-
-    while (!Serial)
-        delay(10);
-
     Serial.println("\n\nVS1053 Radio Streaming Example\n");
 
     // Connect to Wi-Fi
@@ -76,16 +90,26 @@ void setup() {
         Serial.println("Decoder not running - system halted");
         while (1) delay(100);
     }
+
+    // Set the codec callback
+    stream.setCodecCB(codecCallBack);
+
+    // Set the bitrate callback
+    stream.setBitrateCB(bitrateCallback);   
+
+    // Set the station name callback
+    stream.setStationCB(stationCallback);
+
+    // Set the stream metadata callback
+    stream.setInfoCB(infoCallback);
+
+    // Set the EOF callback
+    stream.setEofCB(eofCallback);    
+
     Serial.println("VS1053 running - starting radio stream");
 
-    // Setup the codec callback
-    stream.setCodecCallback(codecCallBack);
-
-    // Setup the bitrate callback
-    stream.setBitrateCallback(bitrateCallback);   
-
     // Connect to the radio stream
-    stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
+    stream.connectToHost("http://icecast.omroep.nl/radio6-bb-mp3");
 
     if (!stream.isRunning()) {
         Serial.println("Stream not running - system halted");
@@ -98,17 +122,6 @@ void loop() {
     delay(5);
 }
 
-void audio_showstation(const char* info) {
-    Serial.printf("Station: %s\n", info);
-}
-
-void audio_showstreamtitle(const char* info) {
-    Serial.printf("Stream title: %s\n", info);
-}
-
-void audio_eof_stream(const char* info) {
-    Serial.printf("End of stream: %s\n", info);
-}
 ```
 
 ## Example: play from SD card
@@ -129,16 +142,22 @@ void audio_eof_stream(const char* info) {
 
 ESP32_VS1053_Stream stream;
 
-// called when codec is detected
+// Called when codec is detected
 void codecCallBack(const char *codec)
 {
     Serial.printf("codec: %s\n", codec);
 }
 
-// called when bitrate is detected (cbr) and changes (vbr)
+// Called when bitrate is detected (cbr) and changes (vbr)
 void bitrateCallback(uint32_t bitrate)
 {
     Serial.printf("bitrate: %lu kbps\n", bitrate);
+}
+
+// Called on end-of-file
+void eofCallback(const char *url)
+{
+    Serial.printf("eof: %s\n", url);
 }
 
 bool mountSDcard() {
@@ -160,10 +179,6 @@ bool mountSDcard() {
 
 void setup() {
     Serial.begin(115200);
-
-    while (!Serial)
-        delay(10);
-
     Serial.println("\n\nVS1053 SD Card Playback Example\n");
 
     // Start SPI bus
@@ -184,16 +199,19 @@ void setup() {
         while (1) delay(100);
     }
 
+    // Set the codec callback
+    stream.setCodecCB(codecCallBack);
+
+    // Set the bitrate callback
+    stream.setBitrateCB(bitrateCallback);
+
+    // Set the EOF callback
+    stream.setEofCB(eofCallback);
+
     Serial.println("VS1053 running - starting SD playback");
 
-    // Setup the codec callback
-    stream.setCodecCallback(codecCallBack);
-
-    // Setup the bitrate callback
-    stream.setBitrateCallback(bitrateCallback);       
-
     // Start playback from an SD file
-    stream.connecttofile(SD, "/test.mp3");
+    stream.connectToFile(SD, "/test.mp3");
 
     if (!stream.isRunning()) {
         Serial.println("No file running - system halted");
@@ -206,9 +224,6 @@ void loop() {
     delay(5);
 }
 
-void audio_eof_stream(const char* info) {
-    Serial.printf("End of file: %s\n", info);
-}
 ```
 
 ## Known issues
@@ -269,16 +284,16 @@ bool isChipConnected()
 ```
 ### Start or resume a stream
 ```c++
-bool connecttohost(url)
+bool connectToHost(url)
 ```
 ```c++
-bool connecttohost(url, offset)
+bool connectToHost(url, offset)
 ```
 ```c++
-bool connecttohost(url, user, pwd)
+bool connectToHost(url, user, pwd)
 ```
 ```c++
-bool connecttohost(url, user, pwd, offset)
+bool connectToHost(url, user, pwd, offset)
 ```
 Note: When a stream does not start in this library but it does play on your desktop or laptop you can try increasing the connection timeout.  
 You can do this in `ESP32_VS1053_Stream.h` by increasing these values:  
@@ -288,10 +303,10 @@ You can do this in `ESP32_VS1053_Stream.h` by increasing these values:
 ```
 ### Start or resume a local file
 ```c++
-bool connecttofile(filesystem, filename)
+bool connectToFile(filesystem, filename)
 ```
 ```c++
-bool connecttofile(filesystem, filename, offset)
+bool connectToFile(filesystem, filename, offset)
 ```
 `filesystem` has to be mounted.  
 Note: Local file playbacks requires psram   
@@ -378,7 +393,7 @@ Returns the eof url or path.
 Also called if a stream or file times out/errors.
 
 You can use this function for coding a playlist.  
-Use `connecttohost()` or `connecttofile()` inside this function to start the next item.
+Use `connectToHost()` or `connectToFile()` inside this function to start the next item.
 ## License
 
 MIT License
