@@ -49,13 +49,13 @@ void bitrateCallback(uint32_t bitrate)
     Serial.printf("bitrate: %lu kbps\n", bitrate);
 }
 
-// Called when a radio stream has an ICY name header 
+// Called when a radio stream has an ICY name header
 void stationCallback(const char *name)
 {
     Serial.printf("station: %s\n", name);
 }
 
-// Called when stream has metadata
+// Called when a stream has metadata available
 void infoCallback(const char *info)
 {
     Serial.printf("info: %s\n", info);
