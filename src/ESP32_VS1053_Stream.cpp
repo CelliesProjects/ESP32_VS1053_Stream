@@ -997,7 +997,7 @@ void ESP32_VS1053_Stream::setInfoCallback(streaminfo_callback_t cb)
 void ESP32_VS1053_Stream::clearInfoCallback()
 {
     _infoCallback = nullptr;
-}    
+}
 
 void ESP32_VS1053_Stream::setEofCallback(eof_callback_t cb)
 {
@@ -1007,4 +1007,4 @@ void ESP32_VS1053_Stream::setEofCallback(eof_callback_t cb)
 void ESP32_VS1053_Stream::clearEofCallback()
 {
     _eofCallback = nullptr;
-}        
+}
