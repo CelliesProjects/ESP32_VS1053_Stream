@@ -60,16 +60,29 @@ public:
     void clearStationCB();
 
     void setInfoCB(streaminfo_callback_t cb);
-    void clearInfoCB();    
+    void clearInfoCB();
 
     void setEofCB(eof_callback_t cb);
     void clearEofCB();
 
     void loop();
+
     bool isRunning();
+
     void stopSong();
+
     uint8_t getVolume();
+
     void setVolume(const uint8_t newVolume); /* 0-100 */
+
+    const char *lastUrl();
+
+    size_t size();
+
+    size_t position();
+
+    void bufferStatus(size_t &used, size_t &capacity);
+
     void setTone(uint8_t *rtone);
     /*  Bass/Treble: void setTone(uint8_t *rtone);
         toneha       = <0..15>        // Setting treble gain (0 off, 1.5dB steps)
@@ -78,10 +91,6 @@ public:
         tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
         e.g. uint8_t rtone[4]  = {12, 15, 15, 15}; // initialize bass & treble
         See https://www.vlsi.fi/fileadmin/datasheets/vs1053.pdf section 9.6.3 */
-    const char *lastUrl();
-    size_t size();
-    size_t position();
-    void bufferStatus(size_t &used, size_t &capacity);
 
 private:
     VS1053 *_vs1053;
