@@ -37,16 +37,34 @@ ESP32_VS1053_Stream stream;
 const char* SSID = "xxx";
 const char* PSK = "xxx";
 
-// called when codec is detected
+// Called when codec is detected
 void codecCallBack(const char *codec)
 {
     Serial.printf("codec: %s\n", codec);
 }
 
-// called when bitrate is detected (cbr) and changes (vbr)
+// Called when bitrate is detected (cbr) and changes (vbr)
 void bitrateCallback(uint32_t bitrate)
 {
     Serial.printf("bitrate: %lu kbps\n", bitrate);
+}
+
+// Called when a radio stream has an ICY name header 
+void stationCallback(const char *name)
+{
+    Serial.printf("station: %s\n", name);
+}
+
+// Called when stream has metadata
+void infoCallback(const char *info)
+{
+    Serial.printf("info: %s\n", info);
+}
+
+// Called on end-of-file
+void eofCallback(const char *url)
+{
+    Serial.printf("eof: %s\n", url);
 }
 
 void setup() {
@@ -76,13 +94,23 @@ void setup() {
         Serial.println("Decoder not running - system halted");
         while (1) delay(100);
     }
-    Serial.println("VS1053 running - starting radio stream");
 
-    // Setup the codec callback
+    // Set the codec callback
     stream.setCodecCallback(codecCallBack);
 
-    // Setup the bitrate callback
+    // Set the bitrate callback
     stream.setBitrateCallback(bitrateCallback);   
+
+    // Set the station name callback
+    stream.setStationCallback(stationCallback);
+
+    // Set the stream metadata callback
+    stream.setInfoCallback(infoCallback);
+
+    // Set the EOF callback
+    stream.setEofCallback(eofCallback);    
+
+    Serial.println("VS1053 running - starting radio stream");
 
     // Connect to the radio stream
     stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
@@ -98,17 +126,6 @@ void loop() {
     delay(5);
 }
 
-void audio_showstation(const char* info) {
-    Serial.printf("Station: %s\n", info);
-}
-
-void audio_showstreamtitle(const char* info) {
-    Serial.printf("Stream title: %s\n", info);
-}
-
-void audio_eof_stream(const char* info) {
-    Serial.printf("End of stream: %s\n", info);
-}
 ```
 
 ## Example: play from SD card
@@ -139,6 +156,12 @@ void codecCallBack(const char *codec)
 void bitrateCallback(uint32_t bitrate)
 {
     Serial.printf("bitrate: %lu kbps\n", bitrate);
+}
+
+// Called on end-of-file
+void eofCallback(const char *url)
+{
+    Serial.printf("eof: %s\n", url);
 }
 
 bool mountSDcard() {
@@ -190,7 +213,10 @@ void setup() {
     stream.setCodecCallback(codecCallBack);
 
     // Setup the bitrate callback
-    stream.setBitrateCallback(bitrateCallback);       
+    stream.setBitrateCallback(bitrateCallback);
+
+    // Set the EOF callback
+    stream.setEofCallback(eofCallback);
 
     // Start playback from an SD file
     stream.connecttofile(SD, "/test.mp3");
@@ -206,9 +232,6 @@ void loop() {
     delay(5);
 }
 
-void audio_eof_stream(const char* info) {
-    Serial.printf("End of file: %s\n", info);
-}
 ```
 
 ## Known issues
