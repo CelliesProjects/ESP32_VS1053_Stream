@@ -115,14 +115,14 @@ void ESP32_VS1053_Stream::_handleMetadata(char *data, const size_t len)
         if (index++ == data + len)
             return;
     index[0] = 0;
-    audio_showstreamtitle(pch);
+    _infoCallback(pch);
 }
 
 void ESP32_VS1053_Stream::_eofStream()
 {
     stopSong();
-    if (audio_eof_stream)
-        audio_eof_stream(_url);
+    if (_eofCallback)
+        _eofCallback(_url);
 }
 
 bool ESP32_VS1053_Stream::_canRedirect()
@@ -298,8 +298,8 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             }
         }
 
-        if (audio_showstation && !_http->header(ICY_NAME).equals(""))
-            audio_showstation(_http->header(ICY_NAME).c_str());
+        if (_stationCallback && !_http->header(ICY_NAME).equals(""))
+            _stationCallback(_http->header(ICY_NAME).c_str());
 
         _remainingBytes = _http->getSize(); // -1 when Server sends no Content-Length header (chunked streams)
         _chunkedResponse = _http->header(ENCODING).equalsIgnoreCase("chunked") ? true : false;
@@ -312,7 +312,7 @@ bool ESP32_VS1053_Stream::connecttohost(const char *url, const char *username,
             snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", url);
         }
         _streamStallStartMS = 0;
-        log_i("redirected %i times to %s", _redirectCount, url);
+        log_d("redirected %i times to %s", _redirectCount, url);
         return true;
     }
 
@@ -480,7 +480,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
         {
             stream->readBytes(_localbuffer, METALENGTH);
 
-            if (audio_showstreamtitle)
+            if (_infoCallback)
                 _handleMetadata(reinterpret_cast<char *>(_localbuffer), METALENGTH);
         }
 
@@ -594,7 +594,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
                 _bytesLeftInChunk--;
             }
 
-            if (audio_showstreamtitle)
+            if (_infoCallback)
                 _handleMetadata(reinterpret_cast<char *>(_localbuffer), METALENGTH);
         }
 
@@ -978,3 +978,33 @@ void ESP32_VS1053_Stream::clearBitrateCallback()
 {
     _bitrateCallback = nullptr;
 }
+
+void ESP32_VS1053_Stream::setStationCallback(station_callback_t cb)
+{
+    _stationCallback = cb;
+}
+
+void ESP32_VS1053_Stream::clearStationCallback()
+{
+    _stationCallback = nullptr;
+}
+
+void ESP32_VS1053_Stream::setInfoCallback(streaminfo_callback_t cb)
+{
+    _infoCallback = cb;
+}
+
+void ESP32_VS1053_Stream::clearInfoCallback()
+{
+    _infoCallback = nullptr;
+}    
+
+void ESP32_VS1053_Stream::setEofCallback(eof_callback_t cb)
+{
+    _eofCallback = cb;
+}
+
+void ESP32_VS1053_Stream::clearEofCallback()
+{
+    _eofCallback = nullptr;
+}        
