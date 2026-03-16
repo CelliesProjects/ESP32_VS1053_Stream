@@ -51,25 +51,11 @@ public:
     bool connecttofile(fs::FS &fs, const char *filename);
     bool connecttofile(fs::FS &fs, const char *filename, const size_t offset);
 
-    void setCodecCallback(codec_callback_t cb)
-    {
-        _codecCallback = cb;
-    }
+    void setCodecCallback(codec_callback_t cb);
+    void clearCodecCallback();
 
-    void clearCodecCallback()
-    {
-        _codecCallback = nullptr;
-    }
-
-    void setBitrateCallback(bitrate_callback_t cb)
-    {
-        _bitrateCallback = cb;
-    }
-
-    void clearBitrateCallback()
-    {
-        _bitrateCallback = nullptr;
-    }
+    void setBitrateCallback(bitrate_callback_t cb);
+    void clearBitrateCallback();
 
     void loop();
     bool isRunning();
@@ -124,6 +110,7 @@ private:
     const char *_codecName(uint8_t codec);
     unsigned long _bitrateTimer = 0;
     uint8_t _codec = CODEC_UNKNOWN;
+    uint8_t _decoderSyncAttempts = 0;
     uint32_t _bitrate = 0;
     enum Codec
     {
@@ -140,7 +127,7 @@ private:
 
     const char *_names[9] = {"UNKNOWN", "AAC ADTS", "AAC ADIF", "AAC MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
 
-    unsigned long _startMute = 0;
+    //unsigned long _startMute = 0;
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
     size_t _bytesLeftInChunk = 0;

@@ -471,8 +471,6 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
     if (!_dataSeen)
     {
         _dataSeen = true;
-        _startMute = millis() ?: 1;
-        _vs1053->setVolume(0);
         _vs1053->startSong();
         _bitrateTimer = millis() ?: 1;
     }
@@ -566,8 +564,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         if (!_dataSeen)
         {
             _dataSeen = true;
-            _startMute = millis() ?: 1;
-            _vs1053->setVolume(0);
             _vs1053->startSong();
             _bitrateTimer = millis() ?: 1;
         }
@@ -719,19 +715,6 @@ void ESP32_VS1053_Stream::loop()
         _streamStallStartMS = 0;
     }
 
-    if (_startMute)
-    {
-        const auto WAIT_TIME_MS = ((!bitrate() && _remainingBytes == -1) ||
-                                   _codec != CODEC_MP3)
-                                      ? 380
-                                      : 80;
-        if (millis() - _startMute > WAIT_TIME_MS)
-        {
-            _vs1053->setVolume(_volume);
-            log_d("startmute is %lu milliseconds", WAIT_TIME_MS);
-            _startMute = 0;
-        }
-    }
     _feedDecoder(stream);
 }
 
@@ -745,12 +728,12 @@ void ESP32_VS1053_Stream::stopSong()
     if (!_http && !_playingFile)
         return;
 
-    _vs1053->setVolume(0);
     _remainingBytes = 0;
     _offset = 0;
     _bitrate = 0;
     _bitrateTimer = 0;
     _codec = CODEC_UNKNOWN;
+    _decoderSyncAttempts = 0;
 
     if (_ringbuffer_handle)
     {
@@ -784,7 +767,7 @@ uint8_t ESP32_VS1053_Stream::getVolume()
 void ESP32_VS1053_Stream::setVolume(const uint8_t newVolume)
 {
     _volume = min(VS1053_MAXVOLUME, newVolume);
-    if (_vs1053 && !_startMute)
+    if (_vs1053)
         _vs1053->setVolume(_volume);
 }
 
@@ -847,26 +830,7 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
         _file.close();
         return false;
     }
-    /*
-        uint8_t header[8];
-        _file.read(header, sizeof(header));
 
-        if (!memcmp(header, "OggS", 4))
-            _codec = CODEC_OGG;
-
-        else if (!memcmp(header, "ID3", 3))
-            _codec = CODEC_MP3;
-
-        else if (header[0] == 0xFF && (header[1] & 0xE0) == 0xE0)
-            _codec = CODEC_MP3;
-
-        if (_codec == CODEC_UNKNOWN)
-        {
-            log_w("unsupported file");
-            _file.close();
-            return false;
-        }
-    */
     _file.seek(offset);
     if (strcmp(filename, _url))
     {
@@ -875,7 +839,6 @@ bool ESP32_VS1053_Stream::connecttofile(fs::FS &fs, const char *filename, const 
         _vs1053->startSong();
     }
     _playingFile = true;
-    _vs1053->setVolume(_volume);
     _remainingBytes = _file.size() - offset;
 
     return true;
@@ -934,7 +897,14 @@ void ESP32_VS1053_Stream::_readBitRate()
     uint16_t hdat0 = _vs1053->readRegister(SCI_HDAT0);
 
     if (hdat1 == 0 && hdat0 == 0) // decoder not locked yet
+    {
+        if (++_decoderSyncAttempts > 2)
+        {
+            log_w("decoder failed to sync");
+            _eofStream();
+        }
         return;
+    }
 
     if (_codec == CODEC_UNKNOWN)
     {
@@ -1016,4 +986,24 @@ const char *ESP32_VS1053_Stream::_codecName(uint8_t codec)
     if (codec >= sizeof(_names) / sizeof(_names[0]))
         return _names[CODEC_UNKNOWN];
     return _names[codec];
+}
+
+void ESP32_VS1053_Stream::setCodecCallback(codec_callback_t cb)
+{
+    _codecCallback = cb;
+}
+
+void ESP32_VS1053_Stream::clearCodecCallback()
+{
+    _codecCallback = nullptr;
+}
+
+void ESP32_VS1053_Stream::setBitrateCallback(bitrate_callback_t cb)
+{
+    _bitrateCallback = cb;
+}
+
+void ESP32_VS1053_Stream::clearBitrateCallback()
+{
+    _bitrateCallback = nullptr;
 }
