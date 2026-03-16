@@ -64,10 +64,6 @@ void eofCallback(const char *url)
 
 void setup() {
     Serial.begin(115200);
-
-    while (!Serial)
-        delay(10);
-
     Serial.println("\n\nVS1053 Radio Streaming Example\n");
 
     // Connect to Wi-Fi
@@ -178,10 +174,6 @@ bool mountSDcard() {
 
 void setup() {
     Serial.begin(115200);
-
-    while (!Serial)
-        delay(10);
-
     Serial.println("\n\nVS1053 SD Card Playback Example\n");
 
     // Start SPI bus
