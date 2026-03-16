@@ -10,10 +10,9 @@ Also plays mp3 and ogg files from sdcard or any mounted filesystem.
 
 ## How to install and use
 
-Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and this library in your Arduino library folder.
+~~Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and this library in your Arduino library folder.~~
 
-Take care to install the master branch of the VS1053 library or at least a version from commit [ba1803f](https://github.com/baldram/ESP_VS1053_Library/commit/ba1803f75722a36f3e9f539129e885bea3c60f71) or later because the `getChipVersion()` call that is needed is not included in the latest release.  
-See https://github.com/CelliesProjects/ESP32_VS1053_Stream/issues/23
+While this [PR](https://github.com/baldram/ESP_VS1053_Library/pull/119) is waiting to be merged in the `baldram/ESP_VS1053_Library` repo, you have to use the this [fork](baldram/ESP_VS1053_Library) to be able to compile the `master` branch.
 
 Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest).
 
