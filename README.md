@@ -146,13 +146,13 @@ void loop() {
 
 ESP32_VS1053_Stream stream;
 
-// called when codec is detected
+// Called when codec is detected
 void codecCallBack(const char *codec)
 {
     Serial.printf("codec: %s\n", codec);
 }
 
-// called when bitrate is detected (cbr) and changes (vbr)
+// Called when bitrate is detected (cbr) and changes (vbr)
 void bitrateCallback(uint32_t bitrate)
 {
     Serial.printf("bitrate: %lu kbps\n", bitrate);
@@ -207,16 +207,16 @@ void setup() {
         while (1) delay(100);
     }
 
-    Serial.println("VS1053 running - starting SD playback");
-
-    // Setup the codec callback
+    // Set the codec callback
     stream.setCodecCallback(codecCallBack);
 
-    // Setup the bitrate callback
+    // Set the bitrate callback
     stream.setBitrateCallback(bitrateCallback);
 
     // Set the EOF callback
     stream.setEofCallback(eofCallback);
+
+    Serial.println("VS1053 running - starting SD playback");
 
     // Start playback from an SD file
     stream.connecttofile(SD, "/test.mp3");
