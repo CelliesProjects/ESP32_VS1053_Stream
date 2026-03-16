@@ -17,6 +17,14 @@ While a [PR](https://github.com/baldram/ESP_VS1053_Library/pull/119) fixing this
 
 Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest) for Arduino IDE or the corresponding [PIOArduino release](https://github.com/pioarduino/platform-espressif32/releases/latest) if you use PlatformIO in VSCode.
 
+### PlatformIO.ini example
+
+```
+lib_deps =
+    https://github.com/CelliesProjects/ESP_VS1053_Library#make-SCI-registers-readable
+    https://github.com/CelliesProjects/ESP32_VS1053_Stream@3.0.0
+```
+
 ## Example: play a stream
 ```c++
 #include <Arduino.h>
