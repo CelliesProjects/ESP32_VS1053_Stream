@@ -783,7 +783,7 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
         log_e("could not open file");
         return false;
     }
-    _file.setBufferSize(4096);
+    _file.setBufferSize(2048);
 
     if (offset >= _file.size())
     {
