@@ -133,7 +133,7 @@ void loop() {
 
 ```
 
-## Example: play from SD card
+## Example: play from SD card - requires psram
 ```c++
 #include <Arduino.h>
 #include <SD.h>
