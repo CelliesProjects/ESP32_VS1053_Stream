@@ -378,6 +378,9 @@ Note: A buffer will only be allocated if there is enough free psram.
 
 # Event callback setup
 
+With event callbacks you can run user defined routines on stream events.  
+Check out the examples to see how to setup event callbacks. 
+
 ### Station name callback.
 
 ```c++
