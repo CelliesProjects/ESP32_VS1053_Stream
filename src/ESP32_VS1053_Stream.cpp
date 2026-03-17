@@ -800,6 +800,7 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     }
     _playingFile = true;
     _remainingBytes = _file.size() - offset;
+    _bitrateTimer = millis() ?: 1;
 
     return true;
 }
@@ -815,6 +816,8 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
     log_d("file pos: %lu", _file.position());
     log_d("remaining bytes: %lu", _remainingBytes);
+
+    _updateBitRate();
 
     [[maybe_unused]] const auto startTimeMS = millis();
 
@@ -856,12 +859,6 @@ void ESP32_VS1053_Stream::_updateBitRate()
 
 void ESP32_VS1053_Stream::_readBitRate()
 {
-    if (!_http || !_http->connected())
-        return;
-
-    if (_codec != CODEC_UNKNOWN && !_bitrateCallback)
-        return;
-
     const uint8_t SCI_HDAT0 = 0x08;
     const uint8_t SCI_HDAT1 = 0x09;
 
