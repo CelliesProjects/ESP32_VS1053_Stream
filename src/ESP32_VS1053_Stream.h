@@ -22,6 +22,7 @@
 #define VS1053_PSRAM_BUFFER_TIMEOUT_MS 900
 #define VS1053_PSRAM_BUFFER_SIZE size_t(1024 * 64)
 
+constexpr size_t VS1053_LOCALBUFFER_SIZE = 4096;
 constexpr size_t VS1053_PSRAM_MAX_MOVE = 2048;
 constexpr uint8_t VS1053_MAXVOLUME = 100;
 constexpr size_t VS1053_PLAYBUFFER_SIZE = 32;
@@ -96,7 +97,7 @@ private:
     VS1053 *_vs1053;
     HTTPClient *_http;
     uint8_t _vs1053Buffer[VS1053_PLAYBUFFER_SIZE];
-    uint8_t _localbuffer[VS1053_PSRAM_MAX_MOVE];
+    uint8_t _localbuffer[VS1053_LOCALBUFFER_SIZE];
     char _url[VS1053_MAX_URL_LENGTH];
 
     RingbufHandle_t _ringbuffer_handle;

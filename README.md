@@ -133,7 +133,7 @@ void loop() {
 
 ```
 
-## Example: play from SD card
+## Example: play from SD card - requires psram
 ```c++
 #include <Arduino.h>
 #include <SD.h>
@@ -354,11 +354,6 @@ tonehf       = <0..15>        // Setting treble frequency lower limit x 1000 Hz
 tonela       = <0..15>        // Setting bass gain (0 = off, 1dB steps)
 tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 ```
-### Get the current used codec
-```c++
-const char* currentCodec()
-```
-Returns `STOPPED` if no stream is running.
 ### Get the current stream url
 ```c++
 const char* lastUrl()
@@ -381,28 +376,55 @@ void bufferStatus(size_t &used, size_t &capacity)
 
 Note: A buffer will only be allocated if there is enough free psram.
 
-# Event callbacks
+# Event callback setup
 
 ### Station name callback.
 
 ```c++
-void audio_showstation(const char* info)
+void setStationCB(callback);
 ```
-### Stream information callback.
+Set a callback on the stream name.  
+Note that not all streams provide a name.
+```c++
+void clearStationCB();
+```
+Clear the stream name callback.
+### Stream metadata callback.
 
 ```c++
-void audio_showstreamtitle(const char* info)
+void setInfoCB(callback);
 ```
+Set a callback on stream metadata.  
+Note that not all streams provide metadata.
+```c++
+void clearInfoCB();
+```
+Clear the metadata callback.
 ### End of file callback.
 
 ```c++
-void audio_eof_stream(const char* info)
+void setEofCB(callback);
 ```
-Returns the eof url or path.  
+Set a callback on the end-of-file.  
 Also called if a stream or file times out/errors.
 
 You can use this function for coding a playlist.  
 Use `connectToHost()` or `connectToFile()` inside this function to start the next item.
+```c++
+void clearEofCB();
+```
+Clear the end-of-file callback.
+### Bitrate callback
+```c+
+void setBitrateCB(callback);
+```
+Set a callback on bitrate detection.  
+This callback will be called multiple times on a vbr stream.
+```c++
+void clearBitrateCB();
+```
+Clear the bitrate callback.
+
 ## License
 
 MIT License

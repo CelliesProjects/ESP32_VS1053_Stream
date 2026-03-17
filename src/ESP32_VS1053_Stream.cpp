@@ -374,7 +374,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToDecoder = 0;
-    while (_remainingBytes && _vs1053->data_request())
+    while (_remainingBytes && _vs1053->data_request() && bytesToDecoder < VS1053_PSRAM_MAX_MOVE)
     {
         size_t size = 0;
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
@@ -415,7 +415,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToRingBuffer = 0;
     while (xRingbufferGetCurFreeSize(_ringbuffer_handle) && stream->available() &&
-           _musicDataPosition < _metaDataStart && bytesToRingBuffer < 4096)
+           _musicDataPosition < _metaDataStart && bytesToRingBuffer < VS1053_PSRAM_MAX_MOVE)
     {
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
         const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PSRAM_MAX_MOVE);
@@ -493,7 +493,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *stream)
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToRingBuffer = 0;
     while (xRingbufferGetCurFreeSize(_ringbuffer_handle) && stream->available() && _bytesLeftInChunk &&
-           _musicDataPosition < _metaDataStart && bytesToRingBuffer < 4096)
+           _musicDataPosition < _metaDataStart && bytesToRingBuffer < VS1053_PSRAM_MAX_MOVE)
     {
         const size_t BYTES_BEFORE_META_DATA = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
         const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, BYTES_BEFORE_META_DATA);
@@ -545,7 +545,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         [[maybe_unused]] const auto startTimeMS = millis();
         size_t bytesToDecoder = 0;
         while (stream->available() && _vs1053->data_request() &&
-               _bytesLeftInChunk && _musicDataPosition < _metaDataStart && bytesToDecoder < 2048)
+               _bytesLeftInChunk && _musicDataPosition < _metaDataStart && bytesToDecoder < VS1053_PSRAM_MAX_MOVE)
         {
             const size_t BYTES_BEFORE_META_DATA = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
             const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, BYTES_BEFORE_META_DATA);
@@ -856,6 +856,9 @@ void ESP32_VS1053_Stream::_updateBitRate()
 
 void ESP32_VS1053_Stream::_readBitRate()
 {
+    if (!_http || !_http->connected())
+        return;
+
     if (_codec != CODEC_UNKNOWN && !_bitrateCallback)
         return;
 
