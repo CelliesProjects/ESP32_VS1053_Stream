@@ -14,6 +14,24 @@
 
 ESP32_VS1053_Stream stream;
 
+// Called when codec is detected
+void codecCallBack(const char *codec)
+{
+    Serial.printf("codec: %s\n", codec);
+}
+
+// Called when bitrate is detected (cbr) and changes (vbr)
+void bitrateCallback(uint32_t bitrate)
+{
+    Serial.printf("bitrate: %lu kbps\n", bitrate);
+}
+
+// Called on end-of-file
+void eofCallback(const char *url)
+{
+    Serial.printf("eof: %s\n", url);
+}
+
 bool mountSDcard() {
     if (!SD.begin(SDREADER_CS)) {
         Serial.println("Card mount failed"); 
@@ -33,10 +51,6 @@ bool mountSDcard() {
 
 void setup() {
     Serial.begin(115200);
-
-    while (!Serial)
-        delay(10);
-
     Serial.println("\n\nVS1053 SD Card Playback Example\n");
 
     // Start SPI bus
@@ -57,25 +71,27 @@ void setup() {
         while (1) delay(100);
     }
 
+    // Set the codec callback
+    stream.setCodecCB(codecCallBack);
+
+    // Set the bitrate callback
+    stream.setBitrateCB(bitrateCallback);
+
+    // Set the EOF callback
+    stream.setEofCB(eofCallback);
+
     Serial.println("VS1053 running - starting SD playback");
 
     // Start playback from an SD file
-    stream.connecttofile(SD, "/test.mp3");
+    stream.connectToFile(SD, "/test.mp3");
 
     if (!stream.isRunning()) {
         Serial.println("No file running - system halted");
         while (1) delay(100);
     }
-
-    Serial.print("Codec: ");
-    Serial.println(stream.currentCodec());
 }
 
 void loop() {
     stream.loop();
     delay(5);
-}
-
-void audio_eof_stream(const char* info) {
-    Serial.printf("End of file: %s\n", info);
 }

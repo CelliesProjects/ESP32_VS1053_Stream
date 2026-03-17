@@ -17,12 +17,38 @@ ESP32_VS1053_Stream stream;
 const char* SSID = "xxx";
 const char* PSK = "xxx";
 
+// Called when codec is detected
+void codecCallBack(const char *codec)
+{
+    Serial.printf("codec: %s\n", codec);
+}
+
+// Called when bitrate is detected (cbr) and changes (vbr)
+void bitrateCallback(uint32_t bitrate)
+{
+    Serial.printf("bitrate: %lu kbps\n", bitrate);
+}
+
+// Called when a stream has an ICY name header set
+void stationCallback(const char *name)
+{
+    Serial.printf("station: %s\n", name);
+}
+
+// Called when stream metadata is available
+void infoCallback(const char *info)
+{
+    Serial.printf("info: %s\n", info);
+}
+
+// Called on end-of-file
+void eofCallback(const char *url)
+{
+    Serial.printf("eof: %s\n", url);
+}
+
 void setup() {
     Serial.begin(115200);
-
-    while (!Serial)
-        delay(10);
-
     Serial.println("\n\nVS1053 Radio Streaming Example\n");
 
     // Connect to Wi-Fi
@@ -44,37 +70,34 @@ void setup() {
         Serial.println("Decoder not running - system halted");
         while (1) delay(100);
     }
+
+    // Set the codec callback
+    stream.setCodecCB(codecCallBack);
+
+    // Set the bitrate callback
+    stream.setBitrateCB(bitrateCallback);   
+
+    // Set the station name callback
+    stream.setStationCB(stationCallback);
+
+    // Set the stream metadata callback
+    stream.setInfoCB(infoCallback);
+
+    // Set the EOF callback
+    stream.setEofCB(eofCallback);    
+
     Serial.println("VS1053 running - starting radio stream");
 
     // Connect to the radio stream
-    stream.connecttohost("http://icecast.omroep.nl/radio6-bb-mp3");
+    stream.connectToHost("http://icecast.omroep.nl/radio6-bb-mp3");
 
     if (!stream.isRunning()) {
         Serial.println("Stream not running - system halted");
         while (1) delay(100);
     }
-
-    Serial.print("Codec: ");
-    Serial.println(stream.currentCodec());
-
-    Serial.print("Bitrate: ");
-    Serial.print(stream.bitrate());
-    Serial.println(" kbps");
 }
 
 void loop() {
     stream.loop();
     delay(5);
-}
-
-void audio_showstation(const char* info) {
-    Serial.printf("Station: %s\n", info);
-}
-
-void audio_showstreamtitle(const char* info) {
-    Serial.printf("Stream title: %s\n", info);
-}
-
-void audio_eof_stream(const char* info) {
-    Serial.printf("End of stream: %s\n", info);
 }
