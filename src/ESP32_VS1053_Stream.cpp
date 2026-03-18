@@ -367,7 +367,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
             return;
 
         _ringbuffer_filled = true;
-        _bitrateTimer = millis() ?: 1;
+        _bitrateTimer = millis();
     }
 
     _updateBitRate();
@@ -441,7 +441,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
     {
         _dataSeen = true;
         _vs1053->startSong();
-        _bitrateTimer = millis() ?: 1;
+        _bitrateTimer = millis();
     }
 
     if (_ringbuffer_handle)
@@ -529,7 +529,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         {
             _dataSeen = true;
             _vs1053->startSong();
-            _bitrateTimer = millis() ?: 1;
+            _bitrateTimer = millis();
         }
     }
 
@@ -804,7 +804,7 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     }
     _playingFile = true;
     _remainingBytes = _file.size() - offset;
-    _bitrateTimer = millis() ?: 1;
+    _bitrateTimer = millis();
 
     return true;
 }
@@ -857,7 +857,7 @@ void ESP32_VS1053_Stream::_updateBitRate()
     if (millis() - _bitrateTimer > 250)
     {
         _readBitRate();
-        _bitrateTimer = millis() ?: 1;
+        _bitrateTimer = millis();
     }
 }
 
@@ -871,7 +871,7 @@ void ESP32_VS1053_Stream::_readBitRate()
 
     if (hdat1 == 0 && hdat0 == 0) // decoder not locked yet
     {
-        if (++_decoderSyncAttempts > 2)
+        if (++_decoderSyncAttempts > 4)
         {
             log_w("decoder failed to sync");
             _eofStream();
@@ -959,7 +959,7 @@ const char *ESP32_VS1053_Stream::_codecName(uint8_t codec)
     const char *_names[9] = {"UNKNOWN", "ADTS", "ADIF", "MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
 
     if (codec >= sizeof(_names) / sizeof(_names[0]))
-        return _names[CODEC_UNKNOWN];
+        return _names[0];
     return _names[codec];
 }
 
