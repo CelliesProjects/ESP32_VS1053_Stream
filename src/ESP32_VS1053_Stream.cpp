@@ -695,7 +695,7 @@ void ESP32_VS1053_Stream::stopSong()
     _codec = CODEC_UNKNOWN;
     _decoderSyncAttempts = 0;
 
-    while(!_vs1053->data_request())
+    while (!_vs1053->data_request())
         yield();
 
     if (_ringbuffer_handle)
@@ -823,6 +823,12 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
     _updateBitRate();
 
+    if (!_ringbuffer_handle)
+    {
+        _handleLocalFileNoPSRAM();
+        return;
+    }
+
     [[maybe_unused]] const auto startTimeMS = millis();
 
     if (_remainingBytes && _file.position() < _file.size())
@@ -850,6 +856,53 @@ void ESP32_VS1053_Stream::_handleLocalFile()
         _playFromRingBuffer();
     else
         _eofStream();
+}
+
+void ESP32_VS1053_Stream::_handleLocalFileNoPSRAM()
+{
+    /*
+    if (!_file)
+    {
+        log_e("file error");
+        _eofStream();
+        return;
+    }
+
+    _updateBitRate();
+    */
+    static size_t bufferIndex = 0;
+    static size_t bufferFill = 0;
+
+    // Refill buffer if empty
+    if (bufferIndex >= bufferFill)
+    {
+        if (!_remainingBytes)
+        {
+            _eofStream();
+            return;
+        }
+
+        size_t toRead = min(sizeof(_localbuffer), _remainingBytes);
+        bufferFill = _file.read(_localbuffer, toRead);
+        bufferIndex = 0;
+
+        if (bufferFill == 0)
+        {
+            log_e("file read failed");
+            _eofStream();
+            return;
+        }
+
+        _remainingBytes -= bufferFill;
+    }
+
+    // Feed VS1053 while it requests data
+    while (_vs1053->data_request() && bufferIndex < bufferFill)
+    {
+        size_t chunk = min((size_t)32, bufferFill - bufferIndex); // typical VS1053 chunk
+        _vs1053->playChunk(&_localbuffer[bufferIndex], chunk);
+        bufferIndex += chunk;
+    }
 }
 
 void ESP32_VS1053_Stream::_updateBitRate()

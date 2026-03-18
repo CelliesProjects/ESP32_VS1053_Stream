@@ -115,6 +115,7 @@ private:
     void _handleStream(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
     void _handleLocalFile();
+    void _handleLocalFileNoPSRAM();
     void _feedDecoder(WiFiClient *stream);
     void _allocateRingbuffer();
     void _deallocateRingbuffer();
