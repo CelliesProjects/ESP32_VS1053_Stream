@@ -917,10 +917,7 @@ void ESP32_VS1053_Stream::_readBitRate()
         }
 
         if (_codec != CODEC_UNKNOWN && _codecCallback)
-        {
             _codecCallback(_codecName(_codec));
-            return;
-        }
     }
 
     if (!_bitrateCallback)
