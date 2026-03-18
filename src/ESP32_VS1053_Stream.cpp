@@ -687,12 +687,16 @@ void ESP32_VS1053_Stream::stopSong()
     if (!_http && !_playingFile)
         return;
 
+    _vs1053->stopSong();
     _remainingBytes = 0;
     _offset = 0;
     _bitrate = 0;
     _bitrateTimer = 0;
     _codec = CODEC_UNKNOWN;
     _decoderSyncAttempts = 0;
+
+    while(!_vs1053->data_request())
+        yield();
 
     if (_ringbuffer_handle)
     {
