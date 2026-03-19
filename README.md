@@ -133,7 +133,7 @@ void loop() {
 
 ```
 
-## Example: play from SD card - requires psram
+## Example: play from SD card
 ```c++
 #include <Arduino.h>
 #include <SD.h>
@@ -318,7 +318,6 @@ bool connectToFile(filesystem, filename)
 bool connectToFile(filesystem, filename, offset)
 ```
 `filesystem` has to be mounted.  
-Note: Local file playbacks requires psram   
 ### Stop a running stream
 ```c++
 void stopSong()
