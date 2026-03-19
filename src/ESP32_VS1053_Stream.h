@@ -150,6 +150,9 @@ private:
     uint8_t _decoderSyncAttempts = 0;
     uint32_t _bitrate = 0;
 
+     size_t _bufferIndex = 0;
+     size_t _bufferFill = 0;    
+
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
     size_t _bytesLeftInChunk = 0;

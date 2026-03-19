@@ -776,11 +776,6 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     if (!_vs1053 || _playingFile || _http)
         return false;
 
-    if (!_ringbuffer_handle)
-    {
-        log_e("psram buffer required for local file decoding");
-        return false;
-    }
     _file = fs.open(filename, FILE_READ, false);
     if (!_file)
     {
@@ -799,11 +794,13 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     if (strcmp(filename, _url))
     {
         _vs1053->stopSong();
-        snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", filename);
+        snprintf(_url, sizeof(_url), "%s", filename);
         _vs1053->startSong();
     }
     _playingFile = true;
     _remainingBytes = _file.size() - offset;
+    _bufferIndex = 0;
+    _bufferFill = 0;
     _bitrateTimer = millis();
 
     return true;
@@ -860,48 +857,36 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
 void ESP32_VS1053_Stream::_handleLocalFileNoPSRAM()
 {
-    /*
-    if (!_file)
+    if (_bufferIndex >= _bufferFill)
     {
-        log_e("file error");
-        _eofStream();
-        return;
-    }
-
-    _updateBitRate();
-    */
-    static size_t bufferIndex = 0;
-    static size_t bufferFill = 0;
-
-    // Refill buffer if empty
-    if (bufferIndex >= bufferFill)
-    {
-        if (!_remainingBytes)
+        if (_remainingBytes)
         {
+            size_t toRead = min(sizeof(_localbuffer), (size_t)_remainingBytes);
+            _bufferFill = _file.read(_localbuffer, toRead);
+            _bufferIndex = 0;
+
+            if (_bufferFill == 0)
+            {
+                log_e("file read failed");
+                _eofStream();
+                return;
+            }
+
+            _remainingBytes -= _bufferFill;
+        }
+        else
+        {
+            // Nothing left to read AND buffer empty
             _eofStream();
             return;
         }
-
-        size_t toRead = min(sizeof(_localbuffer), _remainingBytes);
-        bufferFill = _file.read(_localbuffer, toRead);
-        bufferIndex = 0;
-
-        if (bufferFill == 0)
-        {
-            log_e("file read failed");
-            _eofStream();
-            return;
-        }
-
-        _remainingBytes -= bufferFill;
     }
 
-    // Feed VS1053 while it requests data
-    while (_vs1053->data_request() && bufferIndex < bufferFill)
+    while (_vs1053->data_request() && _bufferIndex < _bufferFill)
     {
-        size_t chunk = min((size_t)32, bufferFill - bufferIndex); // typical VS1053 chunk
-        _vs1053->playChunk(&_localbuffer[bufferIndex], chunk);
-        bufferIndex += chunk;
+        size_t chunk = min(VS1053_PLAYBUFFER_SIZE, _bufferFill - _bufferIndex);
+        _vs1053->playChunk(&_localbuffer[_bufferIndex], chunk);
+        _bufferIndex += chunk;
     }
 }
 
