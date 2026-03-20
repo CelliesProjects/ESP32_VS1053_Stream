@@ -326,6 +326,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         }
         _streamStallStartMS = 0;
         log_i("redirected %i times to %s", _redirectCount, url);
+        _redirectCount = 0;
         return true;
     }
 
@@ -732,7 +733,6 @@ void ESP32_VS1053_Stream::stopSong()
     delete _http;
     _http = nullptr;
     _bytesLeftInChunk = 0;
-    _redirectCount = 0;
     _dataSeen = false;
 }
 
