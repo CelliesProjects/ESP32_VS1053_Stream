@@ -280,19 +280,32 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                 return false;
             }
 
-            char line[256];
+            char *line = (char *)_localbuffer;
 
             while (stream->connected() && stream->available())
             {
-                size_t len = stream->readBytesUntil('\n', line, sizeof(line) - 1);
-                line[len] = 0;
+                size_t len = stream->readBytesUntil('\n', line, VS1053_MAX_URL_LENGTH - 1);
+
+                if (len == 0)
+                    continue;
+
+                line[len] = '\0';
+
+                // Detect truncated line (no newline encountered)
+                if (len == VS1053_MAX_URL_LENGTH - 1)
+                {
+                    int c;
+                    // Flush until end-of-line to avoid corrupt next read
+                    while (stream->available() && (c = stream->read()) != '\n')
+                        ;
+                }
 
                 char *newUrl = strstr(line, "http");
                 if (newUrl)
                 {
                     strtok(newUrl, "\r\n;?");
                     stopSong();
-                    log_d("playlist %s reconnects to: %s", url, newUrl);
+                    log_i("playlist %s reconnects to: %s", url, newUrl);
                     return connectToHost(newUrl, username, pwd, offset);
                 }
             }
@@ -312,7 +325,8 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
             snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", url);
         }
         _streamStallStartMS = 0;
-        log_d("redirected %i times to %s", _redirectCount, url);
+        log_i("redirected %i times to %s", _redirectCount, url);
+        _redirectCount = 0;
         return true;
     }
 
@@ -695,7 +709,7 @@ void ESP32_VS1053_Stream::stopSong()
     _codec = CODEC_UNKNOWN;
     _decoderSyncAttempts = 0;
 
-    while(!_vs1053->data_request())
+    while (!_vs1053->data_request())
         yield();
 
     if (_ringbuffer_handle)
@@ -719,7 +733,6 @@ void ESP32_VS1053_Stream::stopSong()
     delete _http;
     _http = nullptr;
     _bytesLeftInChunk = 0;
-    _redirectCount = 0;
     _dataSeen = false;
 }
 
@@ -776,11 +789,6 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     if (!_vs1053 || _playingFile || _http)
         return false;
 
-    if (!_ringbuffer_handle)
-    {
-        log_e("psram buffer required for local file decoding");
-        return false;
-    }
     _file = fs.open(filename, FILE_READ, false);
     if (!_file)
     {
@@ -799,11 +807,13 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     if (strcmp(filename, _url))
     {
         _vs1053->stopSong();
-        snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", filename);
+        snprintf(_url, sizeof(_url), "%s", filename);
         _vs1053->startSong();
     }
     _playingFile = true;
     _remainingBytes = _file.size() - offset;
+    _bufferIndex = 0;
+    _bufferFill = 0;
     _bitrateTimer = millis();
 
     return true;
@@ -822,6 +832,12 @@ void ESP32_VS1053_Stream::_handleLocalFile()
     log_d("remaining bytes: %lu", _remainingBytes);
 
     _updateBitRate();
+
+    if (!_ringbuffer_handle)
+    {
+        _handleLocalFileNoPSRAM();
+        return;
+    }
 
     [[maybe_unused]] const auto startTimeMS = millis();
 
@@ -850,6 +866,41 @@ void ESP32_VS1053_Stream::_handleLocalFile()
         _playFromRingBuffer();
     else
         _eofStream();
+}
+
+void ESP32_VS1053_Stream::_handleLocalFileNoPSRAM()
+{
+    if (_bufferIndex >= _bufferFill)
+    {
+        if (_remainingBytes)
+        {
+            size_t toRead = min(sizeof(_localbuffer), (size_t)_remainingBytes);
+            _bufferFill = _file.read(_localbuffer, toRead);
+            _bufferIndex = 0;
+
+            if (_bufferFill == 0)
+            {
+                log_e("file read failed");
+                _eofStream();
+                return;
+            }
+
+            _remainingBytes -= _bufferFill;
+        }
+        else
+        {
+            // Nothing left to read AND buffer empty
+            _eofStream();
+            return;
+        }
+    }
+
+    while (_vs1053->data_request() && _bufferIndex < _bufferFill)
+    {
+        size_t chunk = min(VS1053_PLAYBUFFER_SIZE, _bufferFill - _bufferIndex);
+        _vs1053->playChunk(&_localbuffer[_bufferIndex], chunk);
+        _bufferIndex += chunk;
+    }
 }
 
 void ESP32_VS1053_Stream::_updateBitRate()

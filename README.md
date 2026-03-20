@@ -3,26 +3,31 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7571166c872e4dc8a899382389b73f8e)](https://app.codacy.com/gh/CelliesProjects/ESP32_VS1053_Stream?utm_source=github.com&utm_medium=referral&utm_content=CelliesProjects/ESP32_VS1053_Stream&utm_campaign=Badge_Grade_Settings)
 
 A streaming library for esp32, esp32-wrover, esp32-c3, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.  
-This library plays mp3, ogg, aac, aac+ and <strike>flac</strike> files and streams and uses [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
+This library plays mp3, ogg, aac-adts, aac-adif, aac-mp4  and <strike>flac</strike> files and streams and uses [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
 
 Supported stream methods are http and insecure https. Streams can be chunked.  
 Also plays mp3 and ogg files from sdcard or any mounted filesystem.
+
+Very lightweight, has a binary footprint of less than 7kB excluding the psram buffer.
 
 ## How to install and use
 
 ~~Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and this library in your Arduino library folder.~~
 
-Version 3.0.0 needs reads access to the vs1053 registers which the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) does not do. (yet)  
-While a [PR](https://github.com/baldram/ESP_VS1053_Library/pull/119) fixing this issue is waiting to be merged in the ESP_VS1053_Library repo, you can use the this [fork](baldram/ESP_VS1053_Library) to compile the 3.0.0 release or the `master` branch.
+Release 3.0.0 or later releases require read access to the vs1053 registers which the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) does not provide. (yet)  
+
+While a [PR](https://github.com/baldram/ESP_VS1053_Library/pull/119) fixing this issue is waiting to be merged in the ESP_VS1053_Library repo, using this [fork](baldram/ESP_VS1053_Library) it is possible to compile the 3.0.0 release or later releases.
 
 Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest) for Arduino IDE or the corresponding [PIOArduino release](https://github.com/pioarduino/platform-espressif32/releases/latest) if you use PlatformIO in VSCode.
 
-### PlatformIO.ini example
+### platformio.ini example
 
 ```
+platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.37/platform-espressif32.zip
+
 lib_deps =
     https://github.com/CelliesProjects/ESP_VS1053_Library#make-SCI-registers-readable
-    https://github.com/CelliesProjects/ESP32_VS1053_Stream@3.0.0
+    https://github.com/CelliesProjects/ESP32_VS1053_Stream@3.0.2
 ```
 
 ## Example: play a stream
@@ -133,7 +138,7 @@ void loop() {
 
 ```
 
-## Example: play from SD card - requires psram
+## Example: play from SD card
 ```c++
 #include <Arduino.h>
 #include <SD.h>
@@ -318,7 +323,6 @@ bool connectToFile(filesystem, filename)
 bool connectToFile(filesystem, filename, offset)
 ```
 `filesystem` has to be mounted.  
-Note: Local file playbacks requires psram   
 ### Stop a running stream
 ```c++
 void stopSong()
@@ -381,7 +385,7 @@ Note: A buffer will only be allocated if there is enough free psram.
 With event callbacks you can run user defined routines on stream events.  
 Check out the examples to see how to setup event callbacks. 
 
-### Station name callback.
+### Station name callback
 
 ```c++
 void setStationCB(callback);
@@ -392,7 +396,7 @@ Note that not all streams provide a name.
 void clearStationCB();
 ```
 Clear the stream name callback.
-### Stream metadata callback.
+### Stream metadata callback
 
 ```c++
 void setInfoCB(callback);
@@ -403,7 +407,7 @@ Note that not all streams provide metadata.
 void clearInfoCB();
 ```
 Clear the metadata callback.
-### End of file callback.
+### End of file callback
 
 ```c++
 void setEofCB(callback);
@@ -418,7 +422,7 @@ void clearEofCB();
 ```
 Clear the end-of-file callback.
 ### Bitrate callback
-```c+
+```c++
 void setBitrateCB(callback);
 ```
 Set a callback on bitrate detection.  

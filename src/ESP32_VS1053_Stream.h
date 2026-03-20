@@ -15,7 +15,7 @@
 #define VS1053_CONNECT_TIMEOUT_MS 250
 #define VS1053_CONNECT_TIMEOUT_MS_SSL 750
 #define VS1053_STREAM_TIMEOUT_MS 900
-#define VS1053_MAX_URL_LENGTH 256
+#define VS1053_MAX_URL_LENGTH 2048
 #define VS1053_MAX_REDIRECT_COUNT 3
 
 #define VS1053_PSRAM_BUFFER_ENABLED true
@@ -26,6 +26,9 @@ constexpr size_t VS1053_LOCALBUFFER_SIZE = 4096;
 constexpr size_t VS1053_PSRAM_MAX_MOVE = 2048;
 constexpr uint8_t VS1053_MAXVOLUME = 100;
 constexpr size_t VS1053_PLAYBUFFER_SIZE = 32;
+
+static_assert(VS1053_MAX_URL_LENGTH <= VS1053_LOCALBUFFER_SIZE,
+              "VS1053_MAX_URL_LENGTH must be smaller than VS1053_LOCALBUFFER_SIZE");
 
 typedef void (*station_callback_t)(const char *name);
 typedef void (*codec_callback_t)(const char *codec);
@@ -115,6 +118,7 @@ private:
     void _handleStream(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
     void _handleLocalFile();
+    void _handleLocalFileNoPSRAM();
     void _feedDecoder(WiFiClient *stream);
     void _allocateRingbuffer();
     void _deallocateRingbuffer();
@@ -148,6 +152,9 @@ private:
     unsigned long _bitrateTimer = 0;
     uint8_t _decoderSyncAttempts = 0;
     uint32_t _bitrate = 0;
+
+    size_t _bufferIndex = 0;
+    size_t _bufferFill = 0;
 
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
