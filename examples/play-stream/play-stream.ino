@@ -91,10 +91,8 @@ void setup() {
     // Connect to the radio stream
     stream.connectToHost("http://icecast.omroep.nl/radio6-bb-mp3");
 
-    if (!stream.isRunning()) {
-        Serial.println("Stream not running - system halted");
-        while (1) delay(100);
-    }
+    if (!stream.isRunning())
+        Serial.println("Stream not running");
 }
 
 void loop() {
