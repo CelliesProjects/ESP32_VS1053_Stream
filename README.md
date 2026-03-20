@@ -8,8 +8,7 @@ This library plays mp3, ogg, aac-adts, aac-adif, aac-mp4  and <strike>flac</stri
 Supported stream methods are http and insecure https. Streams can be chunked.  
 Also plays mp3 and ogg files from sdcard or any mounted filesystem.
 
-Very lightweight, has a memory footprint of less than 6kB.
-
+Very lightweight, has a binary footprint of less than 7kB excluding the psram buffer.
 
 ## How to install and use
 
