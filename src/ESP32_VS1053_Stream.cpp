@@ -874,7 +874,7 @@ void ESP32_VS1053_Stream::_handleLocalFileNoPSRAM()
     {
         if (_remainingBytes)
         {
-            constexpr int32_t MAX_MOVE = 2048;
+            constexpr int32_t MAX_MOVE = 1024;
 
             static_assert(MAX_MOVE <= sizeof(_localbuffer), "MAX_MOVE must be smaller than sizeof(_localbuffer)");
 
