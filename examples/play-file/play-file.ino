@@ -85,10 +85,8 @@ void setup() {
     // Start playback from an SD file
     stream.connectToFile(SD, "/test.mp3");
 
-    if (!stream.isRunning()) {
-        Serial.println("No file running - system halted");
-        while (1) delay(100);
-    }
+    if (!stream.isRunning()) 
+        Serial.println("No file running");
 }
 
 void loop() {
