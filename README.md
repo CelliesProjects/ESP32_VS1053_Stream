@@ -415,8 +415,8 @@ void setEofCB(callback);
 Set a callback on the end-of-file.  
 Also called if a stream or file times out/errors.
 
-You can use this function for coding a playlist.  
-Use `connectToHost()` or `connectToFile()` inside this function to start the next item.
+You can use the eof callback to code a playlist.  
+Use `connectToHost()` or `connectToFile()` inside the eof callback to start the next item.
 ```c++
 void clearEofCB();
 ```
