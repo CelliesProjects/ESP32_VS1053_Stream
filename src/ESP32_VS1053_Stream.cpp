@@ -874,7 +874,11 @@ void ESP32_VS1053_Stream::_handleLocalFileNoPSRAM()
     {
         if (_remainingBytes)
         {
-            size_t toRead = min(sizeof(_localbuffer), (size_t)_remainingBytes);
+            constexpr int32_t MAX_MOVE = 2048;
+
+            static_assert(MAX_MOVE <= sizeof(_localbuffer), "MAX_MOVE must be smaller than sizeof(_localbuffer)");
+
+            size_t toRead = min(MAX_MOVE, _remainingBytes);
             _bufferFill = _file.read(_localbuffer, toRead);
             _bufferIndex = 0;
 
