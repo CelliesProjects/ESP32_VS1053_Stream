@@ -280,19 +280,32 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                 return false;
             }
 
-            char line[256];
+            char *line = (char *)_localbuffer;
 
             while (stream->connected() && stream->available())
             {
-                size_t len = stream->readBytesUntil('\n', line, sizeof(line) - 1);
-                line[len] = 0;
+                size_t len = stream->readBytesUntil('\n', line, VS1053_MAX_URL_LENGTH - 1);
+
+                if (len == 0)
+                    continue;
+
+                line[len] = '\0';
+
+                // Detect truncated line (no newline encountered)
+                if (len == VS1053_MAX_URL_LENGTH - 1)
+                {
+                    int c;
+                    // Flush until end-of-line to avoid corrupt next read
+                    while (stream->available() && (c = stream->read()) != '\n')
+                        ;
+                }
 
                 char *newUrl = strstr(line, "http");
                 if (newUrl)
                 {
                     strtok(newUrl, "\r\n;?");
                     stopSong();
-                    log_d("playlist %s reconnects to: %s", url, newUrl);
+                    log_i("playlist %s reconnects to: %s", url, newUrl);
                     return connectToHost(newUrl, username, pwd, offset);
                 }
             }
@@ -312,7 +325,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
             snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", url);
         }
         _streamStallStartMS = 0;
-        log_d("redirected %i times to %s", _redirectCount, url);
+        log_i("redirected %i times to %s", _redirectCount, url);
         return true;
     }
 
