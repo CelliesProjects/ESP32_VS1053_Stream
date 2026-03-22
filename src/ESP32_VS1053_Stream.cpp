@@ -326,10 +326,12 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
             _vs1053->stopSong();
             snprintf(_url, sizeof(_url), "%s", url);
             _vs1053->startSong();
+            
         }
         _streamStallStartMS = 0;
         log_d("redirected %i times to %s", _redirectCount, url);
         _redirectCount = 0;
+        _vs1053->setVolume(_volume);
         return true;
     }
 
@@ -457,7 +459,6 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
     if (!_dataSeen)
     {
         _dataSeen = true;
-        _vs1053->startSong();
         _bitrateTimer = millis();
     }
 
@@ -545,7 +546,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         if (!_dataSeen)
         {
             _dataSeen = true;
-            _vs1053->startSong();
             _bitrateTimer = millis();
         }
     }
@@ -704,15 +704,13 @@ void ESP32_VS1053_Stream::stopSong()
     if (!_http && !_playingFile)
         return;
 
+    _vs1053->setVolume(0);
     _remainingBytes = 0;
     _offset = 0;
     _bitrate = 0;
     _bitrateTimer = 0;
     _codec = CODEC_UNKNOWN;
     _decoderSyncAttempts = 0;
-
-    while (!_vs1053->data_request())
-        yield();
 
     if (_ringbuffer_handle)
     {
@@ -817,6 +815,7 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     _bufferIndex = 0;
     _bufferFill = 0;
     _bitrateTimer = millis();
+    _vs1053->setVolume(_volume);
 
     return true;
 }
