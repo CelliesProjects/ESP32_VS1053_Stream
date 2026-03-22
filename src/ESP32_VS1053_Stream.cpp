@@ -324,10 +324,11 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         if (strcmp(_url, url))
         {
             _vs1053->stopSong();
-            snprintf(_url, VS1053_MAX_URL_LENGTH, "%s", url);
+            snprintf(_url, sizeof(_url), "%s", url);
+            _vs1053->startSong();
         }
         _streamStallStartMS = 0;
-        log_i("redirected %i times to %s", _redirectCount, url);
+        log_d("redirected %i times to %s", _redirectCount, url);
         _redirectCount = 0;
         return true;
     }
@@ -703,7 +704,6 @@ void ESP32_VS1053_Stream::stopSong()
     if (!_http && !_playingFile)
         return;
 
-    _vs1053->stopSong();
     _remainingBytes = 0;
     _offset = 0;
     _bitrate = 0;
