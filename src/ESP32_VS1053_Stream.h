@@ -143,6 +143,7 @@ private:
         CODEC_MIDI,
         CODEC_MP3,
         CODEC_OGG,
+        CODEC_FLAC
     };
 
     uint8_t _codec = CODEC_UNKNOWN;
