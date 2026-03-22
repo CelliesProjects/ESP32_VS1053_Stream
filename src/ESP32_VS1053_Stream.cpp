@@ -147,10 +147,12 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     _vs1053->begin();
     _vs1053->switchToMp3Mode();
     if (_vs1053->getChipVersion() == 4)
-        _vs1053->loadDefaultVs1053Patches();
+    {
+        log_i("Patching vs1053 firmware");
+        _vs1053->loadUserCode(PATCHES_FLAC, PATCHES_FLAC_SIZE);
+    }
     setVolume(_volume);
-    if (!_ringbuffer_handle)
-        _allocateRingbuffer();
+    _allocateRingbuffer();
     return true;
 }
 
@@ -966,6 +968,10 @@ void ESP32_VS1053_Stream::_readBitRate()
             _codec = CODEC_OGG;
             break;
 
+        case 0x664C:
+            _codec = CODEC_FLAC;
+            break;
+
         default:
             if ((hdat1 & 0xFFE0) == 0xFFE0)
                 _codec = CODEC_MP3;
@@ -997,7 +1003,7 @@ void ESP32_VS1053_Stream::_readBitRate()
             bitrate = bitrateTable[version == 3 ? 0 : 1][brIndex];
     }
     else
-        bitrate = (hdat0 * 8) / 1000;
+        bitrate = (_codec == CODEC_FLAC) ? 0 : (hdat0 * 8) / 1000;
 
     if (bitrate != _bitrate)
     {
@@ -1008,7 +1014,7 @@ void ESP32_VS1053_Stream::_readBitRate()
 
 const char *ESP32_VS1053_Stream::_codecName(uint8_t codec)
 {
-    const char *_names[9] = {"UNKNOWN", "ADTS", "ADIF", "MP4", "WAV", "WMA", "MIDI", "MP3", "OGG"};
+    const char *_names[] = {"UNKNOWN", "ADTS", "ADIF", "MP4", "WAV", "WMA", "MIDI", "MP3", "OGG", "FLAC"};
 
     if (codec >= sizeof(_names) / sizeof(_names[0]))
         return _names[0];
