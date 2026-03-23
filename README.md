@@ -3,10 +3,13 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7571166c872e4dc8a899382389b73f8e)](https://app.codacy.com/gh/CelliesProjects/ESP32_VS1053_Stream?utm_source=github.com&utm_medium=referral&utm_content=CelliesProjects/ESP32_VS1053_Stream&utm_campaign=Badge_Grade_Settings)
 
 A streaming library for esp32, esp32-wrover, esp32-c3, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.  
-This library plays mp3, ogg, aac-adts, aac-adif, aac-mp4  and <strike>flac</strike> files and streams and uses [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) to communicate with the decoder.
+This library plays **mp3**, **ogg**, **aac**, and **16 bit flac** files and streams.  
+[ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) is used to communicate with the decoder.
 
-Supported stream methods are http and insecure https. Streams can be chunked.  
-Also plays mp3 and ogg files from sdcard or any mounted filesystem.
+- Supported codecs are **mp3**, **ogg**, **aac-adts**, **aac-adif**, **aac-mp4** and **16 bit flac**.
+- Supported stream methods are http and insecure https.  
+- Streams can be chunked.  
+- Also plays **mp3**, **flac** and **ogg** files from sdcard or any mounted filesystem.  
 
 Very lightweight, has a binary footprint of less than 7kB excluding the psram buffer.
 
@@ -14,15 +17,16 @@ Very lightweight, has a binary footprint of less than 7kB excluding the psram bu
 
 ~~Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and this library in your Arduino library folder.~~
 
-Release 3.0.0 or later releases require read access to the vs1053 registers which the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) does not provide. (yet)  
+Release 3.0.0 and later require read access to the vs1053 registers which the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) does not provide.  
+There is a [PR](https://github.com/baldram/ESP_VS1053_Library/pull/119) fixing this issue waiting to be merged in the ESP_VS1053_Library repo.  
 
-While a [PR](https://github.com/baldram/ESP_VS1053_Library/pull/119) fixing this issue is waiting to be merged in the ESP_VS1053_Library repo, using this [fork](baldram/ESP_VS1053_Library) it is possible to compile the 3.0.0 release or later releases.
+While that is waiting you can use [this fork](https://github.com/CelliesProjects/ESP_VS1053_Library/tree/make-SCI-registers-readable) to compile the 3.0.0 and later releases.
 
 Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest) for Arduino IDE or the corresponding [PIOArduino release](https://github.com/pioarduino/platform-espressif32/releases/latest) if you use PlatformIO in VSCode.
 
 ### platformio.ini example
 
-```
+```bash
 platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.37/platform-espressif32.zip
 
 lib_deps =
@@ -237,23 +241,25 @@ void loop() {
 ```
 
 ## Known issues
-Ogg files can not be started with an offset without first playing a couple of seconds from the start of the file. 
+`Ogg` and `flac` files can not be resumed from an offset without first playing a couple of seconds from the start of the file. 
 
 ## Tips for troublefree streaming
 
 ### WiFi setup
 
-Do not forget to switch WiFi out of power save mode:
+Switch off the Blue Tooth radio if unused.  
+Do not forget to switch WiFi out of power save mode.
 
 ```c++
 ...
+btStop();
 WiFi.begin(SSID, PSK);
 WiFi.setSleep(false); 
 ...
 ```
 
 ### Prevent reboots while playing
-Early version of the esp32 have issues with the external psram cache, resulting in reboots.  
+Early versions of the esp32 have issues with the external psram cache, resulting in reboots.  
 Workarounds are possible depending on the hardware revision.
 
 #### Revision V0.0
