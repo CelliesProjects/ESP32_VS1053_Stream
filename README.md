@@ -3,15 +3,16 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7571166c872e4dc8a899382389b73f8e)](https://app.codacy.com/gh/CelliesProjects/ESP32_VS1053_Stream?utm_source=github.com&utm_medium=referral&utm_content=CelliesProjects/ESP32_VS1053_Stream&utm_campaign=Badge_Grade_Settings)
 
 A streaming library for esp32, esp32-wrover, esp32-c3, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.  
-This library plays **mp3**, **ogg**, **aac**, and **16 bit flac** files and streams.  
-[ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) is used to communicate with the decoder.
+This library plays mp3, ogg, aac and flac files and streams.  
 
 - Supported codecs are **mp3**, **ogg**, **aac-adts**, **aac-adif**, **aac-mp4** and **16 bit flac**.
 - Supported stream methods are http and insecure https.  
 - Streams can be chunked.  
-- Also plays **mp3**, **flac** and **ogg** files from sdcard or any mounted filesystem.  
+- Also plays **mp3**, **ogg** and **flac** files from sdcard or any mounted filesystem.  
 
 Very lightweight, has a binary footprint of less than 7kB excluding the psram buffer.
+
+[ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) is used to communicate with the decoder.
 
 ## How to install and use
 
