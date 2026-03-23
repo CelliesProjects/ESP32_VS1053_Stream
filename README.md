@@ -248,7 +248,7 @@ void loop() {
 
 ### WiFi setup
 
-Switch off the Blue Tooth radio if unused.  
+Switch off the BlueTooth radio if unused.  
 Do not forget to switch WiFi out of power save mode.
 
 ```c++
@@ -259,7 +259,7 @@ WiFi.setSleep(false);
 ...
 ```
 
-### Prevent reboots while playing
+### Prevent reboots when used on early esp32
 Early versions of the esp32 have issues with the external psram cache, resulting in reboots.  
 Workarounds are possible depending on the hardware revision.
 
