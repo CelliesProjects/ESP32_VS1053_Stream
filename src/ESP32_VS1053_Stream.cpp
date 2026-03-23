@@ -212,14 +212,19 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         strncasecmp(url, "http", 4) != 0)
         return false;
 
+    const size_t length = strlen(url);
+    if (length < 10) // http://a.b
+    {
+        log_e("Url too short");
+        return false;
+    }
+
     if (strstr(url, "./"))
     { // hacky solution: some items on radio-browser.info has
       // non resolving names that contain './' in their hostname
         log_e("Invalid url not started");
         return false;
     }
-
-    size_t length = strlen(url);
 
     bool needsEscape = false;
     for (size_t i = 0; i < length; ++i)
@@ -244,10 +249,8 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
     }
 
-    const bool isHttps = (length > 4 && tolower(url[4]) == 's');
-
-    _http->setConnectTimeout(isHttps ? VS1053_CONNECT_TIMEOUT_MS_SSL
-                                     : VS1053_CONNECT_TIMEOUT_MS);
+    _http->setConnectTimeout(tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
+                                                    : VS1053_CONNECT_TIMEOUT_MS);
 
     const char *finalUrl = needsEscape ? reinterpret_cast<const char *>(_localbuffer) : url;
     if (!_http->begin(finalUrl))
