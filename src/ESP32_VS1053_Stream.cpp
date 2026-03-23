@@ -164,7 +164,7 @@ bool ESP32_VS1053_Stream::_escapeUrl(const char *url, size_t len)
     {
         if (url[in] == ' ')
         {
-            if (out + 3 >= VS1053_LOCALBUFFER_SIZE)
+            if (out + 3 >= sizeof(_localbuffer))
                 return false;
 
             _localbuffer[out++] = '%';
@@ -173,7 +173,7 @@ bool ESP32_VS1053_Stream::_escapeUrl(const char *url, size_t len)
         }
         else
         {
-            if (out + 1 >= VS1053_LOCALBUFFER_SIZE)
+            if (out + 1 >= sizeof(_localbuffer))
                 return false;
 
             _localbuffer[out++] = url[in];
@@ -219,13 +219,6 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
     }
 
-    _http = new HTTPClient;
-    if (!_http)
-        return false;
-
-    _http->setConnectTimeout(tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
-                                                    : VS1053_CONNECT_TIMEOUT_MS);
-
     size_t length = strlen(url);
 
     bool needsEscape = false;
@@ -240,13 +233,23 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
 
     if (needsEscape && !_escapeUrl(url, length))
     {
-        stopSong();
         log_e("Escaped URL exceeds buffer");
         return false;
     }
 
-    const char *finalUrl = needsEscape ? reinterpret_cast<const char *>(_localbuffer) : url;
+    _http = new HTTPClient;
+    if (!_http)
+    {
+        log_e("Could not create http client");
+        return false;
+    }
 
+    const bool isHttps = (length > 4 && tolower(url[4]) == 's');
+
+    _http->setConnectTimeout(isHttps ? VS1053_CONNECT_TIMEOUT_MS_SSL
+                                     : VS1053_CONNECT_TIMEOUT_MS);
+
+    const char *finalUrl = needsEscape ? reinterpret_cast<const char *>(_localbuffer) : url;
     if (!_http->begin(finalUrl))
     {
         log_w("Could not connect to %s", url);
