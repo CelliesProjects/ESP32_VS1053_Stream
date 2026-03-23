@@ -176,6 +176,13 @@ private:
     const char *ICY_METAINT = "icy-metaint";
     const char *ENCODING = "Transfer-Encoding";
     const char *LOCATION = "Location";
+
+    const char *_header[5] =
+        {CONTENT_TYPE,
+         ICY_NAME,
+         ICY_METAINT,
+         ENCODING,
+         LOCATION};
 };
 
 #endif

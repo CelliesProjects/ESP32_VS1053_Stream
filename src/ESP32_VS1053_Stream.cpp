@@ -262,8 +262,8 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
 
     if (offset)
     {
-        char buffer[30];
-        snprintf(buffer, sizeof(buffer), "bytes=%zu-", offset);
+        char *buffer = reinterpret_cast<char *>(_localbuffer);
+        snprintf(buffer, sizeof(_localbuffer), "bytes=%zu-", offset);
         _http->addHeader("Range", buffer);
     }
 
@@ -271,10 +271,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         _http->setAuthorization(username, pwd);
 
     _http->addHeader("Icy-MetaData", VS1053_ICY_METADATA ? "1" : "0");
-
-    const char *header[] = {CONTENT_TYPE, ICY_NAME, ICY_METAINT,
-                            ENCODING, LOCATION};
-    _http->collectHeaders(header, sizeof(header) / sizeof(char *));
+    _http->collectHeaders(_header, sizeof(_header) / sizeof(_header[0]));
     _http->setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
 
     const int HTTPresult = _http->GET();
@@ -308,7 +305,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                 return false;
             }
 
-            char *line = (char *)_localbuffer;
+            char *line = reinterpret_cast<char *>(_localbuffer);
 
             while (stream->connected() && stream->available())
             {
