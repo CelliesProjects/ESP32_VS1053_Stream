@@ -115,6 +115,7 @@ private:
     void _handleMetadata(char *data, const size_t len);
     void _eofStream();
     bool _canRedirect();
+    bool _escapeUrl(const char *url, size_t len);
     void _handleStream(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
     void _handleLocalFile();

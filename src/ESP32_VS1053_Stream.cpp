@@ -156,6 +156,34 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     return true;
 }
 
+bool ESP32_VS1053_Stream::_escapeUrl(const char *url, size_t len)
+{
+    size_t in = 0;
+    size_t out = 0;
+    while (in < len)
+    {
+        if (url[in] == ' ')
+        {
+            if (out + 3 >= VS1053_LOCALBUFFER_SIZE)
+                return false;
+
+            _localbuffer[out++] = '%';
+            _localbuffer[out++] = '2';
+            _localbuffer[out++] = '0';
+        }
+        else
+        {
+            if (out + 1 >= VS1053_LOCALBUFFER_SIZE)
+                return false;
+
+            _localbuffer[out++] = url[in];
+        }
+        ++in;
+    }
+    _localbuffer[out] = '\0';
+    return true;
+}
+
 bool ESP32_VS1053_Stream::isChipConnected()
 {
     return _vs1053 ? _vs1053->isChipConnected() : false;
@@ -198,40 +226,32 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     _http->setConnectTimeout(tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
                                                     : VS1053_CONNECT_TIMEOUT_MS);
 
+    size_t length = strlen(url);
+
+    bool needsEscape = false;
+    for (size_t i = 0; i < length; ++i)
     {
-        auto length = strlen(url);
-        auto cnt = 0;
-        for (size_t i = 0; i < length; ++i)
-            if (url[i] == ' ')
-                ++cnt;
-
-        char escapedUrl[cnt ? length + (3 * cnt) + 1 : 1]; // At least 1 to avoid zero-sized array
-
-        if (cnt)
+        if (url[i] == ' ')
         {
-            size_t in = 0;
-            size_t out = 0;
+            needsEscape = true;
+            break;
+        }
+    }
 
-            while (in < length)
-            {
-                if (url[in] == ' ')
-                {
-                    escapedUrl[out++] = '%';
-                    escapedUrl[out++] = '2';
-                    escapedUrl[out++] = '0';
-                }
-                else
-                    escapedUrl[out++] = url[in];
-                ++in;
-            }
-            escapedUrl[out] = '\0';
-        }
-        if (!_http->begin(cnt ? escapedUrl : url))
-        {
-            log_w("Could not connect to %s", url);
-            stopSong();
-            return false;
-        }
+    if (needsEscape && !_escapeUrl(url, length))
+    {
+        stopSong();
+        log_e("Escaped URL exceeds buffer");
+        return false;
+    }
+
+    const char *finalUrl = needsEscape ? reinterpret_cast<const char *>(_localbuffer) : url;
+
+    if (!_http->begin(finalUrl))
+    {
+        log_w("Could not connect to %s", url);
+        stopSong();
+        return false;
     }
 
     if (offset)
@@ -326,7 +346,6 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
             _vs1053->stopSong();
             snprintf(_url, sizeof(_url), "%s", url);
             _vs1053->startSong();
-            
         }
         _streamStallStartMS = 0;
         log_d("redirected %i times to %s", _redirectCount, url);
