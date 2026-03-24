@@ -213,9 +213,9 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
 
     const size_t length = strlen(url);
-    if (length < 10) // http://a.b
+    if (length >= sizeof(_url) || length < 10) // http://a.b
     {
-        log_e("Url too short");
+        log_e("Url invalid length");
         return false;
     }
 
