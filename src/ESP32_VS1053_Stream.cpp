@@ -156,6 +156,34 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     return true;
 }
 
+bool ESP32_VS1053_Stream::_escapeUrl(const char *url, size_t len)
+{
+    size_t in = 0;
+    size_t out = 0;
+    while (in < len)
+    {
+        if (url[in] == ' ')
+        {
+            if (out + 3 >= sizeof(_localbuffer) - 1)
+                return false;
+
+            _localbuffer[out++] = '%';
+            _localbuffer[out++] = '2';
+            _localbuffer[out++] = '0';
+        }
+        else
+        {
+            if (out + 1 >= sizeof(_localbuffer) - 1)
+                return false;
+
+            _localbuffer[out++] = url[in];
+        }
+        ++in;
+    }
+    _localbuffer[out] = '\0';
+    return true;
+}
+
 bool ESP32_VS1053_Stream::isChipConnected()
 {
     return _vs1053 ? _vs1053->isChipConnected() : false;
@@ -184,6 +212,13 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         strncasecmp(url, "http", 4) != 0)
         return false;
 
+    const size_t length = strlen(url);
+    if (length >= sizeof(_url) || length < 8) // "http://"
+    {
+        log_e("Url invalid length");
+        return false;
+    }
+
     if (strstr(url, "./"))
     { // hacky solution: some items on radio-browser.info has
       // non resolving names that contain './' in their hostname
@@ -191,53 +226,46 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
     }
 
+    bool needsEscape = false;
+    for (size_t i = 0; i < length; ++i)
+    {
+        if (url[i] == ' ')
+        {
+            needsEscape = true;
+            break;
+        }
+    }
+
+    if (needsEscape && !_escapeUrl(url, length))
+    {
+        log_e("Escaped URL exceeds buffer");
+        return false;
+    }
+
     _http = new HTTPClient;
     if (!_http)
+    {
+        log_e("Could not create http client");
         return false;
+    }
 
-    _http->setConnectTimeout(tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
+    bool isHttps = (length > 4 && tolower(url[4]) == 's');
+
+    _http->setConnectTimeout(tolower(isHttps ? VS1053_CONNECT_TIMEOUT_MS_SSL
                                                     : VS1053_CONNECT_TIMEOUT_MS);
 
+    const char *finalUrl = needsEscape ? reinterpret_cast<const char *>(_localbuffer) : url;
+    if (!_http->begin(finalUrl))
     {
-        auto length = strlen(url);
-        auto cnt = 0;
-        for (size_t i = 0; i < length; ++i)
-            if (url[i] == ' ')
-                ++cnt;
-
-        char escapedUrl[cnt ? length + (3 * cnt) + 1 : 1]; // At least 1 to avoid zero-sized array
-
-        if (cnt)
-        {
-            size_t in = 0;
-            size_t out = 0;
-
-            while (in < length)
-            {
-                if (url[in] == ' ')
-                {
-                    escapedUrl[out++] = '%';
-                    escapedUrl[out++] = '2';
-                    escapedUrl[out++] = '0';
-                }
-                else
-                    escapedUrl[out++] = url[in];
-                ++in;
-            }
-            escapedUrl[out] = '\0';
-        }
-        if (!_http->begin(cnt ? escapedUrl : url))
-        {
-            log_w("Could not connect to %s", url);
-            stopSong();
-            return false;
-        }
+        log_w("Could not connect to %s", url);
+        stopSong();
+        return false;
     }
 
     if (offset)
     {
-        char buffer[30];
-        snprintf(buffer, sizeof(buffer), "bytes=%zu-", offset);
+        char *buffer = reinterpret_cast<char *>(_localbuffer);
+        snprintf(buffer, sizeof(_localbuffer), "bytes=%zu-", offset);
         _http->addHeader("Range", buffer);
     }
 
@@ -245,10 +273,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         _http->setAuthorization(username, pwd);
 
     _http->addHeader("Icy-MetaData", VS1053_ICY_METADATA ? "1" : "0");
-
-    const char *header[] = {CONTENT_TYPE, ICY_NAME, ICY_METAINT,
-                            ENCODING, LOCATION};
-    _http->collectHeaders(header, sizeof(header) / sizeof(char *));
+    _http->collectHeaders(_header, sizeof(_header) / sizeof(_header[0]));
     _http->setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
 
     const int HTTPresult = _http->GET();
@@ -282,7 +307,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                 return false;
             }
 
-            char *line = (char *)_localbuffer;
+            char *line = reinterpret_cast<char *>(_localbuffer);
 
             while (stream->connected() && stream->available())
             {
@@ -326,7 +351,6 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
             _vs1053->stopSong();
             snprintf(_url, sizeof(_url), "%s", url);
             _vs1053->startSong();
-            
         }
         _streamStallStartMS = 0;
         log_d("redirected %i times to %s", _redirectCount, url);

@@ -115,6 +115,7 @@ private:
     void _handleMetadata(char *data, const size_t len);
     void _eofStream();
     bool _canRedirect();
+    bool _escapeUrl(const char *url, size_t len);
     void _handleStream(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
     void _handleLocalFile();
@@ -175,6 +176,13 @@ private:
     const char *ICY_METAINT = "icy-metaint";
     const char *ENCODING = "Transfer-Encoding";
     const char *LOCATION = "Location";
+
+    const char *_header[5] =
+        {CONTENT_TYPE,
+         ICY_NAME,
+         ICY_METAINT,
+         ENCODING,
+         LOCATION};
 };
 
 #endif
