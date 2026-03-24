@@ -252,7 +252,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     bool isHttps = (length > 4 && tolower(url[4]) == 's');
 
     _http->setConnectTimeout(isHttps ? VS1053_CONNECT_TIMEOUT_MS_SSL
-                                                    : VS1053_CONNECT_TIMEOUT_MS);
+                                     : VS1053_CONNECT_TIMEOUT_MS);
 
     const char *finalUrl = needsEscape ? reinterpret_cast<const char *>(_localbuffer) : url;
     if (!_http->begin(finalUrl))
@@ -954,7 +954,7 @@ void ESP32_VS1053_Stream::_readBitRate()
         if (++_decoderSyncAttempts > 4)
         {
             log_w("decoder failed to sync");
-            _eofStream();
+            _remainingBytes = 0;
         }
         return;
     }
