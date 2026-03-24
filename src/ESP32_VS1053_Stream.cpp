@@ -164,7 +164,7 @@ bool ESP32_VS1053_Stream::_escapeUrl(const char *url, size_t len)
     {
         if (url[in] == ' ')
         {
-            if (out + 3 >= sizeof(_localbuffer))
+            if (out + 3 >= sizeof(_localbuffer) - 1)
                 return false;
 
             _localbuffer[out++] = '%';
@@ -173,7 +173,7 @@ bool ESP32_VS1053_Stream::_escapeUrl(const char *url, size_t len)
         }
         else
         {
-            if (out + 1 >= sizeof(_localbuffer))
+            if (out + 1 >= sizeof(_localbuffer) - 1)
                 return false;
 
             _localbuffer[out++] = url[in];
@@ -213,7 +213,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
 
     const size_t length = strlen(url);
-    if (length >= sizeof(_url) || length < 10) // http://a.b
+    if (length >= sizeof(_url) || length < 8) // "http://"
     {
         log_e("Url invalid length");
         return false;
@@ -249,7 +249,9 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
     }
 
-    _http->setConnectTimeout(tolower(url[4]) == 's' ? VS1053_CONNECT_TIMEOUT_MS_SSL
+    bool isHttps = (length > 4 && tolower(url[4]) == 's');
+
+    _http->setConnectTimeout(tolower(isHttps ? VS1053_CONNECT_TIMEOUT_MS_SSL
                                                     : VS1053_CONNECT_TIMEOUT_MS);
 
     const char *finalUrl = needsEscape ? reinterpret_cast<const char *>(_localbuffer) : url;
