@@ -251,7 +251,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
 
     bool isHttps = (length > 4 && tolower(url[4]) == 's');
 
-    _http->setConnectTimeout(tolower(isHttps ? VS1053_CONNECT_TIMEOUT_MS_SSL
+    _http->setConnectTimeout(isHttps ? VS1053_CONNECT_TIMEOUT_MS_SSL
                                                     : VS1053_CONNECT_TIMEOUT_MS);
 
     const char *finalUrl = needsEscape ? reinterpret_cast<const char *>(_localbuffer) : url;
