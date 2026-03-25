@@ -395,6 +395,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     default:
         log_d("error %i %s", HTTPresult, _http->errorToString(HTTPresult).c_str());
         stopSong();
+        _redirectCount = 0;
         return false;
     }
 }
@@ -448,7 +449,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         _vs1053->playChunk(data, size);
         vRingbufferReturnItem(_ringbuffer_handle, data);
         bytesToDecoder += size;
-        _remainingBytes = (_remainingBytes > size) ? _remainingBytes - size : 0;
+        _remainingBytes -= size;
     }
     log_d("%lu ms moving %i bytes ringbuffer->decoder", millis() - startTimeMS, bytesToDecoder);
 }
@@ -674,10 +675,12 @@ void ESP32_VS1053_Stream::loop()
     if (!_http)
         return;
 
-    if (!_http->connected())
+    if (!_http->connected() && _ringbuffer_handle)
     {
-        log_e("Stream disconnect");
-        _eofStream();
+        if (_remainingBytes)
+            _playFromRingBuffer();
+        else
+            _eofStream();
         return;
     }
 
@@ -947,9 +950,8 @@ void ESP32_VS1053_Stream::_readBitRate()
     const uint8_t SCI_HDAT1 = 0x09;
 
     uint16_t hdat1 = _vs1053->readRegister(SCI_HDAT1);
-    uint16_t hdat0 = _vs1053->readRegister(SCI_HDAT0);
 
-    if (hdat1 == 0 && hdat0 == 0) // decoder not locked yet
+    if (hdat1 == 0) // decoder not locked yet
     {
         if (++_decoderSyncAttempts > 4)
         {
@@ -1006,6 +1008,8 @@ void ESP32_VS1053_Stream::_readBitRate()
 
     if (!_bitrateCallback)
         return;
+
+    uint16_t hdat0 = _vs1053->readRegister(SCI_HDAT0);
 
     uint32_t bitrate = 0;
 
