@@ -20,10 +20,9 @@ Very lightweight, has a binary footprint of less than 7kB excluding the psram bu
 
 Release 3.0.0 and later require read access to the vs1053 registers which the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) does not provide.  
 There is a [PR](https://github.com/baldram/ESP_VS1053_Library/pull/119) fixing this issue waiting to be merged in the ESP_VS1053_Library repo.  
-
 While that is waiting you can use [this fork](https://github.com/CelliesProjects/ESP_VS1053_Library/tree/make-SCI-registers-readable) to compile the 3.0.0 and later releases.
 
-Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest) for Arduino IDE or the corresponding [PIOArduino release](https://github.com/pioarduino/platform-espressif32/releases/latest) if you use PlatformIO in VSCode.
+Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest) for Arduino IDE or the corresponding [PIOArduino release](https://github.com/pioarduino/platform-espressif32/releases/latest) if you use PlatformIO in VSCode.  
 
 ### platformio.ini example
 
@@ -32,8 +31,17 @@ platform = https://github.com/pioarduino/platform-espressif32/releases/download/
 
 lib_deps =
     https://github.com/CelliesProjects/ESP_VS1053_Library#make-SCI-registers-readable
-    https://github.com/CelliesProjects/ESP32_VS1053_Stream@3.0.2
+    https://github.com/CelliesProjects/ESP32_VS1053_Stream@3.0.4
 ```
+
+### Arduino IDE setup for 3.0.0 or later releases
+
+- Browse to [the forked repository](https://github.com/CelliesProjects/ESP_VS1053_Library/tree/make-SCI-registers-readable) and download the zip file found under the green button marked `<> Code`.
+- In the Arduino IDE go to `Sketch->Include Library->Add .ZIP library` and select the downloaded zip file to install.
+- Answer `YES` when asked to overwrite the existing library.
+
+That's it.  
+With the forked vs1053 library installed 3.0.x releases can be compiled in the Arduino IDE. 
 
 ## Example: play a stream
 ```c++
