@@ -449,7 +449,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         _vs1053->playChunk(data, size);
         vRingbufferReturnItem(_ringbuffer_handle, data);
         bytesToDecoder += size;
-        _remainingBytes -= size;
+        _remainingBytes -= (_remaingBytes > 0) ? size : 0;
     }
     log_d("%lu ms moving %i bytes ringbuffer->decoder", millis() - startTimeMS, bytesToDecoder);
 }
