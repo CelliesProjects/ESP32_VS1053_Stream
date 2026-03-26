@@ -199,7 +199,7 @@ const char *ESP32_VS1053_Stream::_parsePlaylist(const char *url)
     {
         if (!stream->available())
         {
-            delay(1); // or yield()
+            yield();
             continue;
         }
 
@@ -351,7 +351,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         {
             if (!_canRedirect())
             {
-                stopSong();
+                _eofStream();
                 _redirectCount = 0;
                 return false;
             }
@@ -366,7 +366,8 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
             }
 
             log_e("Playlist detected but no valid URL found: %s", url);
-            stopSong();
+            snprintf(_url, sizeof(_url), "%s", url);
+            _eofStream();
             _redirectCount = 0;
             return false;
         }
@@ -398,7 +399,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     {
         if (!_canRedirect())
         {
-            stopSong();
+            _eofStream();
             _redirectCount = 0;
             return false;
         }
@@ -406,7 +407,8 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         if (!_http->hasHeader(LOCATION))
         {
             log_e("No location header redirecting from %s", url);
-            stopSong();
+            _eofStream();
+            _redirectCount = 0;
             return false;
         }
 
@@ -417,7 +419,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         if (location.indexOf("./") != -1)
         {
             log_e("Invalid url %s redirecting from %s", location, url);
-            stopSong();
+            _eofStream();
             return false;
         }
 
@@ -428,7 +430,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
 
     default:
         log_d("error %i %s", HTTPresult, _http->errorToString(HTTPresult).c_str());
-        stopSong();
+        _eofStream();
         _redirectCount = 0;
         return false;
     }
