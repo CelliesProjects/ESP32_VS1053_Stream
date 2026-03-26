@@ -116,6 +116,8 @@ private:
     void _eofStream();
     bool _canRedirect();
     bool _escapeUrl(const char *url, size_t len);
+    bool _isPlaylistContentType();
+    const char *_parsePlaylist();
     void _handleStream(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
     void _handleLocalFile();

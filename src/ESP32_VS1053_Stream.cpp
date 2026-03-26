@@ -184,6 +184,62 @@ bool ESP32_VS1053_Stream::_escapeUrl(const char *url, size_t len)
     return true;
 }
 
+bool ESP32_VS1053_Stream::_isPlaylistContentType()
+{
+    const String contentType = _http->header(CONTENT_TYPE);
+    const char *ct = contentType.c_str();
+
+    return strcasestr(ct, "audio/x-scpls") ||
+           strcasestr(ct, "audio/scpls") ||
+           strcasestr(ct, "audio/x-mpegurl") ||
+           strcasestr(ct, "application/x-mpegurl") ||
+           strcasestr(ct, "audio/mpegurl");
+}
+
+const char *ESP32_VS1053_Stream::_parsePlaylist()
+{
+    WiFiClient *stream = _http->getStreamPtr();
+    if (!stream)
+    {
+        log_e("No stream handle");
+        return nullptr;
+    }
+
+    char *line = reinterpret_cast<char *>(_localbuffer);
+
+    while (stream->connected() && stream->available())
+    {
+        size_t len = stream->readBytesUntil('\n', line, VS1053_MAX_URL_LENGTH - 1);
+
+        if (len == 0)
+            continue;
+
+        line[len] = '\0';
+
+        // Handle truncated lines
+        if (len == VS1053_MAX_URL_LENGTH - 1)
+        {
+            int c;
+            while (stream->available() && (c = stream->read()) != '\n')
+                ;
+        }
+
+        // Skip comments (M3U, EXTINF, etc.)
+        if (line[0] == '#' || line[0] == '\0')
+            continue;
+
+        // Find URL
+        char *newUrl = strstr(line, "http");
+        if (newUrl)
+        {
+            strtok(newUrl, "\r\n;?");
+            return newUrl;
+        }
+    }
+
+    return nullptr;
+}
+
 bool ESP32_VS1053_Stream::isChipConnected()
 {
     return _vs1053 ? _vs1053->isChipConnected() : false;
@@ -216,13 +272,6 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     if (length >= sizeof(_url) || length < 8) // "http://"
     {
         log_e("Url invalid length");
-        return false;
-    }
-
-    if (strstr(url, "./"))
-    { // hacky solution: some items on radio-browser.info has
-      // non resolving names that contain './' in their hostname
-        log_e("Invalid url not started");
         return false;
     }
 
@@ -285,57 +334,25 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         [[fallthrough]];
     case 200:
     {
-        const String contentType = _http->header(CONTENT_TYPE);
-        const char *ct = contentType.c_str();
-        if (strcasestr(ct, "audio/x-scpls") ||
-            strcasestr(ct, "audio/scpls") ||
-            strcasestr(ct, "audio/x-mpegurl") ||
-            strcasestr(ct, "application/x-mpegurl") ||
-            strcasestr(ct, "audio/mpegurl"))
+        if (_isPlaylistContentType())
         {
-            log_d("url %s is a playlist", url);
             if (!_canRedirect())
             {
-                stopSong();
+                _eofStream();
+                _redirectCount = 0;
                 return false;
             }
-            WiFiClient *stream = _http->getStreamPtr();
-            if (!stream)
+            
+            const char *newUrl = _parsePlaylist();
+            if (newUrl)
             {
-                log_e("No stream handle");
+                log_i("playlist redirection to: %s", newUrl);
                 stopSong();
-                return false;
+                return connectToHost(newUrl, username, pwd, offset);
             }
-
-            char *line = reinterpret_cast<char *>(_localbuffer);
-
-            while (stream->connected() && stream->available())
-            {
-                size_t len = stream->readBytesUntil('\n', line, VS1053_MAX_URL_LENGTH - 1);
-
-                if (len == 0)
-                    continue;
-
-                line[len] = '\0';
-
-                // Detect truncated line (no newline encountered)
-                if (len == VS1053_MAX_URL_LENGTH - 1)
-                {
-                    int c;
-                    // Flush until end-of-line to avoid corrupt next read
-                    while (stream->available() && (c = stream->read()) != '\n')
-                        ;
-                }
-
-                char *newUrl = strstr(line, "http");
-                if (newUrl)
-                {
-                    strtok(newUrl, "\r\n;?");
-                    stopSong();
-                    log_i("playlist %s reconnects to: %s", url, newUrl);
-                    return connectToHost(newUrl, username, pwd, offset);
-                }
-            }
+            _eofStream();
+            _redirectCount = 0;
+            return false;
         }
 
         if (_stationCallback && !_http->header(ICY_NAME).equals(""))
@@ -353,7 +370,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
             _vs1053->startSong();
         }
         _streamStallStartMS = 0;
-        log_d("redirected %i times to %s", _redirectCount, url);
+        log_i("redirected %i times to %s", _redirectCount, url);
         _redirectCount = 0;
         _vs1053->setVolume(_volume);
         return true;
@@ -365,30 +382,23 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     {
         if (!_canRedirect())
         {
-            stopSong();
+            _eofStream();
+            _redirectCount = 0;
             return false;
         }
 
         if (!_http->hasHeader(LOCATION))
         {
             log_e("No location header redirecting from %s", url);
-            stopSong();
+            _eofStream();
+            _redirectCount = 0;
             return false;
         }
 
         const String location = _http->header(LOCATION);
 
-        // hacky solution: some items on radio-browser.info
-        // have non-resolving names containing "./" in the hostname
-        if (location.indexOf("./") != -1)
-        {
-            log_e("Invalid url %s redirecting from %s", location, url);
-            stopSong();
-            return false;
-        }
-
         stopSong();
-        log_d("%i redirection to: %s", HTTPresult, location.c_str());
+        log_i("%i redirection to: %s", HTTPresult, location.c_str());
         return connectToHost(location.c_str(), username, pwd, 0);
     }
 
