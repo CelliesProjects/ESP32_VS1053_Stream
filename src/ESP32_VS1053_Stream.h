@@ -126,6 +126,8 @@ private:
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *stream);
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
+    bool _isPlaylistContentType();
+    const char *_parsePlaylist();
 
     codec_callback_t _codecCallback = nullptr;
     bitrate_callback_t _bitrateCallback = nullptr;
