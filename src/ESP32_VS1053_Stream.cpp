@@ -336,6 +336,8 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     {
         if (_isPlaylistContentType())
         {
+            snprintf(_url, sizeof(_url), "%s", url);
+            
             if (!_canRedirect())
             {
                 _eofStream();
@@ -350,6 +352,8 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                 stopSong();
                 return connectToHost(newUrl, username, pwd, offset);
             }
+
+            // no url found            
             _eofStream();
             _redirectCount = 0;
             return false;
@@ -380,6 +384,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         [[fallthrough]];
     case 302:
     {
+        snprintf(_url, sizeof(_url), "%s", url);
         if (!_canRedirect())
         {
             _eofStream();
