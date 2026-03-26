@@ -184,6 +184,68 @@ bool ESP32_VS1053_Stream::_escapeUrl(const char *url, size_t len)
     return true;
 }
 
+const char *ESP32_VS1053_Stream::_parsePlaylist(const char *url)
+{
+    WiFiClient *stream = _http->getStreamPtr();
+    if (!stream)
+    {
+        log_e("No stream handle");
+        return nullptr;
+    }
+
+    char *line = reinterpret_cast<char *>(_localbuffer);
+
+    while (stream->connected())
+    {
+        if (!stream->available())
+        {
+            delay(1); // or yield()
+            continue;
+        }
+
+        size_t len = stream->readBytesUntil('\n', line, VS1053_MAX_URL_LENGTH - 1);
+
+        if (len == 0)
+            continue;
+
+        line[len] = '\0';
+
+        // Handle truncated lines
+        if (len == VS1053_MAX_URL_LENGTH - 1)
+        {
+            int c;
+            while (stream->available() && (c = stream->read()) != '\n')
+                ;
+        }
+
+        // Skip comments (M3U, EXTINF, etc.)
+        if (line[0] == '#' || line[0] == '\0')
+            continue;
+
+        // Find URL
+        char *newUrl = strstr(line, "http");
+        if (newUrl)
+        {
+            strtok(newUrl, "\r\n;?");
+            return newUrl;
+        }
+    }
+
+    return nullptr;
+}
+
+bool ESP32_VS1053_Stream::_isPlaylistContentType()
+{
+    const String contentType = _http->header(CONTENT_TYPE);
+    const char *ct = contentType.c_str();
+
+    return strcasestr(ct, "audio/x-scpls") ||
+           strcasestr(ct, "audio/scpls") ||
+           strcasestr(ct, "audio/x-mpegurl") ||
+           strcasestr(ct, "application/x-mpegurl") ||
+           strcasestr(ct, "audio/mpegurl");
+}
+
 bool ESP32_VS1053_Stream::isChipConnected()
 {
     return _vs1053 ? _vs1053->isChipConnected() : false;
@@ -285,57 +347,28 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         [[fallthrough]];
     case 200:
     {
-        const String contentType = _http->header(CONTENT_TYPE);
-        const char *ct = contentType.c_str();
-        if (strcasestr(ct, "audio/x-scpls") ||
-            strcasestr(ct, "audio/scpls") ||
-            strcasestr(ct, "audio/x-mpegurl") ||
-            strcasestr(ct, "application/x-mpegurl") ||
-            strcasestr(ct, "audio/mpegurl"))
+        if (_isPlaylistContentType())
         {
-            log_d("url %s is a playlist", url);
             if (!_canRedirect())
             {
                 stopSong();
+                _redirectCount = 0;
                 return false;
             }
-            WiFiClient *stream = _http->getStreamPtr();
-            if (!stream)
+
+            const char *newUrl = _parsePlaylist(url);
+
+            if (newUrl)
             {
-                log_e("No stream handle");
                 stopSong();
-                return false;
+                log_i("playlist %s reconnects to: %s", url, newUrl);
+                return connectToHost(newUrl, username, pwd, offset);
             }
 
-            char *line = reinterpret_cast<char *>(_localbuffer);
-
-            while (stream->connected() && stream->available())
-            {
-                size_t len = stream->readBytesUntil('\n', line, VS1053_MAX_URL_LENGTH - 1);
-
-                if (len == 0)
-                    continue;
-
-                line[len] = '\0';
-
-                // Detect truncated line (no newline encountered)
-                if (len == VS1053_MAX_URL_LENGTH - 1)
-                {
-                    int c;
-                    // Flush until end-of-line to avoid corrupt next read
-                    while (stream->available() && (c = stream->read()) != '\n')
-                        ;
-                }
-
-                char *newUrl = strstr(line, "http");
-                if (newUrl)
-                {
-                    strtok(newUrl, "\r\n;?");
-                    stopSong();
-                    log_i("playlist %s reconnects to: %s", url, newUrl);
-                    return connectToHost(newUrl, username, pwd, offset);
-                }
-            }
+            log_e("Playlist detected but no valid URL found: %s", url);
+            stopSong();
+            _redirectCount = 0;
+            return false;
         }
 
         if (_stationCallback && !_http->header(ICY_NAME).equals(""))
@@ -366,6 +399,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         if (!_canRedirect())
         {
             stopSong();
+            _redirectCount = 0;
             return false;
         }
 
