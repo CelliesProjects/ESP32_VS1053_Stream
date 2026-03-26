@@ -342,12 +342,11 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                 _redirectCount = 0;
                 return false;
             }
-
-            log_i("playlist found");
+            
             const char *newUrl = _parsePlaylist();
             if (newUrl)
             {
-                log_i("redirection to: %s", newUrl);
+                log_i("playlist redirection to: %s", newUrl);
                 stopSong();
                 return connectToHost(newUrl, username, pwd, offset);
             }
