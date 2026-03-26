@@ -392,13 +392,14 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         {
             log_e("No location header redirecting from %s", url);
             _eofStream();
+            _redirectCount = 0;
             return false;
         }
 
         const String location = _http->header(LOCATION);
 
         stopSong();
-        log_d("%i redirection to: %s", HTTPresult, location.c_str());
+        log_i("%i redirection to: %s", HTTPresult, location.c_str());
         return connectToHost(location.c_str(), username, pwd, 0);
     }
 
