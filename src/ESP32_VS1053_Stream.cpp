@@ -275,15 +275,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
     }
 
-    bool needsEscape = false;
-    for (size_t i = 0; i < length; ++i)
-    {
-        if (url[i] == ' ')
-        {
-            needsEscape = true;
-            break;
-        }
-    }
+    const bool needsEscape = (strchr(url, ' ') != nullptr);
 
     if (needsEscape && !_escapeUrl(url, length))
     {
