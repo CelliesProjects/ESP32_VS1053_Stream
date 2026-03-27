@@ -275,6 +275,13 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
     }
 
+    _http = new HTTPClient;
+    if (!_http)
+    {
+        log_e("Could not create http client");
+        return false;
+    }
+
     const bool needsEscape = (strchr(url, ' ') != nullptr);
 
     if (needsEscape && !_escapeUrl(url, length))
@@ -283,14 +290,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
     }
 
-    _http = new HTTPClient;
-    if (!_http)
-    {
-        log_e("Could not create http client");
-        return false;
-    }
-
-    bool isHttps = (length > 4 && tolower(url[4]) == 's');
+    const bool isHttps = (length > 4 && tolower(url[4]) == 's');
 
     _http->setConnectTimeout(isHttps ? VS1053_CONNECT_TIMEOUT_MS_SSL
                                      : VS1053_CONNECT_TIMEOUT_MS);
