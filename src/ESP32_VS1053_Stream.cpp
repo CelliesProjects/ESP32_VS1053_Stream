@@ -406,7 +406,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 {
     if (!_ringbuffer_filled)
     {
-        const size_t SET_LIMIT = min(size_t(1024 * 15), VS1053_PSRAM_BUFFER_SIZE - 1024);
+        const size_t SET_LIMIT = min(1024 * 15, VS1053_PSRAM_BUFFER_SIZE);
         const auto MINIMUM_TO_PLAY = min(size() ? size() : SET_LIMIT, SET_LIMIT);
 
         if (VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle) < MINIMUM_TO_PLAY)
