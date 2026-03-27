@@ -329,14 +329,14 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         if (_isPlaylistContentType())
         {
             snprintf(_url, sizeof(_url), "%s", url);
-            
+
             if (!_canRedirect())
             {
                 _eofStream();
                 _redirectCount = 0;
                 return false;
             }
-            
+
             const char *newUrl = _parsePlaylist();
             if (newUrl)
             {
@@ -345,7 +345,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                 return connectToHost(newUrl, username, pwd, offset);
             }
 
-            // no url found            
+            // no url found
             _eofStream();
             _redirectCount = 0;
             return false;
@@ -360,15 +360,10 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         _metaDataStart = _http->header(ICY_METAINT).toInt();
         _musicDataPosition = _metaDataStart ? 0 : -1;
         if (strcmp(_url, url))
-        {
-            _vs1053->stopSong();
             snprintf(_url, sizeof(_url), "%s", url);
-            _vs1053->startSong();
-        }
         _streamStallStartMS = 0;
         log_i("redirected %i times to %s", _redirectCount, url);
         _redirectCount = 0;
-        _vs1053->setVolume(_volume);
         return true;
     }
 
@@ -491,7 +486,11 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
     if (!_dataSeen)
     {
         _dataSeen = true;
+        if (!_offset)
+            _vs1053->stopSong();
         _bitrateTimer = millis();
+        _vs1053->startSong();
+        _vs1053->setVolume(_volume);
     }
 
     if (_ringbuffer_handle)
@@ -578,7 +577,11 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         if (!_dataSeen)
         {
             _dataSeen = true;
+            if (!_offset)
+                _vs1053->stopSong();
             _bitrateTimer = millis();
+            _vs1053->startSong();
+            _vs1053->setVolume(_volume);
         }
     }
 
@@ -738,7 +741,7 @@ void ESP32_VS1053_Stream::stopSong()
     if (!_http && !_playingFile)
         return;
 
-    setVolume(0);
+    _vs1053->setVolume(0);
     _remainingBytes = 0;
     _offset = 0;
     _bitrate = 0;
