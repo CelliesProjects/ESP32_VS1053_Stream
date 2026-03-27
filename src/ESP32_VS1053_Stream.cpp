@@ -275,22 +275,6 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
     }
 
-    bool needsEscape = false;
-    for (size_t i = 0; i < length; ++i)
-    {
-        if (url[i] == ' ')
-        {
-            needsEscape = true;
-            break;
-        }
-    }
-
-    if (needsEscape && !_escapeUrl(url, length))
-    {
-        log_e("Escaped URL exceeds buffer");
-        return false;
-    }
-
     _http = new HTTPClient;
     if (!_http)
     {
@@ -298,7 +282,15 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
     }
 
-    bool isHttps = (length > 4 && tolower(url[4]) == 's');
+    const bool needsEscape = (strchr(url, ' ') != nullptr);
+
+    if (needsEscape && !_escapeUrl(url, length))
+    {
+        log_e("Escaped URL exceeds buffer");
+        return false;
+    }
+
+    const bool isHttps = (length > 4 && tolower(url[4]) == 's');
 
     _http->setConnectTimeout(isHttps ? VS1053_CONNECT_TIMEOUT_MS_SSL
                                      : VS1053_CONNECT_TIMEOUT_MS);
