@@ -156,7 +156,7 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     return true;
 }
 
-bool ESP32_VS1053_Stream::_escapeUrl(const char *url, size_t len)
+bool ESP32_VS1053_Stream::_escapeUrl(const char *url, const size_t len)
 {
     size_t in = 0;
     size_t out = 0;
@@ -481,17 +481,20 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
     log_d("%lu ms moving %i bytes stream->ringbuffer", millis() - startTimeMS, bytesToRingBuffer);
 }
 
+void ESP32_VS1053_Stream::_setupStream()
+{
+    if (!_offset)
+        _vs1053->stopSong();
+    _vs1053->startSong();
+    _vs1053->setVolume(_volume);
+    _bitrateTimer = millis();
+    _dataSeen = true;
+}
+
 void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
 {
     if (!_dataSeen)
-    {
-        _dataSeen = true;
-        if (!_offset)
-            _vs1053->stopSong();
-        _bitrateTimer = millis();
-        _vs1053->startSong();
-        _vs1053->setVolume(_volume);
-    }
+        _setupStream();
 
     if (_ringbuffer_handle)
     {
@@ -518,7 +521,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
         log_d("%lu ms moving %i bytes stream->decoder", millis() - startTimeMS, bytesToDecoder);
     }
 
-    if (stream->available() && _metaDataStart && _musicDataPosition == _metaDataStart)
+    if (_metaDataStart && _musicDataPosition == _metaDataStart && stream->available())
     {
         const auto DATA_NEEDED = stream->peek() * 16 + 1;
         if (stream->available() < DATA_NEEDED)
@@ -575,14 +578,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             return;
         }
         if (!_dataSeen)
-        {
-            _dataSeen = true;
-            if (!_offset)
-                _vs1053->stopSong();
-            _bitrateTimer = millis();
-            _vs1053->startSong();
-            _vs1053->setVolume(_volume);
-        }
+            _setupStream();
     }
 
     if (_ringbuffer_handle)
@@ -758,6 +754,11 @@ void ESP32_VS1053_Stream::stopSong()
         _ringbuffer_filled = false;
         _bufferStallStartMS = 0;
     }
+
+    while (!_vs1053->data_request())
+        yield();
+
+    _vs1053->startSong();
 
     if (_playingFile)
     {
@@ -956,9 +957,6 @@ void ESP32_VS1053_Stream::_updateBitRate()
 
 void ESP32_VS1053_Stream::_readBitRate()
 {
-    const uint8_t SCI_HDAT0 = 0x08;
-    const uint8_t SCI_HDAT1 = 0x09;
-
     uint16_t hdat1 = _vs1053->readRegister(SCI_HDAT1);
 
     if (hdat1 == 0) // decoder not locked yet

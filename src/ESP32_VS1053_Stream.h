@@ -115,9 +115,10 @@ private:
     void _handleMetadata(char *data, const size_t len);
     void _eofStream();
     bool _canRedirect();
-    bool _escapeUrl(const char *url, size_t len);
+    bool _escapeUrl(const char *url, const size_t len);
     bool _isPlaylistContentType();
     const char *_parsePlaylist();
+    void _setupStream();
     void _handleStream(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
     void _handleLocalFile();
@@ -148,6 +149,9 @@ private:
         CODEC_OGG,
         CODEC_FLAC
     };
+
+    const uint8_t SCI_HDAT0 = 0x08;
+    const uint8_t SCI_HDAT1 = 0x09;
 
     uint8_t _codec = CODEC_UNKNOWN;
     void _updateBitRate();
