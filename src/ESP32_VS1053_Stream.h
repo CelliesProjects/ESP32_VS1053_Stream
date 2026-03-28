@@ -20,15 +20,21 @@
 
 #define VS1053_PSRAM_BUFFER_ENABLED true
 #define VS1053_PSRAM_BUFFER_TIMEOUT_MS 900
-#define VS1053_PSRAM_BUFFER_SIZE size_t(1024 * 64)
+#define VS1053_PSRAM_BUFFER_SIZE 65536
 
-constexpr size_t VS1053_LOCALBUFFER_SIZE = 4096;
+constexpr size_t VS1053_LOCALBUFFER_SIZE = 4096; // need at least 4kB to safely receive ICY metadata
 constexpr size_t VS1053_PSRAM_MAX_MOVE = 2048;
 constexpr uint8_t VS1053_MAXVOLUME = 100;
 constexpr size_t VS1053_PLAYBUFFER_SIZE = 32;
 
+static_assert(VS1053_LOCALBUFFER_SIZE >= 4096,
+              "VS1053_LOCALBUFFER_SIZE must be equal or greater than 4096");
+
 static_assert(VS1053_MAX_URL_LENGTH <= VS1053_LOCALBUFFER_SIZE,
-              "VS1053_MAX_URL_LENGTH must be smaller than VS1053_LOCALBUFFER_SIZE");
+              "VS1053_MAX_URL_LENGTH must be smaller than or equal to VS1053_LOCALBUFFER_SIZE");
+
+static_assert(VS1053_PSRAM_MAX_MOVE <= VS1053_LOCALBUFFER_SIZE,
+              "VS1053_PSRAM_MAX_MOVE must be smaller than or equal to VS1053_LOCALBUFFER_SIZE");
 
 typedef void (*station_callback_t)(const char *name);
 typedef void (*codec_callback_t)(const char *codec);
@@ -115,9 +121,10 @@ private:
     void _handleMetadata(char *data, const size_t len);
     void _eofStream();
     bool _canRedirect();
-    bool _escapeUrl(const char *url, size_t len);
+    bool _escapeUrl(const char *url, const size_t len);
     bool _isPlaylistContentType();
     const char *_parsePlaylist();
+    void _setupStream();
     void _handleStream(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
     void _handleLocalFile();
@@ -148,6 +155,9 @@ private:
         CODEC_OGG,
         CODEC_FLAC
     };
+
+    const uint8_t SCI_HDAT0 = 0x08;
+    const uint8_t SCI_HDAT1 = 0x09;
 
     uint8_t _codec = CODEC_UNKNOWN;
     void _updateBitRate();

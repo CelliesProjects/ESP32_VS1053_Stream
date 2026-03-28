@@ -156,7 +156,7 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     return true;
 }
 
-bool ESP32_VS1053_Stream::_escapeUrl(const char *url, size_t len)
+bool ESP32_VS1053_Stream::_escapeUrl(const char *url, const size_t len)
 {
     size_t in = 0;
     size_t out = 0;
@@ -329,14 +329,14 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         if (_isPlaylistContentType())
         {
             snprintf(_url, sizeof(_url), "%s", url);
-            
+
             if (!_canRedirect())
             {
                 _eofStream();
                 _redirectCount = 0;
                 return false;
             }
-            
+
             const char *newUrl = _parsePlaylist();
             if (newUrl)
             {
@@ -345,7 +345,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                 return connectToHost(newUrl, username, pwd, offset);
             }
 
-            // no url found            
+            // no url found
             _eofStream();
             _redirectCount = 0;
             return false;
@@ -360,15 +360,10 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         _metaDataStart = _http->header(ICY_METAINT).toInt();
         _musicDataPosition = _metaDataStart ? 0 : -1;
         if (strcmp(_url, url))
-        {
-            _vs1053->stopSong();
             snprintf(_url, sizeof(_url), "%s", url);
-            _vs1053->startSong();
-        }
         _streamStallStartMS = 0;
         log_i("redirected %i times to %s", _redirectCount, url);
         _redirectCount = 0;
-        _vs1053->setVolume(_volume);
         return true;
     }
 
@@ -411,7 +406,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 {
     if (!_ringbuffer_filled)
     {
-        const size_t SET_LIMIT = min(size_t(1024 * 15), VS1053_PSRAM_BUFFER_SIZE - 1024);
+        const size_t SET_LIMIT = min(1024 * 15, VS1053_PSRAM_BUFFER_SIZE);
         const auto MINIMUM_TO_PLAY = min(size() ? size() : SET_LIMIT, SET_LIMIT);
 
         if (VS1053_PSRAM_BUFFER_SIZE - xRingbufferGetCurFreeSize(_ringbuffer_handle) < MINIMUM_TO_PLAY)
@@ -486,13 +481,20 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
     log_d("%lu ms moving %i bytes stream->ringbuffer", millis() - startTimeMS, bytesToRingBuffer);
 }
 
+void ESP32_VS1053_Stream::_setupStream()
+{
+    if (!_offset)
+        _vs1053->stopSong();
+    _vs1053->startSong();
+    _vs1053->setVolume(_volume);
+    _bitrateTimer = millis();
+    _dataSeen = true;
+}
+
 void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
 {
     if (!_dataSeen)
-    {
-        _dataSeen = true;
-        _bitrateTimer = millis();
-    }
+        _setupStream();
 
     if (_ringbuffer_handle)
     {
@@ -519,7 +521,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
         log_d("%lu ms moving %i bytes stream->decoder", millis() - startTimeMS, bytesToDecoder);
     }
 
-    if (stream->available() && _metaDataStart && _musicDataPosition == _metaDataStart)
+    if (_metaDataStart && _musicDataPosition == _metaDataStart && stream->available())
     {
         const auto DATA_NEEDED = stream->peek() * 16 + 1;
         if (stream->available() < DATA_NEEDED)
@@ -576,10 +578,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             return;
         }
         if (!_dataSeen)
-        {
-            _dataSeen = true;
-            _bitrateTimer = millis();
-        }
+            _setupStream();
     }
 
     if (_ringbuffer_handle)
@@ -755,6 +754,11 @@ void ESP32_VS1053_Stream::stopSong()
         _ringbuffer_filled = false;
         _bufferStallStartMS = 0;
     }
+
+    while (!_vs1053->data_request())
+        yield();
+
+    _vs1053->startSong();
 
     if (_playingFile)
     {
@@ -953,9 +957,6 @@ void ESP32_VS1053_Stream::_updateBitRate()
 
 void ESP32_VS1053_Stream::_readBitRate()
 {
-    const uint8_t SCI_HDAT0 = 0x08;
-    const uint8_t SCI_HDAT1 = 0x09;
-
     uint16_t hdat1 = _vs1053->readRegister(SCI_HDAT1);
 
     if (hdat1 == 0) // decoder not locked yet
