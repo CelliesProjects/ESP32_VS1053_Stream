@@ -232,7 +232,7 @@ const char *ESP32_VS1053_Stream::_parsePlaylist()
         char *newUrl = strstr(line, "http");
         if (newUrl)
         {
-            strtok(newUrl, "\r\n;?");
+            strtok(newUrl, "\r\n;");
             return newUrl;
         }
     }
