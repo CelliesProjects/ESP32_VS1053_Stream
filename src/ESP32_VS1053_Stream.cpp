@@ -360,7 +360,10 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         _metaDataStart = _http->header(ICY_METAINT).toInt();
         _musicDataPosition = _metaDataStart ? 0 : -1;
         if (strcmp(_url, url))
+        {
+            _vs1053->softReset();
             snprintf(_url, sizeof(_url), "%s", url);
+        }
         _streamStallStartMS = 0;
         log_i("redirected %i times to %s", _redirectCount, url);
         _redirectCount = 0;
@@ -844,7 +847,8 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     _file.seek(offset);
     if (strcmp(filename, _url))
     {
-        _vs1053->stopSong();
+        //_vs1053->stopSong();
+        _vs1053->softReset();
         snprintf(_url, sizeof(_url), "%s", filename);
         _vs1053->startSong();
     }
