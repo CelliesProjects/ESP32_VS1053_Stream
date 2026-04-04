@@ -370,7 +370,7 @@ tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 ```
 ### Get the current stream url
 ```c++
-const char* lastUrl()
+const char* lastUrl();
 ```
 The current stream url might differ from the request url if the request url points to a playlist.
 ### Get the filesize
