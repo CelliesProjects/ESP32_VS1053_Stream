@@ -19,29 +19,28 @@ Very lightweight, has a binary footprint of less than 7kB excluding the psram bu
 ~~Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and this library in your Arduino library folder.~~
 
 Release 3.0.0 and later require read access to the vs1053 registers which the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) does not provide.  
-There is a [PR](https://github.com/baldram/ESP_VS1053_Library/pull/119) fixing this issue waiting to be merged in the ESP_VS1053_Library repo.  
-While that is waiting you can use [this fork](https://github.com/CelliesProjects/ESP_VS1053_Library/tree/make-SCI-registers-readable) to compile the 3.0.0 and later releases.
+While that is getting fixed you can use [this fork](https://github.com/CelliesProjects/ESP_VS1053_Library/tree/make-SCI-registers-readable) to compile the 3.0.0 and later releases.
 
 Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest) for Arduino IDE or the corresponding [PIOArduino release](https://github.com/pioarduino/platform-espressif32/releases/latest) if you use PlatformIO in VSCode.  
 
 ### platformio.ini example
 
-```bash
+```ini
 platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.37/platform-espressif32.zip
 
 lib_deps =
     https://github.com/CelliesProjects/ESP_VS1053_Library#make-SCI-registers-readable
-    https://github.com/CelliesProjects/ESP32_VS1053_Stream@3.0.4
+    https://github.com/CelliesProjects/ESP32_VS1053_Stream@3.0.6
 ```
 
-### Arduino IDE setup for 3.0.0 or later releases
+### Arduino IDE setup
 
-- Browse to [the forked repository](https://github.com/CelliesProjects/ESP_VS1053_Library/tree/make-SCI-registers-readable) and download the zip file found under the green button marked `<> Code`.
+- Browse to [the patched vs1053 repository](https://github.com/CelliesProjects/ESP_VS1053_Library/tree/make-SCI-registers-readable) and download the zip file found under the green button marked `<> Code`.
 - In the Arduino IDE go to `Sketch->Include Library->Add .ZIP library` and select the downloaded zip file to install.
 - Answer `YES` when asked to overwrite the existing library.
 
 That's it.  
-With the forked vs1053 library installed 3.0.x releases can be compiled in the Arduino IDE. 
+With the patched vs1053 library installed 3.x.x releases can be compiled in the Arduino IDE. 
 
 ## Example: play a stream
 ```c++
@@ -256,8 +255,8 @@ void loop() {
 
 ### WiFi setup
 
-Switch off the BlueTooth radio if unused.  
-Do not forget to switch WiFi out of power save mode.
+- Switch off the BlueTooth radio if unused.  
+- Switch off power save mode.
 
 ```c++
 ...
@@ -301,24 +300,24 @@ You can now see the hardware revision when you upload a sketch.
 ### Initialize the VS1053 codec
 
 ```c++
-bool startDecoder(CS, DCS, DREQ)
+bool startDecoder(CS, DCS, DREQ);
 ```
 ### Check if VS1053 is responding
 ```c++
-bool isChipConnected()
+bool isChipConnected();
 ```
 ### Start or resume a stream
 ```c++
-bool connectToHost(url)
+bool connectToHost(url);
 ```
 ```c++
-bool connectToHost(url, offset)
+bool connectToHost(url, offset);
 ```
 ```c++
-bool connectToHost(url, user, pwd)
+bool connectToHost(url, user, pwd);
 ```
 ```c++
-bool connectToHost(url, user, pwd, offset)
+bool connectToHost(url, user, pwd, offset);
 ```
 Note: When a stream does not start in this library but it does play on your desktop or laptop you can try increasing the connection timeout.  
 You can do this in `ESP32_VS1053_Stream.h` by increasing these values:  
@@ -328,39 +327,39 @@ You can do this in `ESP32_VS1053_Stream.h` by increasing these values:
 ```
 ### Start or resume a local file
 ```c++
-bool connectToFile(filesystem, filename)
+bool connectToFile(filesystem, filename);
 ```
 ```c++
-bool connectToFile(filesystem, filename, offset)
+bool connectToFile(filesystem, filename, offset);
 ```
 `filesystem` has to be mounted.  
 ### Stop a running stream
 ```c++
-void stopSong()
+void stopSong();
 ```
 ### Feed the decoder
 ```c++
-void loop()
+void loop();
 ```
 This function has to called every couple of ms to feed the decoder with data.  
 For bitrates up to 320kbps somewhere between 5-10 ms is about right.
 ### Check if stream is running
 ```c++
-bool isRunning()
+bool isRunning();
 ```
 ### Get the current volume
 ```c++
-uint8_t getVolume()
+uint8_t getVolume();
 ```
 ### Set the volume
 ```c++
-void setVolume(newVolume)
+void setVolume(newVolume);
 ```
 `newVolume` should be in the range 0-100.
 ### Set bass and treble
 ```c++
 uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};
-void setTone(rtone)
+void setTone(rtone);
 ```
 Values for `rtone`:
 ```c++
@@ -376,17 +375,17 @@ const char* lastUrl()
 The current stream url might differ from the request url if the request url points to a playlist.
 ### Get the filesize
 ```c++
-size_t size()
+size_t size();
 ```
 Returns `0` if the stream is a radio stream.
 ### Get the current position in the file
 ```c++
-size_t position()
+size_t position();
 ```
 Returns `0` if the stream is a radio stream.
 ### Get the buffer fill status
 ```c++
-void bufferStatus(size_t &used, size_t &capacity)
+void bufferStatus(size_t &used, size_t &capacity);
 ```
 
 Note: A buffer will only be allocated if there is enough free psram.
