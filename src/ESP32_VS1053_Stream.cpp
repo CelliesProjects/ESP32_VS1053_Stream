@@ -423,7 +423,8 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     while (_remainingBytes && bytesToDecoder < VS1053_PSRAM_MAX_MOVE && _vs1053->data_request())
     {
         size_t size = 0;
-        uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), VS1053_PLAYBUFFER_SIZE);
+        size_t avail = min(VS1053_PLAYBUFFER_SIZE, _remainingBytes);
+        uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), avail);
         if (!data)
         {
             if (!_bufferStallStartMS)
