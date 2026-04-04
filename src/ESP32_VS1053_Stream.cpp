@@ -649,9 +649,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         _musicDataPosition = 0;
     }
 
-    //if (!_bytesLeftInChunk && stream->available() < 20) /* make sure we dont run out of data in the next test*/
-    //    return;
-
     if (!_bytesLeftInChunk && !_checkSync(stream))
     {
         _remainingBytes = 0;
