@@ -742,7 +742,6 @@ void ESP32_VS1053_Stream::stopSong()
     _bitrateTimer = 0;
     _codec = CODEC_UNKNOWN;
     _decoderSyncAttempts = 0;
-    _lastWavByte = 0;
 
     if (_ringbuffer_handle)
     {
@@ -841,12 +840,7 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     }
 
     if (strstr(filename, ".wav"))
-    {
         _fileLastWAVByte();
-        _remainingBytes = _lastWavByte - offset;
-    }
-    else
-        _remainingBytes = _file.size() - offset;
 
     _file.seek(offset);
     if (strcmp(filename, _url))
@@ -882,8 +876,8 @@ void ESP32_VS1053_Stream::_fileLastWAVByte()
         if (memcmp(chunkId, "data", 4) == 0)
         {
             size_t dataStart = _file.position();
-            _lastWavByte = dataStart + chunkSize;
-            log_i("last wav byte: %lu", _lastWavByte);
+            _remainingBytes = dataStart + chunkSize;
+            log_i("last wav byte: %lu", _remainingBytes);
             return;
         }
 
@@ -893,7 +887,7 @@ void ESP32_VS1053_Stream::_fileLastWAVByte()
 
     // fallback if not found
     log_i("last wav byte is _file.size()");
-    _lastWavByte = _file.size();
+    _remainingBytes = _file.size();
 }
 
 void ESP32_VS1053_Stream::_handleLocalFile()
