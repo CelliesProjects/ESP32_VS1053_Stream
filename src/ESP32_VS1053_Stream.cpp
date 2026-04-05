@@ -884,7 +884,8 @@ void ESP32_VS1053_Stream::_handleLocalFile()
         if (free > 1024)
         {
             size_t toRead = min(sizeof(_localbuffer), free);
-            size_t bytes = _file.read(_localbuffer, toRead);
+            size_t avail = min(toRead, (size_t)_remainingBytes);
+            size_t bytes = _file.read(_localbuffer, avail);
 
             if (bytes)
             {
