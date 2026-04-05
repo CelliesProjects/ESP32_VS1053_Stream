@@ -877,7 +877,7 @@ void ESP32_VS1053_Stream::_fileLastWAVByte()
         {
             size_t dataStart = _file.position();
             _remainingBytes = dataStart + chunkSize;
-            log_i("last wav byte: %lu", _remainingBytes);
+            log_i("last playable byte: %lu", _remainingBytes);
             return;
         }
 
@@ -886,7 +886,7 @@ void ESP32_VS1053_Stream::_fileLastWAVByte()
     }
 
     // fallback if not found
-    log_i("last wav byte is _file.size()");
+    log_i("last playable byte is _file.size()");
     _remainingBytes = _file.size();
 }
 
