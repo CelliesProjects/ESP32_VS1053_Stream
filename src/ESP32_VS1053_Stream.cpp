@@ -880,12 +880,12 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
     if (_remainingBytes && _file.position() < _file.size())
     {
-        size_t free = xRingbufferGetCurFreeSize(_ringbuffer_handle);
+        const size_t free = xRingbufferGetCurFreeSize(_ringbuffer_handle);
         if (free > 1024)
         {
-            size_t toRead = min(sizeof(_localbuffer), free);
-            size_t bytes = _file.read(_localbuffer, toRead);
-
+            const size_t toRead = min(sizeof(_localbuffer), free);
+            const size_t avail = min(toRead, (size_t)_remainingBytes);
+            const size_t bytes = _file.read(_localbuffer, avail);
             if (bytes)
             {
                 if (xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0) == pdFALSE)
