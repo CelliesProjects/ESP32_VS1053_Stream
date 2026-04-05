@@ -461,13 +461,13 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
 {
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToRingBuffer = 0;
-    while (_musicDataPosition < _metaDataStart && /*bytesToRingBuffer < VS1053_PSRAM_MAX_MOVE &&*/
+    while (_musicDataPosition < _metaDataStart && bytesToRingBuffer < VS1053_PSRAM_MAX_MOVE &&
            xRingbufferGetCurFreeSize(_ringbuffer_handle) > 2048 && stream->available())
     {
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
-        //const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PSRAM_MAX_MOVE);
-        const size_t BYTES_SAFE_TO_MOVE = min(BYTES_AVAILABLE, xRingbufferGetCurFreeSize(_ringbuffer_handle));
-        const size_t BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_SAFE_TO_MOVE);
+        const size_t BYTES_READY_TO_MOVE = min(BYTES_AVAILABLE, xRingbufferGetCurFreeSize(_ringbuffer_handle));
+        const size_t BYTES_SAFE_TO_MOVE = min(sizeof(_localbuffer), BYTES_READY_TO_MOVE);
+        const size_t BYTES_IN_BUFFER = stream->readBytes(_localbuffer, min(sizeof(_localbuffer), BYTES_SAFE_TO_MOVE));
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, 0);
         if (result == pdFALSE)
         {
