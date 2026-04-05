@@ -167,6 +167,9 @@ private:
     uint8_t _decoderSyncAttempts = 0;
     uint32_t _bitrate = 0;
 
+    void _fileLastWAVByte();
+    size_t _lastWavByte = 0;
+
     size_t _bufferIndex = 0;
     size_t _bufferFill = 0;
 

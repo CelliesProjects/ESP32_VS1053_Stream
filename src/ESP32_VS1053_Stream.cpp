@@ -742,6 +742,7 @@ void ESP32_VS1053_Stream::stopSong()
     _bitrateTimer = 0;
     _codec = CODEC_UNKNOWN;
     _decoderSyncAttempts = 0;
+    _lastWavByte = 0;
 
     if (_ringbuffer_handle)
     {
@@ -839,6 +840,14 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
         return false;
     }
 
+    if (strstr(filename, ".wav"))
+    {
+        _fileLastWAVByte();
+        _remainingBytes = _lastWavByte - offset;
+    }
+    else
+        _remainingBytes = _file.size() - offset;
+
     _file.seek(offset);
     if (strcmp(filename, _url))
     {
@@ -847,13 +856,44 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
         _vs1053->startSong();
     }
     _playingFile = true;
-    _remainingBytes = _file.size() - offset;
     _bufferIndex = 0;
     _bufferFill = 0;
     _bitrateTimer = millis();
     _vs1053->setVolume(_volume);
 
     return true;
+}
+
+void ESP32_VS1053_Stream::_fileLastWAVByte()
+{
+    _file.seek(12); // skip RIFF header
+
+    while (true)
+    {
+        char chunkId[4];
+        uint32_t chunkSize;
+
+        if (_file.read((uint8_t *)chunkId, 4) != 4)
+            break;
+
+        if (_file.read((uint8_t *)&chunkSize, 4) != 4)
+            break;
+
+        if (memcmp(chunkId, "data", 4) == 0)
+        {
+            size_t dataStart = _file.position();
+            _lastWavByte = dataStart + chunkSize;
+            log_i("last wav byte: %lu", _lastWavByte);
+            return;
+        }
+
+        // skip this chunk
+        _file.seek(_file.position() + chunkSize);
+    }
+
+    // fallback if not found
+    log_i("last wav byte is _file.size()");
+    _lastWavByte = _file.size();
 }
 
 void ESP32_VS1053_Stream::_handleLocalFile()
