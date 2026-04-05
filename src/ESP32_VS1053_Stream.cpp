@@ -420,7 +420,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToDecoder = 0;
-    while (_remainingBytes && _vs1053->data_request() && bytesToDecoder < 4096)
+    while (_remainingBytes && bytesToDecoder < 4096 && _vs1053->data_request())
     {
         size_t size = 0;
         size_t avail = min(VS1053_PLAYBUFFER_SIZE, (size_t)_remainingBytes);
@@ -841,6 +841,8 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
 
     if (strstr(filename, ".wav"))
         _fileLastWAVByte();
+    else
+        _remainingBytes = _file.size() - offset;
 
     _file.seek(offset);
     if (strcmp(filename, _url))
