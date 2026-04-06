@@ -420,7 +420,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToDecoder = 0;
-    while (_remainingBytes && bytesToDecoder < 4096 && _vs1053->data_request())
+    while (_remainingBytes && bytesToDecoder < 2048 && _vs1053->data_request())
     {
         size_t size = 0;
         size_t avail = min(VS1053_PLAYBUFFER_SIZE, (size_t)_remainingBytes);
@@ -461,7 +461,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
 {
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToRingBuffer = 0;
-    while (_musicDataPosition < _metaDataStart && bytesToRingBuffer < 4096 &&
+    while (_musicDataPosition < _metaDataStart && bytesToRingBuffer < 2048 &&
            xRingbufferGetCurFreeSize(_ringbuffer_handle) && stream->available())
     {
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
@@ -879,7 +879,7 @@ void ESP32_VS1053_Stream::_fileLastWAVByte()
         {
             size_t dataStart = _file.position();
             _remainingBytes = dataStart + chunkSize;
-            log_i("last playable byte: %lu", _remainingBytes);
+            log_d("last playable byte: %lu", _remainingBytes);
             return;
         }
 
