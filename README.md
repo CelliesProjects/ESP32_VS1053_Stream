@@ -16,11 +16,6 @@ Very lightweight, has a binary footprint of less than 7kB excluding the psram bu
 
 ## How to install and use
 
-~~Install [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) and this library in your Arduino library folder.~~
-
-Release 3.0.0 and later require read access to the vs1053 registers which the [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) does not provide.  
-While that is getting fixed you can use [this fork](https://github.com/CelliesProjects/ESP_VS1053_Library/tree/make-SCI-registers-readable) to compile the 3.0.0 and later releases.
-
 Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino-esp32/releases/latest) for Arduino IDE or the corresponding [PIOArduino release](https://github.com/pioarduino/platform-espressif32/releases/latest) if you use PlatformIO in VSCode.  
 
 ### platformio.ini example
@@ -29,18 +24,23 @@ Use the [latest Arduino ESP32 core version](https://github.com/espressif/arduino
 platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.37/platform-espressif32.zip
 
 lib_deps =
-    https://github.com/CelliesProjects/ESP_VS1053_Library#make-SCI-registers-readable
+    https://github.com/baldram/ESP_VS1053_Library#master
     https://github.com/CelliesProjects/ESP32_VS1053_Stream@3.0.6
 ```
 
 ### Arduino IDE setup
 
-- Browse to [the patched vs1053 repository](https://github.com/CelliesProjects/ESP_VS1053_Library/tree/make-SCI-registers-readable) and download the zip file found under the green button marked `<> Code`.
+The `ESP_VS1053_Library` library is not available in the Arduino IDE library manager.   
+You will have to install manually.  
+
+Follow these steps to install the vs1053 libaray in the Arduino IDE:
+
+- Browse to the [vs1053 repository](https://github.com/baldram/ESP_VS1053_Library) and download the zip file found under the green button marked `<> Code`.
 - In the Arduino IDE go to `Sketch->Include Library->Add .ZIP library` and select the downloaded zip file to install.
 - Answer `YES` when asked to overwrite the existing library.
 
 That's it.  
-With the patched vs1053 library installed 3.x.x releases can be compiled in the Arduino IDE. 
+With the vs1053 library installed this library can be compiled in the Arduino IDE. 
 
 ## Example: play a stream
 ```c++
