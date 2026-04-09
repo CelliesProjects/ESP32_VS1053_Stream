@@ -839,8 +839,9 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
         return false;
     }
 
-    if (strstr(filename, ".wav"))
-        _fileLastWAVByte();
+    const char *ext = strrchr(filename, '.');
+    if (ext && strcasecmp(ext, ".wav") == 0)
+        _remainingBytes = _fileLastWAVByte() - offset;
     else
         _remainingBytes = _file.size() - offset;
 
@@ -860,7 +861,7 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     return true;
 }
 
-void ESP32_VS1053_Stream::_fileLastWAVByte()
+size_t ESP32_VS1053_Stream::_fileLastWAVByte()
 {
     _file.seek(12); // skip RIFF header
 
@@ -878,9 +879,8 @@ void ESP32_VS1053_Stream::_fileLastWAVByte()
         if (memcmp(chunkId, "data", 4) == 0)
         {
             size_t dataStart = _file.position();
-            _remainingBytes = dataStart + chunkSize;
-            log_d("last playable byte: %lu", _remainingBytes);
-            return;
+            log_d("last playable byte: %lu", dataStart + chunkSize);
+            return dataStart + chunkSize;
         }
 
         // skip this chunk
@@ -888,8 +888,7 @@ void ESP32_VS1053_Stream::_fileLastWAVByte()
     }
 
     // fallback if not found
-    log_i("last playable byte is _file.size()");
-    _remainingBytes = _file.size();
+    return _file.size();
 }
 
 void ESP32_VS1053_Stream::_handleLocalFile()
