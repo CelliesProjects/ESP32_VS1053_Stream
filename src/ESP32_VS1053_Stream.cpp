@@ -420,7 +420,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToDecoder = 0;
-    while (_remainingBytes && _vs1053->data_request())
+    while (_remainingBytes && bytesToDecoder < 2048 && _vs1053->data_request())
     {
         size_t size = 0;
         size_t avail = min(VS1053_PLAYBUFFER_SIZE, (size_t)_remainingBytes);
@@ -461,13 +461,13 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
 {
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToRingBuffer = 0;
-    while (_musicDataPosition < _metaDataStart && bytesToRingBuffer < VS1053_PSRAM_MAX_MOVE &&
+    while (_musicDataPosition < _metaDataStart && bytesToRingBuffer < 2048 &&
            xRingbufferGetCurFreeSize(_ringbuffer_handle) && stream->available())
     {
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
-        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, VS1053_PSRAM_MAX_MOVE);
-        const size_t BYTES_SAFE_TO_MOVE = min(BYTES_TO_READ, xRingbufferGetCurFreeSize(_ringbuffer_handle));
-        const size_t BYTES_IN_BUFFER = stream->readBytes(_localbuffer, min((size_t)stream->available(), BYTES_SAFE_TO_MOVE));
+        const size_t BYTES_READY_TO_MOVE = min(BYTES_AVAILABLE, xRingbufferGetCurFreeSize(_ringbuffer_handle));
+        const size_t BYTES_SAFE_TO_MOVE = min(sizeof(_localbuffer), BYTES_READY_TO_MOVE);
+        const size_t BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_SAFE_TO_MOVE);
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, 0);
         if (result == pdFALSE)
         {
@@ -839,6 +839,12 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
         return false;
     }
 
+    const char *ext = strrchr(filename, '.');
+    if (ext && strcasecmp(ext, ".wav") == 0)
+        _remainingBytes = _fileLastWAVByte() - offset;
+    else
+        _remainingBytes = _file.size() - offset;
+
     _file.seek(offset);
     if (strcmp(filename, _url))
     {
@@ -847,13 +853,42 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
         _vs1053->startSong();
     }
     _playingFile = true;
-    _remainingBytes = _file.size() - offset;
     _bufferIndex = 0;
     _bufferFill = 0;
     _bitrateTimer = millis();
     _vs1053->setVolume(_volume);
 
     return true;
+}
+
+size_t ESP32_VS1053_Stream::_fileLastWAVByte()
+{
+    _file.seek(12); // skip RIFF header
+
+    while (true)
+    {
+        char chunkId[4];
+        uint32_t chunkSize;
+
+        if (_file.read((uint8_t *)chunkId, 4) != 4)
+            break;
+
+        if (_file.read((uint8_t *)&chunkSize, 4) != 4)
+            break;
+
+        if (memcmp(chunkId, "data", 4) == 0)
+        {
+            size_t dataStart = _file.position();
+            log_d("last playable byte: %lu", dataStart + chunkSize);
+            return dataStart + chunkSize;
+        }
+
+        // skip this chunk
+        _file.seek(_file.position() + chunkSize);
+    }
+
+    // fallback if not found
+    return _file.size();
 }
 
 void ESP32_VS1053_Stream::_handleLocalFile()
