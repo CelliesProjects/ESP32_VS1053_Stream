@@ -33,7 +33,7 @@ lib_deps =
 The `ESP_VS1053_Library` library is not available in the Arduino IDE library manager.   
 You will have to install manually.  
 
-Follow these steps to install the vs1053 libaray in the Arduino IDE:
+Follow these steps to install the vs1053 library in the Arduino IDE:
 
 - Browse to the [vs1053 repository](https://github.com/baldram/ESP_VS1053_Library) and download the zip file found under the green button marked `<> Code`.
 - In the Arduino IDE go to `Sketch->Include Library->Add .ZIP library` and select the downloaded zip file to install.
