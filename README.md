@@ -342,7 +342,7 @@ void stopSong();
 void loop();
 ```
 This function has to called every couple of ms to feed the decoder with data.  
-For bitrates up to 320kbps somewhere between 5-10 ms is about right.
+For bitrates up to 320kbps somewhere between 2-5 ms is about right.
 ### Check if stream is running
 ```c++
 bool isRunning();
