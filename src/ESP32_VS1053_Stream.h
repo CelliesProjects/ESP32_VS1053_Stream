@@ -23,7 +23,7 @@
 #define VS1053_PSRAM_BUFFER_SIZE 65536
 
 constexpr size_t VS1053_LOCALBUFFER_SIZE = 4096; // need at least 4kB to safely receive ICY metadata
-constexpr size_t VS1053_PSRAM_MAX_MOVE = 2048;
+constexpr size_t VS1053_PSRAM_MAX_MOVE = 4096;
 constexpr uint8_t VS1053_MAXVOLUME = 100;
 constexpr size_t VS1053_PLAYBUFFER_SIZE = 32;
 
