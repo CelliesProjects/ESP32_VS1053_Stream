@@ -430,12 +430,6 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         size_t size = 0;
         size_t avail = min(VS1053_PLAYBUFFER_SIZE, (size_t)_remainingBytes);
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), avail);
-
-        if (!size)
-        {
-            log_w("no bytes moved");
-            break;
-        }
         if (!data)
         {
             if (!_bufferStallStartMS)
