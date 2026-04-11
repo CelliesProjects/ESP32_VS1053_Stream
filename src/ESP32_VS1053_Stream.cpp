@@ -420,6 +420,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToDecoder = 0;
+
     while (_remainingBytes && _vs1053->data_request() && xRingbufferGetCurFreeSize(_ringbuffer_handle) < VS1053_PSRAM_BUFFER_SIZE)
     {
         size_t size = 0;
@@ -461,8 +462,10 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
 {
     size_t bytesToRingBuffer = 0;
     [[maybe_unused]] const auto startTimeMS = millis();
-    const size_t MAX_MOVE = size() ? sizeof(_localbuffer) : 1024;
-    while (_musicDataPosition < _metaDataStart && bytesToRingBuffer < MAX_MOVE &&
+
+    const size_t MAX_MOVE = size() ? sizeof(_localbuffer) : 1024; // everything without a size is radio
+
+    if (_musicDataPosition < _metaDataStart && /*bytesToRingBuffer < MAX_MOVE &&*/
            xRingbufferGetCurFreeSize(_ringbuffer_handle) > 1024 && stream->available())
     {
         const size_t BYTES_AVAILABLE = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
@@ -545,15 +548,17 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
 
 void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *stream)
 {
-    constexpr size_t CHUNKED_MAX_MOVE = 2048;
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToRingBuffer = 0;
-    while (_bytesLeftInChunk && _musicDataPosition < _metaDataStart && bytesToRingBuffer < CHUNKED_MAX_MOVE &&
+
+    const size_t MAX_MOVE = size() ? sizeof(_localbuffer) : 1024; // everything without a size is radio
+
+    if (_bytesLeftInChunk && _musicDataPosition < _metaDataStart && /*bytesToRingBuffer < MAX_MOVE &&*/
            xRingbufferGetCurFreeSize(_ringbuffer_handle) > 1024 && stream->available())
     {
         const size_t BYTES_BEFORE_META_DATA = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
         const size_t BYTES_AVAILABLE = min(_bytesLeftInChunk, BYTES_BEFORE_META_DATA);
-        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, CHUNKED_MAX_MOVE);
+        const size_t BYTES_TO_READ = min(BYTES_AVAILABLE, MAX_MOVE);
         const size_t BYTES_SAFE_TO_MOVE = min(BYTES_TO_READ, xRingbufferGetCurFreeSize(_ringbuffer_handle));
         const size_t BYTES_IN_BUFFER = stream->readBytes(_localbuffer, BYTES_SAFE_TO_MOVE);
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, BYTES_IN_BUFFER, 0);
