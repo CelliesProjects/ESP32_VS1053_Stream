@@ -422,7 +422,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToDecoder = 0;
 
-    const size_t MAX_MOVE = size() ? sizeof(_localbuffer) : 512; // everything without a size is radio so low bitrate
+    const size_t MAX_MOVE = size() ? 2048 : 512; // everything without a size is radio so low bitrate
 
     while (_remainingBytes && bytesToDecoder < MAX_MOVE &&
            _vs1053->data_request() && xRingbufferGetCurFreeSize(_ringbuffer_handle) < VS1053_PSRAM_BUFFER_SIZE)
@@ -467,7 +467,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
     size_t bytesToRingBuffer = 0;
     [[maybe_unused]] const auto startTimeMS = millis();
 
-    const size_t MAX_MOVE = size() ? sizeof(_localbuffer) : 512; // everything without a size is radio so low bitrate
+    const size_t MAX_MOVE = size() ? 2048 : 512; // everything without a size is radio so low bitrate
 
     if (_musicDataPosition < _metaDataStart &&
         xRingbufferGetCurFreeSize(_ringbuffer_handle) > 1024 && stream->available())
@@ -558,7 +558,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *stream)
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToRingBuffer = 0;
 
-    const size_t MAX_MOVE = size() ? sizeof(_localbuffer) : 512; // everything without a size is radio so low bitrate
+    const size_t MAX_MOVE = size() ? 2048 : 512; // everything without a size is radio so low bitrate
 
     if (_bytesLeftInChunk && _musicDataPosition < _metaDataStart &&
         xRingbufferGetCurFreeSize(_ringbuffer_handle) > 1024 && stream->available())
@@ -609,7 +609,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         [[maybe_unused]] const auto startTimeMS = millis();
         size_t bytesToDecoder = 0;
 
-        const size_t MAX_MOVE = size() ? sizeof(_localbuffer) : 512; // everything without a size is radio so low bitrate
+        const size_t MAX_MOVE = size() ? 2048 : 512; // everything without a size is radio so low bitrate
 
         while (_bytesLeftInChunk && _musicDataPosition < _metaDataStart && bytesToDecoder < MAX_MOVE &&
                stream->available() && _vs1053->data_request())
