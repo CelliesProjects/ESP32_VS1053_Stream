@@ -538,7 +538,11 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
     {
         const auto DATA_NEEDED = stream->peek() * 16 + 1;
         if (stream->available() < DATA_NEEDED)
+        {
+            if (_ringbuffer_handle && _remainingBytes)
+                _playFromRingBuffer();
             return;
+        }
 
         const auto METALENGTH = stream->read() * 16;
         if (METALENGTH)
@@ -630,7 +634,11 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
     {
         const auto DATA_NEEDED = stream->peek() * 16 + 20; /* extra margin for chunk end */
         if (stream->available() < DATA_NEEDED)
+        {
+            if (_ringbuffer_handle && _remainingBytes)
+                _playFromRingBuffer();
             return;
+        }
 
         const auto METALENGTH = stream->read() * 16;
         _bytesLeftInChunk--;
