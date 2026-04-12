@@ -148,7 +148,7 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
     _vs1053->switchToMp3Mode();
     if (_vs1053->getChipVersion() == 4)
     {
-        log_i("Patching vs1053 firmware");
+        log_d("Patching vs1053 firmware");
         _vs1053->loadUserCode(PATCHES_FLAC, PATCHES_FLAC_SIZE);
     }
     setVolume(_volume);
@@ -340,7 +340,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
             const char *newUrl = _parsePlaylist();
             if (newUrl)
             {
-                log_i("playlist redirection to: %s", newUrl);
+                log_d("playlist redirection to: %s", newUrl);
                 stopSong();
                 return connectToHost(newUrl, username, pwd, offset);
             }
@@ -356,7 +356,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
 
         _remainingBytes = _http->getSize(); // -1 when Server sends no Content-Length header (chunked streams)
         _chunkedResponse = _http->header(ENCODING).equalsIgnoreCase("chunked") ? true : false;
-        log_i("stream is %s", _chunkedResponse ? "chunked" : "normal");
+        log_d("%s stream", _chunkedResponse ? "chunked" : "http");
         _offset = (_remainingBytes == -1) ? 0 : offset;
         _metaDataStart = _http->header(ICY_METAINT).toInt();
         _musicDataPosition = _metaDataStart ? 0 : -1;
@@ -391,7 +391,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         const String location = _http->header(LOCATION);
 
         stopSong();
-        log_i("%i redirection to: %s", HTTPresult, location.c_str());
+        log_d("%i redirection to: %s", HTTPresult, location.c_str());
         return connectToHost(location.c_str(), username, pwd, 0);
     }
 
