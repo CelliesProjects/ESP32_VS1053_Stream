@@ -569,9 +569,9 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *stream)
     {
         const size_t inStream = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
         const size_t inChunk = min(_bytesLeftInChunk, inStream);
-        const size_t toRead = min(inChunk, MAX_MOVE);
-        const size_t toMove = min(toRead, xRingbufferGetCurFreeSize(_ringbuffer_handle));
-        const size_t inBuffer = stream->read(_localbuffer, toMove);
+        const size_t toMove = min(inChunk, MAX_MOVE);
+        const size_t toRead = min(toMove, xRingbufferGetCurFreeSize(_ringbuffer_handle));
+        const size_t inBuffer = stream->read(_localbuffer, toRead);
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, inBuffer, 0);
         if (result == pdFALSE)
         {
