@@ -565,7 +565,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *stream)
     const size_t MAX_MOVE = size() ? 2048 : 512; // everything without a size is radio so low bitrate
 
     if (_bytesLeftInChunk && _musicDataPosition < _metaDataStart &&
-        xRingbufferGetCurFreeSize(_ringbuffer_handle) > 1024 && stream->available())
+        xRingbufferGetCurFreeSize(_ringbuffer_handle) && stream->available())
     {
         const size_t inStream = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
         const size_t inChunk = min(_bytesLeftInChunk, inStream);
