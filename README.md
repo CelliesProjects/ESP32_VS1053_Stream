@@ -5,7 +5,7 @@
 A streaming library for esp32, esp32-wrover, esp32-c3, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.  
 This library plays mp3, ogg, aac and flac files and streams.  
 
-- Supported codecs are **mp3**, **ogg**, **aac-adts**, **aac-adif**, **aac-mp4** and **16 bit flac**.
+- Supported codecs are **mp3**, **ogg**, **aac-adts**, **aac-adif**, **aac-m4a** and **16 bit flac**.
 - Supported stream methods are http and insecure https.  
 - Streams can be chunked.  
 - Also plays **mp3**, **ogg** and **flac** files from sdcard or any mounted filesystem.  
