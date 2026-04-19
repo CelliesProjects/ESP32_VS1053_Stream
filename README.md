@@ -25,7 +25,7 @@ platform = https://github.com/pioarduino/platform-espressif32/releases/download/
 
 lib_deps =
     https://github.com/baldram/ESP_VS1053_Library#master
-    https://github.com/CelliesProjects/ESP32_VS1053_Stream@3.0.6
+    https://github.com/CelliesProjects/ESP32_VS1053_Stream@3.0.9
 ```
 
 ### Arduino IDE setup
