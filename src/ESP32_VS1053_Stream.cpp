@@ -458,7 +458,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         bytesToDecoder += size;
         _remainingBytes -= (_remainingBytes > 0) ? size : 0;
     }
-    log_i("%lu ms moving %i bytes ringbuffer->decoder", millis() - startTimeMS, bytesToDecoder);
+    log_d("%lu ms moving %i bytes ringbuffer->decoder", millis() - startTimeMS, bytesToDecoder);
 }
 
 void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
