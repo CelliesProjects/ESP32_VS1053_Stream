@@ -424,8 +424,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
     const size_t MAX_MOVE = size() ? 2048 : 512; // everything without a size is radio so low bitrate
 
-    while (_remainingBytes && bytesToDecoder < MAX_MOVE &&
-           _vs1053->data_request() && xRingbufferGetCurFreeSize(_ringbuffer_handle) < VS1053_PSRAM_BUFFER_SIZE)
+    while (_remainingBytes && bytesToDecoder < MAX_MOVE && _vs1053->data_request())
     {
         size_t size = 0;
         size_t avail = min(VS1053_PLAYBUFFER_SIZE, (size_t)_remainingBytes);
@@ -435,13 +434,13 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
             if (!_bufferStallStartMS)
             {
                 _bufferStallStartMS = millis() ?: 1;
-                log_w("no buffer data available");
+                log_w("no ringbuffer data available");
                 return;
             }
 
             if (millis() - _bufferStallStartMS > VS1053_PSRAM_BUFFER_TIMEOUT_MS)
             {
-                log_e("buffer empty for %i ms, bailing out...", VS1053_PSRAM_BUFFER_TIMEOUT_MS);
+                log_e("ringbuffer empty for %i ms, bailing out", VS1053_PSRAM_BUFFER_TIMEOUT_MS);
                 _bufferStallStartMS = 0;
                 _remainingBytes = 0;
                 return;
