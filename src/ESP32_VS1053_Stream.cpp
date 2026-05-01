@@ -443,7 +443,6 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
             {
                 _bufferStallStartMS = millis() ?: 1;
                 log_w("no ringbuffer data available");
-                return;
             }
             return;
         }
