@@ -708,7 +708,8 @@ void ESP32_VS1053_Stream::loop()
     {
         if (_remainingBytes)
             _playFromRingBuffer();
-        else
+
+        if (!_remainingBytes)
             _eofStream();
         return;
     }
