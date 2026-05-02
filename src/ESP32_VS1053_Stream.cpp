@@ -449,7 +449,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
 
         if (_bufferStallStartMS)
         {
-            log_e("buffer empty for %i ms", millis() - _bufferStallStartMS);
+            log_e("ringbuffer was empty for %i ms", millis() - _bufferStallStartMS);
             _bufferStallStartMS = 0;
         }
 
