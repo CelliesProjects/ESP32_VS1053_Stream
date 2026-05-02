@@ -431,7 +431,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), avail);
         if (!data)
         {
-            if (millis() - _bufferStallStartMS > VS1053_PSRAM_BUFFER_TIMEOUT_MS)
+            if (_bufferStallStartMS && (millis() - _bufferStallStartMS) > VS1053_PSRAM_BUFFER_TIMEOUT_MS)
             {
                 log_e("ringbuffer empty for %i ms, bailing out", VS1053_PSRAM_BUFFER_TIMEOUT_MS);
                 _bufferStallStartMS = 0;
@@ -442,7 +442,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
             if (!_bufferStallStartMS)
             {
                 _bufferStallStartMS = millis() ?: 1;
-                log_w("no ringbuffer data available");
+                log_e("no ringbuffer data available");
             }
             return;
         }
