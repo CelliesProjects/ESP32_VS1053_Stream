@@ -427,29 +427,29 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
     while (_remainingBytes && bytesToDecoder < MAX_MOVE && _vs1053->data_request())
     {
         size_t size = 0;
-        size_t avail = min(VS1053_PLAYBUFFER_SIZE, (size_t)_remainingBytes);
+        const size_t avail = min(VS1053_PLAYBUFFER_SIZE, (size_t)_remainingBytes);
         uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(_ringbuffer_handle, &size, pdMS_TO_TICKS(0), avail);
         if (!data)
         {
-            if (!_bufferStallStartMS)
-            {
-                _bufferStallStartMS = millis() ?: 1;
-                log_w("no ringbuffer data available");
-                return;
-            }
-
-            if (millis() - _bufferStallStartMS > VS1053_PSRAM_BUFFER_TIMEOUT_MS)
+            if (_bufferStallStartMS && (millis() - _bufferStallStartMS) > VS1053_PSRAM_BUFFER_TIMEOUT_MS)
             {
                 log_e("ringbuffer empty for %i ms, bailing out", VS1053_PSRAM_BUFFER_TIMEOUT_MS);
                 _bufferStallStartMS = 0;
                 _remainingBytes = 0;
                 return;
             }
+
+            if (!_bufferStallStartMS)
+            {
+                _bufferStallStartMS = millis() ?: 1;
+                log_e("no ringbuffer data available");
+            }
             return;
         }
+
         if (_bufferStallStartMS)
         {
-            log_e("buffer empty for %i ms", millis() - _bufferStallStartMS);
+            log_e("ringbuffer was empty for %i ms", millis() - _bufferStallStartMS);
             _bufferStallStartMS = 0;
         }
 
@@ -708,7 +708,8 @@ void ESP32_VS1053_Stream::loop()
     {
         if (_remainingBytes)
             _playFromRingBuffer();
-        else
+
+        if (!_remainingBytes)
             _eofStream();
         return;
     }
