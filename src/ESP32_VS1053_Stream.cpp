@@ -224,7 +224,7 @@ const char *ESP32_VS1053_Stream::_parsePlaylist()
                 ;
         }
 
-        if (strncmp(line, "#EXT-X-", 7) == 0)
+        if (strncmp(line, "#EXTM3U", 7) == 0)
         {
             log_w("HLS playlists not supported");
             return nullptr;
