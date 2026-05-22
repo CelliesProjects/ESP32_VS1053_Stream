@@ -1029,6 +1029,10 @@ void ESP32_VS1053_Stream::_readBitRate()
         if (++_decoderSyncAttempts > 4)
         {
             log_w("decoder failed to sync");
+
+            if (_noSyncCallback)
+                _noSyncCallback;
+
             _remainingBytes = 0;
         }
         return;
@@ -1167,4 +1171,14 @@ void ESP32_VS1053_Stream::setEofCB(eof_callback_t cb)
 void ESP32_VS1053_Stream::clearEofCB()
 {
     _eofCallback = nullptr;
+}
+
+void ESP32_VS1053_Stream::setNoSyncCB(noSync_callback_t cb)
+{
+    _noSyncCallback = cb;
+}
+
+void ESP32_VS1053_Stream::clearNoSyncCB()
+{
+    _noSyncCallback = nullptr;
 }
