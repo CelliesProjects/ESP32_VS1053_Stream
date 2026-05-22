@@ -37,6 +37,7 @@ typedef void (*codec_callback_t)(const char *codec);
 typedef void (*bitrate_callback_t)(uint32_t bitrate);
 typedef void (*streaminfo_callback_t)(const char *info);
 typedef void (*eof_callback_t)(const char *url);
+typedef void (*noSync_callback_t)();
 
 class ESP32_VS1053_Stream
 {
@@ -70,6 +71,9 @@ public:
 
     void setEofCB(eof_callback_t cb);
     void clearEofCB();
+
+    void setNoSyncCB(noSync_callback_t cb);
+    void clearNoSyncCB();
 
     void loop();
 
@@ -137,6 +141,7 @@ private:
     station_callback_t _stationCallback = nullptr;
     streaminfo_callback_t _infoCallback = nullptr;
     eof_callback_t _eofCallback = nullptr;
+    noSync_callback_t _noSyncCallback = nullptr;
 
     enum Codec
     {
