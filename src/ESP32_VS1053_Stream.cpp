@@ -1031,7 +1031,7 @@ void ESP32_VS1053_Stream::_readBitRate()
             log_w("decoder failed to sync");
 
             if (_noSyncCallback)
-                _noSyncCallback;
+                _noSyncCallback();
 
             _remainingBytes = 0;
         }
