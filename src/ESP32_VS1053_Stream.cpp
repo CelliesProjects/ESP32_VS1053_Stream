@@ -96,6 +96,7 @@ bool ESP32_VS1053_Stream::_checkSync(WiFiClient *stream)
 {
     if ((char)stream->read() != '\r' || (char)stream->read() != '\n')
     {
+        log_v("lost sync");
         if (_errorCallback)
             _errorCallback("lost sync");
         return false;
