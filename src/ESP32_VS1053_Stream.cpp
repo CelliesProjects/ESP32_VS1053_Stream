@@ -96,9 +96,9 @@ bool ESP32_VS1053_Stream::_checkSync(WiFiClient *stream)
 {
     if ((char)stream->read() != '\r' || (char)stream->read() != '\n')
     {
-        log_v("lost sync");
+        log_v("sync lost");
         if (_errorCallback)
-            _errorCallback("lost sync");
+            _errorCallback("sync lost");
         return false;
     }
     return true;
@@ -294,7 +294,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
 
     if (needsEscape && !_escapeUrl(url, length))
     {
-        log_e("Escaped URL exceeds buffer");
+        log_v("Escaped URL exceeds buffer");
         return false;
     }
 
@@ -454,7 +454,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
             if (!_bufferStallStartMS)
             {
                 _bufferStallStartMS = millis() ?: 1;
-                log_e("no ringbuffer data available");
+                log_w("no ringbuffer data available");
             }
             return;
         }
