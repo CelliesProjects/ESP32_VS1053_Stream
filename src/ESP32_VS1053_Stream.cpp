@@ -1063,15 +1063,6 @@ void ESP32_VS1053_Stream::_handleLocalFileNoPSRAM()
     }
 }
 
-void ESP32_VS1053_Stream::_updateBitRate()
-{
-    if (millis() - _bitrateTimer > 250)
-    {
-        _readBitRate();
-        _bitrateTimer = millis();
-    }
-}
-
 bool ESP32_VS1053_Stream::probeAudioFile(File &f)
 {
     const size_t n = f.read(_localbuffer, 64);
@@ -1110,6 +1101,15 @@ bool ESP32_VS1053_Stream::probeAudioFile(File &f)
     // Unknown binary data:
     // let VS1053 decide.
     return true;
+}
+
+void ESP32_VS1053_Stream::_updateBitRate()
+{
+    if (millis() - _bitrateTimer > 250)
+    {
+        _readBitRate();
+        _bitrateTimer = millis();
+    }
 }
 
 void ESP32_VS1053_Stream::_readBitRate()
