@@ -295,6 +295,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     if (needsEscape && !_escapeUrl(url, length))
     {
         log_v("Escaped URL exceeds buffer");
+        stopSong();
         return false;
     }
 
