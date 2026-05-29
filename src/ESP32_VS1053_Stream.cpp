@@ -407,7 +407,15 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     }
 
     default:
-        log_d("error %i %s", HTTPresult, _http->errorToString(HTTPresult).c_str());
+        log_v("error %i %s", HTTPresult, _http->errorToString(HTTPresult).c_str());
+
+        if (_errorCallback)
+        {
+            char *buff = reinterpret_cast<char *>(_localbuffer);
+            snprintf(buff, sizeof(_localbuffer), "%s", _http->errorToString(HTTPresult).c_str());
+            _errorCallback(buff);
+        }
+
         stopSong();
         _redirectCount = 0;
         return false;
@@ -709,7 +717,12 @@ void ESP32_VS1053_Stream::_feedDecoder(WiFiClient *stream)
         _handleStream(stream);
 
     if (!_remainingBytes)
+    {
+        if (_codec == CODEC_UNKNOWN && _errorCallback)
+            _errorCallback("not playable");
+
         _eofStream();
+    }
 }
 
 void ESP32_VS1053_Stream::loop()
@@ -877,14 +890,26 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     _file = fs.open(filename, FILE_READ, false);
     if (!_file)
     {
-        log_e("could not open file");
+        log_v("could not open file");
+        if (_errorCallback)
+            _errorCallback("could not open file");
         return false;
     }
     _file.setBufferSize(2048);
 
+    if (!probeAudioFile(_file))
+    {
+        if (_errorCallback)
+            _errorCallback("not playable");
+        _file.close();
+        return false;
+    }
+
     if (offset >= _file.size())
     {
         _file.close();
+        if (_errorCallback)
+            _errorCallback("out of range offset");
         return false;
     }
 
@@ -954,6 +979,12 @@ void ESP32_VS1053_Stream::_handleLocalFile()
     log_d("remaining bytes: %lu", _remainingBytes);
 
     _updateBitRate();
+
+    if (!_remainingBytes)
+    {
+        _eofStream();
+        return;
+    }
 
     if (!_ringbuffer_handle)
     {
@@ -1030,6 +1061,46 @@ void ESP32_VS1053_Stream::_handleLocalFileNoPSRAM()
         _vs1053->playChunk(&_localbuffer[_bufferIndex], chunk);
         _bufferIndex += chunk;
     }
+}
+
+bool ESP32_VS1053_Stream::probeAudioFile(File &f)
+{
+    const size_t n = f.read(_localbuffer, 64);
+    f.seek(0);
+
+    if (n < 4)
+        return false;
+
+    if (!memcmp(_localbuffer, "ID3", 3))
+        return true;
+
+    if (!memcmp(_localbuffer, "RIFF", 4))
+        return true;
+
+    if (!memcmp(_localbuffer, "fLaC", 4))
+        return true;
+
+    if (!memcmp(_localbuffer, "OggS", 4))
+        return true;
+
+    if (_localbuffer[0] == 0xFF && (_localbuffer[1] & 0xE0) == 0xE0)
+        return true;
+
+    // text heuristic
+    int printable = 0;
+
+    for (size_t i = 0; i < n; i++)
+    {
+        if (isprint(_localbuffer[i]) || isspace(_localbuffer[i]))
+            printable++;
+    }
+
+    if ((printable * 100) / n > 90)
+        return false;
+
+    // Unknown binary data:
+    // let VS1053 decide.
+    return true;
 }
 
 void ESP32_VS1053_Stream::_updateBitRate()
