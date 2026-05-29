@@ -1080,23 +1080,18 @@ bool ESP32_VS1053_Stream::probeAudioFile(File &f)
     if (n < 4)
         return false;
 
-    // ID3
     if (!memcmp(_localbuffer, "ID3", 3))
         return true;
 
-    // WAV
     if (!memcmp(_localbuffer, "RIFF", 4))
         return true;
 
-    // FLAC
     if (!memcmp(_localbuffer, "fLaC", 4))
         return true;
 
-    // OGG
     if (!memcmp(_localbuffer, "OggS", 4))
         return true;
 
-    // MP3 frame sync
     if (_localbuffer[0] == 0xFF && (_localbuffer[1] & 0xE0) == 0xE0)
         return true;
 
