@@ -96,7 +96,9 @@ bool ESP32_VS1053_Stream::_checkSync(WiFiClient *stream)
 {
     if ((char)stream->read() != '\r' || (char)stream->read() != '\n')
     {
-        log_e("Lost sync!");
+        log_v("sync lost");
+        if (_errorCallback)
+            _errorCallback("sync lost");
         return false;
     }
     return true;
@@ -292,7 +294,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
 
     if (needsEscape && !_escapeUrl(url, length))
     {
-        log_e("Escaped URL exceeds buffer");
+        log_v("Escaped URL exceeds buffer");
         stopSong();
         return false;
     }
@@ -389,7 +391,9 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
 
         if (!_http->hasHeader(LOCATION))
         {
-            log_e("No location header redirecting from %s", url);
+            log_v("No location header redirecting from %s", url);
+            if (_errorCallback)
+                _errorCallback("redirect error");
             _eofStream();
             _redirectCount = 0;
             return false;
@@ -440,7 +444,9 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
         {
             if (_bufferStallStartMS && (millis() - _bufferStallStartMS) > VS1053_PSRAM_BUFFER_TIMEOUT_MS)
             {
-                log_e("ringbuffer empty for %i ms, bailing out", VS1053_PSRAM_BUFFER_TIMEOUT_MS);
+                log_v("ringbuffer empty for %i ms, bailing out", VS1053_PSRAM_BUFFER_TIMEOUT_MS);
+                if (_errorCallback)
+                    _errorCallback("ringbuffer empty");
                 _bufferStallStartMS = 0;
                 _remainingBytes = 0;
                 return;
@@ -449,14 +455,16 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
             if (!_bufferStallStartMS)
             {
                 _bufferStallStartMS = millis() ?: 1;
-                log_e("no ringbuffer data available");
+                log_w("no ringbuffer data available");
             }
             return;
         }
 
         if (_bufferStallStartMS)
         {
-            log_e("ringbuffer was empty for %i ms", millis() - _bufferStallStartMS);
+            log_v("ringbuffer was empty for %i ms", millis() - _bufferStallStartMS);
+            if (_errorCallback)
+                _errorCallback("ringbuffer empty");
             _bufferStallStartMS = 0;
         }
 
@@ -486,7 +494,9 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, inBuffer, 0);
         if (result == pdFALSE)
         {
-            log_e("ringbuffer failed to receive %i bytes. Closing stream.", inBuffer);
+            log_v("ringbuffer failed to receive %i bytes. Closing stream.", inBuffer);
+            if (_errorCallback)
+                _errorCallback("ringbuffer fail");
             _remainingBytes = 0;
             return;
         }
@@ -581,7 +591,9 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *stream)
         const BaseType_t result = xRingbufferSend(_ringbuffer_handle, _localbuffer, inBuffer, 0);
         if (result == pdFALSE)
         {
-            log_e("ringbuffer failed to receive %i bytes. Closing stream.", inBuffer);
+            log_v("ringbuffer failed to receive %i bytes. Closing stream.", inBuffer);
+            if (_errorCallback)
+                _errorCallback("ringbuffer fail");
             _remainingBytes = 0;
             return;
         }
@@ -724,7 +736,9 @@ void ESP32_VS1053_Stream::loop()
     WiFiClient *stream = _http->getStreamPtr();
     if (!stream)
     {
-        log_e("Stream connection lost");
+        log_v("Stream connection lost");
+        if (_errorCallback)
+            _errorCallback("connection lost");
         _eofStream();
         return;
     }
@@ -736,7 +750,9 @@ void ESP32_VS1053_Stream::loop()
     if (!data && _streamStallStartMS && !_ringbuffer_handle &&
         currentStallTimeMS > VS1053_STREAM_TIMEOUT_MS)
     {
-        log_e("Stream timeout %lu ms", VS1053_STREAM_TIMEOUT_MS);
+        log_v("Stream timeout %lu ms", VS1053_STREAM_TIMEOUT_MS);
+        if (_errorCallback)
+            _errorCallback("stream timeout");
         _eofStream();
         return;
     }
@@ -928,7 +944,8 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 {
     if (!_file)
     {
-        log_e("file error");
+        if (_errorCallback)
+            _errorCallback("file error");
         _eofStream();
         return;
     }
@@ -958,7 +975,9 @@ void ESP32_VS1053_Stream::_handleLocalFile()
             {
                 if (xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0) == pdFALSE)
                 {
-                    log_e("ringbuffer failed to receive %i bytes. Closing stream.", bytes);
+                    log_v("ringbuffer failed to receive %i bytes. Closing stream.", bytes);
+                    if (_errorCallback)
+                        _errorCallback("ringbuffer fail");
                     _remainingBytes = 0;
                 }
 
@@ -989,7 +1008,8 @@ void ESP32_VS1053_Stream::_handleLocalFileNoPSRAM()
 
             if (_bufferFill == 0)
             {
-                log_e("file read failed");
+                if (_errorCallback)
+                    _errorCallback("file error");
                 _eofStream();
                 return;
             }
@@ -1182,4 +1202,14 @@ void ESP32_VS1053_Stream::setEofCB(eof_callback_t cb)
 void ESP32_VS1053_Stream::clearEofCB()
 {
     _eofCallback = nullptr;
+}
+
+void ESP32_VS1053_Stream::setErrorCB(error_callback_t cb)
+{
+    _errorCallback = cb;
+}
+
+void ESP32_VS1053_Stream::clearErrorCB()
+{
+    _errorCallback = nullptr;
 }
