@@ -364,6 +364,14 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
             _stationCallback(_http->header(ICY_NAME).c_str());
 
         _remainingBytes = _http->getSize(); // -1 when Server sends no Content-Length header (chunked streams)
+
+        const bool suspiciousLength = _remainingBytes >= 0x7FFFFFF0;
+        if (suspiciousLength)
+        {
+            log_w("suspicious content-length %ld", _remainingBytes);
+            _remainingBytes = -1;
+        }
+
         _chunkedResponse = _http->header(ENCODING).equalsIgnoreCase("chunked") ? true : false;
         log_d("%s stream", _chunkedResponse ? "chunked" : "http");
         _offset = (_remainingBytes == -1) ? 0 : offset;
