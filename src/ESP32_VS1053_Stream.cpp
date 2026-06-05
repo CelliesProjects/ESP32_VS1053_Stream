@@ -122,7 +122,11 @@ void ESP32_VS1053_Stream::_handleMetadata(char *data, const size_t len)
 
 void ESP32_VS1053_Stream::_eofStream()
 {
+    if (_codec == CODEC_UNKNOWN && _failCallback)
+        _failCallback();
+
     stopSong();
+
     if (_eofCallback)
         _eofCallback(_url);
 }
@@ -725,12 +729,7 @@ void ESP32_VS1053_Stream::_feedDecoder(WiFiClient *stream)
         _handleStream(stream);
 
     if (!_remainingBytes)
-    {
-        if (_codec == CODEC_UNKNOWN && _errorCallback)
-            _errorCallback("not playable");
-
         _eofStream();
-    }
 }
 
 void ESP32_VS1053_Stream::loop()
@@ -1128,11 +1127,7 @@ void ESP32_VS1053_Stream::_readBitRate()
     {
         if (++_decoderSyncAttempts > 4)
         {
-            log_w("decoder failed to sync");
-
-            if (_failCallback)
-                _failCallback();
-
+            log_v("decoder failed to sync");
             _remainingBytes = 0;
         }
         return;
