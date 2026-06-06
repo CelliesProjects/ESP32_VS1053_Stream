@@ -465,7 +465,7 @@ void ESP32_VS1053_Stream::_playFromRingBuffer()
             if (_bufferStallStartMS && (millis() - _bufferStallStartMS) > VS1053_PSRAM_BUFFER_TIMEOUT_MS)
             {
                 log_v("ringbuffer empty for %i ms, bailing out", VS1053_PSRAM_BUFFER_TIMEOUT_MS);
-                if (_errorCallback)
+                if (_errorCallback && _codec != CODEC_UNKNOWN)
                     _errorCallback("ringbuffer empty");
                 _bufferStallStartMS = 0;
                 _remainingBytes = 0;
