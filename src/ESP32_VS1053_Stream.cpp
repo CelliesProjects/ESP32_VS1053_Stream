@@ -167,7 +167,6 @@ bool ESP32_VS1053_Stream::startDecoder(const uint8_t CS, const uint8_t DCS, cons
         log_d("Patching vs1053 firmware");
         _vs1053->loadUserCode(PATCHES_FLAC, PATCHES_FLAC_SIZE);
     }
-    setVolume(_volume);
     _allocateRingbuffer();
     return true;
 }
@@ -552,7 +551,6 @@ void ESP32_VS1053_Stream::_setupStream()
     if (!_offset)
         _vs1053->stopSong();
     _vs1053->startSong();
-    _vs1053->setVolume(_volume);
     _bitrateTimer = millis();
     _dataSeen = true;
 }
@@ -967,7 +965,6 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     _bufferIndex = 0;
     _bufferFill = 0;
     _bitrateTimer = millis();
-    _vs1053->setVolume(_volume);
 
     return true;
 }
@@ -1142,7 +1139,7 @@ bool ESP32_VS1053_Stream::_isAudioFile(File &f)
 
 void ESP32_VS1053_Stream::_updateBitRate()
 {
-    if (millis() - _bitrateTimer > 250)
+    if (millis() - _bitrateTimer > 20)
     {
         _readBitRate();
         _bitrateTimer = millis();
@@ -1155,7 +1152,7 @@ void ESP32_VS1053_Stream::_readBitRate()
 
     if (hdat1 == 0) // decoder not locked yet
     {
-        if (++_decoderSyncAttempts > 4)
+        if (++_decoderSyncAttempts > 25)
         {
             log_v("decoder failed to sync");
             _remainingBytes = 0;
@@ -1203,6 +1200,9 @@ void ESP32_VS1053_Stream::_readBitRate()
             if ((hdat1 & 0xFFE0) == 0xFFE0)
                 _codec = CODEC_MP3;
         }
+
+        if (_codec != CODEC_UNKNOWN)
+            setVolume(_volume);
 
         if (_codec != CODEC_UNKNOWN && _codecCallback)
             _codecCallback(_codecName(_codec));
