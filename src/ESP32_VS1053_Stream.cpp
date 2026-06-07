@@ -551,7 +551,6 @@ void ESP32_VS1053_Stream::_setupStream()
     if (!_offset)
         _vs1053->stopSong();
     _vs1053->startSong();
-    _vs1053->setVolume(_volume);
     _bitrateTimer = millis();
     _dataSeen = true;
 }
