@@ -928,8 +928,8 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     {
         if (_errorCallback)
         {
-            const char *name = _url;
-            const char *lastSlash = strrchr(_url, '/');
+            const char *name = filename;
+            const char *lastSlash = strrchr(filename, '/');
 
             if (lastSlash && lastSlash[1])
                 name = lastSlash + 1;
