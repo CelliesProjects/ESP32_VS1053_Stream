@@ -199,21 +199,21 @@ private:
          ICY_METAINT,
          ENCODING,
          LOCATION};
-};
 
-constexpr const char *ERROR_STREAM_SYNC_LOST = "Stream sync lost";
-constexpr const char *ERROR_DECODER_NO_SYNC = "No decoder sync: ";
-constexpr const char *ERROR_NO_CONNECTION = "Could not connect";
-constexpr const char *ERROR_MAX_REDIRECT = "Too much redirection";
-constexpr const char *ERROR_REDIRECTING = "Redirection error";
-constexpr const char *ERROR_PLAYLIST_EMPTY = "No url found";
-constexpr const char *ERROR_RINGBUFFER_EMPTY = "Ringbuffer empty";
-constexpr const char *ERROR_RINGBUFFER_FAIL = "Ringbuffer error";
-constexpr const char *ERROR_CONNECTION_LOST = "Connection lost";
-constexpr const char *ERROR_STREAM_TIMEOUT = "Stream timeout";
-constexpr const char *ERROR_COULD_NOT_OPEN = "Could not open";
-constexpr const char *ERROR_NOT_PLAYABLE = "Not playable: ";
-constexpr const char *ERROR_OUT_OF_RANGE = "Out of range offset";
-constexpr const char *ERROR_FILE_IO = "File i/o error";
+    const char *ERROR_STREAM_SYNC_LOST = "Stream sync lost";
+    const char *ERROR_DECODER_NO_SYNC = "No decoder sync: ";
+    const char *ERROR_NO_CONNECTION = "Could not connect";
+    const char *ERROR_MAX_REDIRECT = "Too much redirection";
+    const char *ERROR_REDIRECTING = "Redirection error";
+    const char *ERROR_PLAYLIST_EMPTY = "No url found";
+    const char *ERROR_RINGBUFFER_EMPTY = "Ringbuffer empty";
+    const char *ERROR_RINGBUFFER_FAIL = "Ringbuffer error";
+    const char *ERROR_CONNECTION_LOST = "Connection lost";
+    const char *ERROR_STREAM_TIMEOUT = "Stream timeout";
+    const char *ERROR_COULD_NOT_OPEN = "Could not open";
+    const char *ERROR_NOT_PLAYABLE = "Not playable: ";
+    const char *ERROR_OUT_OF_RANGE = "Out of range offset";
+    const char *ERROR_FILE_IO = "File i/o error";
+};
 
 #endif
