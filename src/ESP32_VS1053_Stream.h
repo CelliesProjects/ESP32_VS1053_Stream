@@ -37,7 +37,6 @@ typedef void (*codec_callback_t)(const char *codec);
 typedef void (*bitrate_callback_t)(uint32_t bitrate);
 typedef void (*streaminfo_callback_t)(const char *info);
 typedef void (*eof_callback_t)(const char *url);
-typedef void (*fail_callback_t)();
 typedef void (*error_callback_t)(const char *error);
 
 class ESP32_VS1053_Stream
@@ -73,11 +72,8 @@ public:
     void setEofCB(eof_callback_t cb);
     void clearEofCB();
 
-    void setFailCB(fail_callback_t cb);
-    void clearFailCB();
-
     void setErrorCB(error_callback_t cb);
-    void clearErrorCB();    
+    void clearErrorCB();
 
     void loop();
 
@@ -141,7 +137,6 @@ private:
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
 
     codec_callback_t _codecCallback = nullptr;
-    fail_callback_t _failCallback = nullptr;
     bitrate_callback_t _bitrateCallback = nullptr;
     station_callback_t _stationCallback = nullptr;
     streaminfo_callback_t _infoCallback = nullptr;
@@ -205,5 +200,20 @@ private:
          ENCODING,
          LOCATION};
 };
+
+constexpr const char *ERROR_STREAM_SYNC_LOST = "Stream sync lost";
+constexpr const char *ERROR_DECODER_NO_SYNC = "No decoder sync: ";
+constexpr const char *ERROR_NO_CONNECTION = "Could not connect";
+constexpr const char *ERROR_MAX_REDIRECT = "Too much redirection";
+constexpr const char *ERROR_REDIRECTING = "Redirection error";
+constexpr const char *ERROR_PLAYLIST_EMPTY = "No url found";
+constexpr const char *ERROR_RINGBUFFER_EMPTY = "Ringbuffer empty";
+constexpr const char *ERROR_RINGBUFFER_FAIL = "Ringbuffer error";
+constexpr const char *ERROR_CONNECTION_LOST = "Connection lost";
+constexpr const char *ERROR_STREAM_TIMEOUT = "Stream timeout";
+constexpr const char *ERROR_COULD_NOT_OPEN = "Could not open";
+constexpr const char *ERROR_NOT_PLAYABLE = "Not playable: ";
+constexpr const char *ERROR_OUT_OF_RANGE = "Out of range offset";
+constexpr const char *ERROR_FILE_IO = "File i/o error";
 
 #endif
