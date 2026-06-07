@@ -924,7 +924,7 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     }
     _file.setBufferSize(2048);
 
-    if (!_probeAudioFile(_file))
+    if (!_isAudioFile(_file))
     {
         if (_errorCallback)
         {
@@ -1100,7 +1100,7 @@ void ESP32_VS1053_Stream::_handleLocalFileNoPSRAM()
     }
 }
 
-bool ESP32_VS1053_Stream::_probeAudioFile(File &f)
+bool ESP32_VS1053_Stream::_isAudioFile(File &f)
 {
     const size_t n = f.read(_localbuffer, 64);
     f.seek(0);
