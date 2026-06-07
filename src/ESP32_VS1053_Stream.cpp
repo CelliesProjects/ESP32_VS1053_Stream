@@ -132,7 +132,6 @@ void ESP32_VS1053_Stream::_eofStream()
 
         char *buffer = reinterpret_cast<char *>(_localbuffer);
         snprintf(buffer, sizeof(_localbuffer), "%s%s", ERROR_DECODER_NO_SYNC, name);
-
         _errorCallback(buffer);
     }
 
@@ -928,7 +927,17 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     if (!probeAudioFile(_file))
     {
         if (_errorCallback)
-            _errorCallback(ERROR_NOT_PLAYABLE);
+        {
+            const char *name = _url;
+            const char *lastSlash = strrchr(_url, '/');
+
+            if (lastSlash && lastSlash[1])
+                name = lastSlash + 1;
+
+            char *buffer = reinterpret_cast<char *>(_localbuffer);
+            snprintf(buffer, sizeof(_localbuffer), "%s%s", ERROR_NOT_PLAYABLE, name);
+            _errorCallback(buffer);
+        }
         _file.close();
         return false;
     }

@@ -212,7 +212,7 @@ constexpr const char *ERROR_RINGBUFFER_FAIL = "Ringbuffer error";
 constexpr const char *ERROR_CONNECTION_LOST = "Connection lost";
 constexpr const char *ERROR_STREAM_TIMEOUT = "Stream timeout";
 constexpr const char *ERROR_COULD_NOT_OPEN = "Could not open";
-constexpr const char *ERROR_NOT_PLAYABLE = "Not playable";
+constexpr const char *ERROR_NOT_PLAYABLE = "Not playable: ";
 constexpr const char *ERROR_OUT_OF_RANGE = "Out of range offset";
 constexpr const char *ERROR_FILE_IO = "File i/o error";
 
