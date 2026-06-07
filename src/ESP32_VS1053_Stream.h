@@ -162,7 +162,7 @@ private:
 
     uint8_t _codec = CODEC_UNKNOWN;
     void _updateBitRate();
-    bool probeAudioFile(File &f);
+    bool _probeAudioFile(File &f);
     void _readBitRate();
     const char *_codecName(uint8_t codec);
     unsigned long _bitrateTimer = 0;
