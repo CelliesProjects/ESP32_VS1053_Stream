@@ -1057,7 +1057,7 @@ void ESP32_VS1053_Stream::_handleLocalFileNoPSRAM()
             if (_bufferFill == 0)
             {
                 if (_errorCallback)
-                    _errorCallback(ERROR_FILE_ERROR);
+                    _errorCallback(ERROR_FILE_IO);
                 _eofStream();
                 return;
             }
