@@ -202,7 +202,7 @@ private:
 };
 
 constexpr const char *ERROR_STREAM_SYNC_LOST = "Stream sync lost";
-constexpr const char *ERROR_DECODER_NO_SYNC = "No decoder sync";
+constexpr const char *ERROR_DECODER_NO_SYNC = "No decoder sync: ";
 constexpr const char *ERROR_NO_CONNECTION = "Could not connect";
 constexpr const char *ERROR_MAX_REDIRECT = "Too much redirection";
 constexpr const char *ERROR_REDIRECTING = "Redirection error";
