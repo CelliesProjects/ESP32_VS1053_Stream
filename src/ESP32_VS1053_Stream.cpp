@@ -298,7 +298,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     {
         log_v("Url error");
         if (_errorCallback)
-            _errorCallback(ERROR_URL_ERROR);
+            _errorCallback(ERROR_INVALID_URL);
         return false;
     }
 

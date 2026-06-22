@@ -201,7 +201,7 @@ private:
          LOCATION};
 
     const char *ERROR_SYSTEM_ERROR = "System error";
-    const char *ERROR_URL_ERROR = "URL error";
+    const char *ERROR_INVALID_URL = "Invalid URL";
     const char *ERROR_STREAM_SYNC_LOST = "Stream sync lost";
     const char *ERROR_DECODER_NO_SYNC = "No decoder sync: ";
     const char *ERROR_NO_CONNECTION = "Could not connect";
