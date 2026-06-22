@@ -308,7 +308,9 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     _http = new HTTPClient;
     if (!_http)
     {
-        log_e("Could not create http client");
+        log_v("Could not create http client");
+        if (_errorCallback)
+            _errorCallback(ERROR_HTTP_ERROR);        
         return false;
     }
 

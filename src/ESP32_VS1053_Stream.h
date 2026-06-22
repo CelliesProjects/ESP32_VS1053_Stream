@@ -200,6 +200,7 @@ private:
          ENCODING,
          LOCATION};
 
+    const char *ERROR_HTTP_ERROR = "Http create error";
     const char *ERROR_SYSTEM_ERROR = "System error";
     const char *ERROR_INVALID_URL = "Invalid URL";
     const char *ERROR_STREAM_SYNC_LOST = "Stream sync lost";
