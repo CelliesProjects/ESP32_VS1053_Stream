@@ -296,9 +296,10 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     const size_t length = strlen(url);
     if (strncasecmp(url, "http", 4) != 0 || length >= (sizeof(_url) - 1) || length < 8) // "http://"
     {
-        log_v("Url error");
+        log_v("Invalid URL");
         if (_errorCallback)
             _errorCallback(ERROR_INVALID_URL);
+        _redirectCount = 0;
         return false;
     }
 
