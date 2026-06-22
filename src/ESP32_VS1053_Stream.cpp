@@ -418,7 +418,6 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         {
             if (_errorCallback)
                 _errorCallback(ERROR_MAX_REDIRECT);
-
             stopSong();
             _redirectCount = 0;
             return false;
@@ -426,7 +425,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
 
         if (!_http->hasHeader(LOCATION))
         {
-            log_v("No location header redirecting from %s", url);
+            log_v("Error redirecting from %s", url);
             if (_errorCallback)
                 _errorCallback(ERROR_REDIRECTING);
             stopSong();
