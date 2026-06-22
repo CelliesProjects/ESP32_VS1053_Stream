@@ -285,14 +285,20 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
 bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                                         const char *pwd, size_t offset)
 {
-    if (!_vs1053 || _http || _playingFile || !WiFi.isConnected() ||
-        strncasecmp(url, "http", 4) != 0)
+    if (!_vs1053 || _http || _playingFile || !WiFi.isConnected())
+    {
+        log_e("system error");
+        if (_errorCallback)
+            _errorCallback(ERROR_SYSTEM_ERROR);
         return false;
+    }
 
     const size_t length = strlen(url);
-    if (length >= sizeof(_url) || length < 8) // "http://"
+    if (strncasecmp(url, "http", 4) != 0 || length >= (sizeof(_url) - 1) || length < 8) // "http://"
     {
-        log_e("Url invalid length");
+        log_v("Url error");
+        if (_errorCallback)
+            _errorCallback(ERROR_URL_ERROR);
         return false;
     }
 
