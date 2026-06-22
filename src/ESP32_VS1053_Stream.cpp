@@ -442,12 +442,14 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     }
 
     default:
-        log_v("http error %i %s", HTTPresult, _http->errorToString(HTTPresult).c_str());
-
         if (_errorCallback)
         {
             char *buff = reinterpret_cast<char *>(_localbuffer);
-            snprintf(buff, sizeof(_localbuffer), "Http error %i %s", HTTPresult, _http->errorToString(HTTPresult).c_str());
+            if (HTTPresult < 0)
+                snprintf(buff, sizeof(_localbuffer), "Http error: %s", _http->errorToString(HTTPresult).c_str());
+            else
+                snprintf(buff, sizeof(_localbuffer), "Server error: %i", HTTPresult);
+
             _errorCallback(buff);
         }
 
