@@ -303,8 +303,6 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         return false;
     }
 
-    _vs1053->setVolume(0);
-
     _http = new HTTPClient;
     if (!_http)
     {
