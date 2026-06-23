@@ -302,7 +302,8 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     {
         log_v("Could not create http client");
         if (_errorCallback)
-            _errorCallback(ERROR_HTTP_ERROR);        
+            _errorCallback(ERROR_HTTP_ERROR);
+        _redirectCount = 0;
         return false;
     }
 
@@ -311,6 +312,8 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
     if (needsEscape && !_escapeUrl(url, length))
     {
         log_v("Escaped URL exceeds buffer");
+        if (_errorCallback)
+            _errorCallback(ERROR_INVALID_URL);
         stopSong();
         return false;
     }
@@ -326,7 +329,6 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         log_v("Could not connect to %s", url);
         if (_errorCallback)
             _errorCallback(ERROR_NO_CONNECTION);
-
         stopSong();
         return false;
     }
