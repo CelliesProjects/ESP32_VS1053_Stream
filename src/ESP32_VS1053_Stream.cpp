@@ -124,14 +124,8 @@ void ESP32_VS1053_Stream::_eofStream()
 {
     if (_codec == CODEC_UNKNOWN && _errorCallback)
     {
-        const char *name = _url;
-        const char *lastSlash = strrchr(_url, '/');
-
-        if (lastSlash && lastSlash[1])
-            name = lastSlash + 1;
-
         char *buffer = reinterpret_cast<char *>(_localbuffer);
-        snprintf(buffer, sizeof(_localbuffer), "%s%s", ERROR_DECODER_NO_SYNC, name);
+        snprintf(buffer, sizeof(_localbuffer), "%s%s", ERROR_DECODER_NO_SYNC, _url);
         _errorCallback(buffer);
     }
 
