@@ -919,8 +919,6 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     if (!_vs1053 || _playingFile || _http)
         return false;
 
-    _vs1053->setVolume(0);
-
     _file = fs.open(filename, FILE_READ, false);
     if (!_file)
     {
@@ -1161,7 +1159,7 @@ void ESP32_VS1053_Stream::_readBitRate()
 
     if (hdat1 == 0) // decoder not locked yet
     {
-        if (++_decoderSyncAttempts > 25)
+        if (++_decoderSyncAttempts > 50)
         {
             log_v("decoder failed to sync");
             _remainingBytes = 0;
