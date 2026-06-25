@@ -437,10 +437,10 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         }
 
         char *location = reinterpret_cast<char *>(_localbuffer);
-        snprintf(location, sizeof(_localbuffer), "%s", _http->header(LOCATION));
+        snprintf(location, sizeof(_localbuffer), "%s", _http->header(LOCATION).c_str());
 
         stopSong();
-        log_d("%i redirection to: %s", HTTPresult, location);
+        log_i("%i redirection to: %s", HTTPresult, location);
         return connectToHost(location, username, pwd, 0);
     }
 
