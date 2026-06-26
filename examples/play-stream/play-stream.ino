@@ -41,6 +41,12 @@ void infoCallback(const char *info)
     Serial.printf("info: %s\n", info);
 }
 
+// Called on stream errors
+void errorCallback(const char *error)
+{
+    Serial.printf("error: %s\n", error);
+}
+
 // Called on end-of-file
 void eofCallback(const char *url)
 {
@@ -59,17 +65,14 @@ void setup() {
     while (!WiFi.isConnected())
         delay(10);
 
-    Serial.println("WiFi connected - starting decoder...");
+    Serial.println("WiFi connected");
 
     // Start SPI bus
-    SPI.setHwCs(true);
     SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);
 
     // Initialize the VS1053 decoder
-    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected()) {
-        Serial.println("Decoder not running - system halted");
-        while (1) delay(100);
-    }
+    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected())
+        Serial.println("Decoder not running");
 
     // Set the codec callback
     stream.setCodecCB(codecCallBack);
@@ -83,10 +86,13 @@ void setup() {
     // Set the stream metadata callback
     stream.setInfoCB(infoCallback);
 
+    // Set the error callback
+    stream.setErrorCB(errorCallback); 
+
     // Set the EOF callback
     stream.setEofCB(eofCallback);    
 
-    Serial.println("VS1053 running - starting radio stream");
+    Serial.println("Starting radio stream");
 
     // Connect to the radio stream
     stream.connectToHost("http://icecast.omroep.nl/radio6-bb-mp3");

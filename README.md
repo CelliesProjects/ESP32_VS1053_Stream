@@ -87,6 +87,12 @@ void infoCallback(const char *info)
     Serial.printf("info: %s\n", info);
 }
 
+// Called on stream errors
+void errorCallback(const char *error)
+{
+    Serial.printf("error: %s\n", error);
+}
+
 // Called on end-of-file
 void eofCallback(const char *url)
 {
@@ -105,17 +111,14 @@ void setup() {
     while (!WiFi.isConnected())
         delay(10);
 
-    Serial.println("WiFi connected - starting decoder...");
+    Serial.println("WiFi connected");
 
     // Start SPI bus
-    SPI.setHwCs(true);
     SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);
 
     // Initialize the VS1053 decoder
-    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected()) {
-        Serial.println("Decoder not running - system halted");
-        while (1) delay(100);
-    }
+    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected())
+        Serial.println("Decoder not running");
 
     // Set the codec callback
     stream.setCodecCB(codecCallBack);
@@ -129,10 +132,13 @@ void setup() {
     // Set the stream metadata callback
     stream.setInfoCB(infoCallback);
 
+    // Set the error callback
+    stream.setErrorCB(errorCallback); 
+
     // Set the EOF callback
     stream.setEofCB(eofCallback);    
 
-    Serial.println("VS1053 running - starting radio stream");
+    Serial.println("Starting radio stream");
 
     // Connect to the radio stream
     stream.connectToHost("http://icecast.omroep.nl/radio6-bb-mp3");
@@ -178,6 +184,12 @@ void bitrateCallback(uint32_t bitrate)
     Serial.printf("bitrate: %lu kbps\n", bitrate);
 }
 
+// Called on errors
+void errorCallback(const char *error)
+{
+    Serial.printf("error: %s\n", error);
+}
+
 // Called on end-of-file
 void eofCallback(const char *url)
 {
@@ -206,22 +218,17 @@ void setup() {
     Serial.println("\n\nVS1053 SD Card Playback Example\n");
 
     // Start SPI bus
-    SPI.setHwCs(true);
     SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);
 
     // Mount SD card
-    if (!mountSDcard()) {
-        Serial.println("SD card not mounted - system halted");
-        while (1) delay(100);
-    }
-
-    Serial.println("SD card mounted - starting decoder...");
+    if (!mountSDcard()) 
+        Serial.println("SD card not mounted");
+    
+    Serial.println("Starting decoder...");
 
     // Initialize the VS1053 decoder
-    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected()) {
-        Serial.println("Decoder not running - system halted");
-        while (1) delay(100);
-    }
+    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected()) 
+        Serial.println("Decoder not running");
 
     // Set the codec callback
     stream.setCodecCB(codecCallBack);
@@ -229,13 +236,16 @@ void setup() {
     // Set the bitrate callback
     stream.setBitrateCB(bitrateCallback);
 
+    // Set the error callback
+    stream.setErrorCB(errorCallback);     
+
     // Set the EOF callback
     stream.setEofCB(eofCallback);
 
     Serial.println("VS1053 running - starting SD playback");
 
     // Start playback from an SD file
-    stream.connectToFile(SD, "/test.mp3");
+    stream.connectToFile(SD, "/track1.mp3");
 
     if (!stream.isRunning())
         Serial.println("No file running");
@@ -406,6 +416,9 @@ Note that not all streams provide a name.
 void clearStationCB();
 ```
 Clear the stream name callback.
+
+---
+
 ### Stream metadata callback
 
 ```c++
@@ -417,6 +430,9 @@ Note that not all streams provide metadata.
 void clearInfoCB();
 ```
 Clear the metadata callback.
+
+---
+
 ### End of file callback
 
 ```c++
@@ -431,7 +447,11 @@ Use `connectToHost()` or `connectToFile()` inside the eof callback to start the 
 void clearEofCB();
 ```
 Clear the end-of-file callback.
+
+---
+
 ### Bitrate callback
+
 ```c++
 void setBitrateCB(callback);
 ```
@@ -441,6 +461,22 @@ This callback will be called multiple times on a vbr stream.
 void clearBitrateCB();
 ```
 Clear the bitrate callback.
+
+---
+
+### Error callback
+
+```c++
+void setErrorCB(callback);
+```
+Set a callback on stream or file errors.  
+This callback will give a short description of the occured error.
+```c++
+void clearErrorCB();
+```
+Clear the error callback.
+
+---
 
 ## License
 
