@@ -26,6 +26,12 @@ void bitrateCallback(uint32_t bitrate)
     Serial.printf("bitrate: %lu kbps\n", bitrate);
 }
 
+// Called on errors
+void errorCallback(const char *error)
+{
+    Serial.printf("error: %s\n", error);
+}
+
 // Called on end-of-file
 void eofCallback(const char *url)
 {
@@ -54,22 +60,17 @@ void setup() {
     Serial.println("\n\nVS1053 SD Card Playback Example\n");
 
     // Start SPI bus
-    SPI.setHwCs(true);
     SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);
 
     // Mount SD card
-    if (!mountSDcard()) {
-        Serial.println("SD card not mounted - system halted");
-        while (1) delay(100);
-    }
+    if (!mountSDcard()) 
+        Serial.println("SD card not mounted");
 
-    Serial.println("SD card mounted - starting decoder...");
+    Serial.println("Starting decoder...");
 
     // Initialize the VS1053 decoder
-    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected()) {
-        Serial.println("Decoder not running - system halted");
-        while (1) delay(100);
-    }
+    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected()) 
+        Serial.println("Decoder not running");
 
     // Set the codec callback
     stream.setCodecCB(codecCallBack);
@@ -77,15 +78,18 @@ void setup() {
     // Set the bitrate callback
     stream.setBitrateCB(bitrateCallback);
 
+    // Set the error callback
+    stream.setErrorCB(errorCallback);     
+
     // Set the EOF callback
     stream.setEofCB(eofCallback);
 
     Serial.println("VS1053 running - starting SD playback");
 
     // Start playback from an SD file
-    stream.connectToFile(SD, "/test.mp3");
+    stream.connectToFile(SD, "/track1.mp3");
 
-    if (!stream.isRunning()) 
+    if (!stream.isRunning())
         Serial.println("No file running");
 }
 
