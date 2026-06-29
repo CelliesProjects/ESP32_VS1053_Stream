@@ -1008,14 +1008,6 @@ size_t ESP32_VS1053_Stream::_fileLastWAVByte()
 
 void ESP32_VS1053_Stream::_handleLocalFile()
 {
-    if (!_file)
-    {
-        if (_errorCallback)
-            _errorCallback(ERROR_FILE_IO);
-        _eofStream();
-        return;
-    }
-
     log_d("file pos: %lu", _file.position());
     log_d("remaining bytes: %lu", _remainingBytes);
 
