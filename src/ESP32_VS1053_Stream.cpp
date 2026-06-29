@@ -893,7 +893,7 @@ size_t ESP32_VS1053_Stream::size()
 {
     if (_playingFile)
         return _file.size();
-    return _offset + (_http ? _http->getSize() != -1 ? _http->getSize() : 0 : 0);
+    return _offset + (_http ? _remainingBytes != -1 ? _http->getSize() : 0 : 0);
 }
 
 size_t ESP32_VS1053_Stream::position()
