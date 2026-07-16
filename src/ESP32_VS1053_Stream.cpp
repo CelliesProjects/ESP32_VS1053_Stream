@@ -202,6 +202,7 @@ bool ESP32_VS1053_Stream::_isPlaylistContentType()
            strcasestr(ct, "audio/scpls") ||
            strcasestr(ct, "audio/x-mpegurl") ||
            strcasestr(ct, "application/x-mpegurl") ||
+           strcasestr(ct, "application/vnd.apple.mpegurl") ||
            strcasestr(ct, "audio/mpegurl");
 }
 
@@ -235,7 +236,7 @@ const char *ESP32_VS1053_Stream::_parsePlaylist()
 
         if (strncmp(line, "#EXT-X-", 7) == 0)
         {
-            log_w("HLS playlists not supported");
+            _isHLS = true;
             return nullptr;
         }
 
@@ -371,6 +372,17 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
             }
 
             const char *newUrl = _parsePlaylist();
+            if (_isHLS)
+            {
+                if (_errorCallback)
+                    _errorCallback(ERROR_HLS_UNSUPPORTED);
+
+                _isHLS = false;
+                stopSong();
+                _redirectCount = 0;
+                return false;
+            }
+
             if (newUrl)
             {
                 log_d("playlist redirection to: %s", newUrl);
