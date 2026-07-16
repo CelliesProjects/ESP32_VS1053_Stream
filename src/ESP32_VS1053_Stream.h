@@ -186,6 +186,7 @@ private:
     unsigned long _streamStallStartMS = 0;
     unsigned long _bufferStallStartMS = 0;
     uint8_t _redirectCount = 0;
+    bool _isHLS = false;
 
     const char *CONTENT_TYPE = "Content-Type";
     const char *ICY_NAME = "icy-name";
@@ -215,6 +216,7 @@ private:
     const char *ERROR_STREAM_TIMEOUT = "Stream timeout";
     const char *ERROR_COULD_NOT_OPEN = "Could not open";
     const char *ERROR_NOT_PLAYABLE = "Not playable: ";
+    const char *ERROR_HLS_UNSUPPORTED = "HLS streams not supported";
     const char *ERROR_OUT_OF_RANGE = "Out of range offset";
     const char *ERROR_FILE_IO = "File i/o error";
 };
