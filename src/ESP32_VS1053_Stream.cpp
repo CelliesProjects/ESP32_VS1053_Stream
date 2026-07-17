@@ -123,11 +123,7 @@ void ESP32_VS1053_Stream::_handleMetadata(char *data, const size_t len)
 void ESP32_VS1053_Stream::_eofStream()
 {
     if (_codec == CODEC_UNKNOWN && _errorCallback)
-    {
-        char *buffer = reinterpret_cast<char *>(_localbuffer);
-        snprintf(buffer, sizeof(_localbuffer), "%s%s", ERROR_DECODER_NO_SYNC, _url);
-        _errorCallback(buffer);
-    }
+        _errorCallback(ERROR_NO_DECODER_SYNC);
 
     stopSong();
 
@@ -944,17 +940,8 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     if (!_isAudioFile(_file))
     {
         if (_errorCallback)
-        {
-            const char *name = filename;
-            const char *lastSlash = strrchr(filename, '/');
+            _errorCallback(ERROR_NOT_PLAYABLE);
 
-            if (lastSlash && lastSlash[1])
-                name = lastSlash + 1;
-
-            char *buffer = reinterpret_cast<char *>(_localbuffer);
-            snprintf(buffer, sizeof(_localbuffer), "%s%s", ERROR_NOT_PLAYABLE, name);
-            _errorCallback(buffer);
-        }
         _file.close();
         return false;
     }
