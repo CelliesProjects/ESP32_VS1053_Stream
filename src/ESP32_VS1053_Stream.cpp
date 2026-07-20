@@ -1146,7 +1146,7 @@ void ESP32_VS1053_Stream::_updateBitRate()
 
 void ESP32_VS1053_Stream::_readBitRate()
 {
-    uint16_t hdat1 = _vs1053->readRegister(SCI_HDAT1);
+    const uint16_t hdat1 = _vs1053->readRegister(SCI_HDAT1);
 
     if (hdat1 == 0) // decoder not locked yet
     {
@@ -1209,25 +1209,24 @@ void ESP32_VS1053_Stream::_readBitRate()
     if (!_bitrateCallback)
         return;
 
-    uint16_t hdat0 = _vs1053->readRegister(SCI_HDAT0);
+    const uint16_t hdat0 = _vs1053->readRegister(SCI_HDAT0);
 
     uint32_t bitrate = 0;
 
     if (_codec == CODEC_MP3)
     {
-        uint8_t version = (hdat1 >> 3) & 0x03;
-        uint8_t layer = (hdat1 >> 1) & 0x03;
-        uint8_t brIndex = (hdat0 >> 12) & 0x0F;
+        const uint8_t version = (hdat1 >> 3) & 0x03;
+        const uint8_t layer = (hdat1 >> 1) & 0x03;
+        const uint8_t brIndex = (hdat0 >> 12) & 0x0F;
 
-        static const uint16_t bitrateTable[2][16] =
+        static constexpr uint16_t bitrateTable[2][16] =
             {
                 {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0},
                 {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0}};
 
-        constexpr uint8_t MPEG_LAYER_III = 1;
+        static constexpr uint8_t MPEG_LAYER_III = 1;
 
-        if (layer == MPEG_LAYER_III)
-            bitrate = bitrateTable[version == 3 ? 0 : 1][brIndex];
+        bitrate = (layer == MPEG_LAYER_III) ? bitrateTable[version == 3 ? 0 : 1][brIndex] : 0;
     }
     else
         bitrate = (_codec == CODEC_FLAC) ? 0 : (hdat0 * 8) / 1000;
