@@ -121,6 +121,7 @@ private:
     void _handleMetadata(char *data, const size_t len);
     void _eofStream();
     bool _canRedirect();
+    void _resolveRedirect(const char *location, const char *base, char *result);
     bool _escapeUrl(const char *url, const size_t len);
     bool _isPlaylistContentType();
     const char *_parsePlaylist();

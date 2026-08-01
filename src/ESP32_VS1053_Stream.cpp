@@ -257,6 +257,62 @@ bool ESP32_VS1053_Stream::isChipConnected()
     return _vs1053 ? _vs1053->isChipConnected() : false;
 }
 
+void ESP32_VS1053_Stream::_resolveRedirect(const char *location, const char *base, char *result)
+{
+    // Absolute URL
+    if (!strncasecmp(location, "http://", 7) ||
+        !strncasecmp(location, "https://", 8))
+    {
+        snprintf(result, sizeof(_url), "%s", location);
+        return;
+    }
+
+    // Protocol-relative
+    if (!strncmp(location, "//", 2))
+    {
+        const char *scheme = !strncasecmp(base, "https://", 8) ? "https:" : "http:";
+
+        snprintf(result, sizeof(_url), "%s%s", scheme, location);
+        return;
+    }
+
+    // Find "scheme://host"
+    const char *p = strstr(base, "://");
+    if (!p)
+    {
+        snprintf(result, sizeof(_url), "%s", location);
+        return;
+    }
+
+    p += 3;
+    const char *hostEnd = strchr(p, '/');
+
+    // URL contains no path
+    if (!hostEnd)
+    {
+        if (location[0] == '/')
+            snprintf(result, sizeof(_url), "%s%s", base, location);
+        else
+            snprintf(result, sizeof(_url), "%s/%s", base, location);
+
+        return;
+    }
+
+    if (location[0] == '/')
+    {
+        // Root-relative
+        snprintf(result, sizeof(_url), "%.*s%s", int(hostEnd - base), base, location);
+        return;
+    }
+
+    // Relative to current directory
+    const char *lastSlash = strrchr(hostEnd, '/');
+    if (!lastSlash)
+        lastSlash = hostEnd;
+
+    snprintf(result, sizeof(_url), "%.*s/%s", int(lastSlash - base), base, location);
+}
+
 bool ESP32_VS1053_Stream::connectToHost(const char *url)
 {
     return connectToHost(url, "", "", 0);
@@ -445,7 +501,8 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
         }
 
         char *location = reinterpret_cast<char *>(_localbuffer);
-        snprintf(location, sizeof(_localbuffer), "%s", _http->header(LOCATION).c_str());
+
+        _resolveRedirect(_http->header(LOCATION).c_str(), url, location);
 
         stopSong();
         log_i("%i redirection to: %s", HTTPresult, location);
