@@ -335,8 +335,8 @@ bool connectToHost(url, user, pwd, offset);
 Note: When a stream does not start in this library but it does play on your desktop or laptop you can try increasing the connection timeout.  
 You can do this in `ESP32_VS1053_Stream.h` by increasing these values:  
 ```c++
-#define VS1053_CONNECT_TIMEOUT_MS 250
-#define VS1053_CONNECT_TIMEOUT_MS_SSL 750
+#define VS1053_CONNECT_TIMEOUT_MS 500
+#define VS1053_CONNECT_TIMEOUT_MS_SSL 1000
 ```
 ### Start or resume a local file
 ```c++
