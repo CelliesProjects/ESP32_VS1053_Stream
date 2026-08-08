@@ -12,7 +12,7 @@
 #define VS1053_DREQ 22
 #define SDREADER_CS 26
 
-ESP32_VS1053_Stream stream;
+ESP32_VS1053_Stream audio;
 
 // Called when codec is detected
 void codecCallBack(const char *codec)
@@ -65,35 +65,35 @@ void setup() {
     // Mount SD card
     if (!mountSDcard()) 
         Serial.println("SD card not mounted");
-
+    
     Serial.println("Starting decoder...");
 
     // Initialize the VS1053 decoder
-    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected()) 
+    if (!audio.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !audio.isChipConnected()) 
         Serial.println("Decoder not running");
 
     // Set the codec callback
-    stream.setCodecCB(codecCallBack);
+    audio.setCodecCB(codecCallBack);
 
     // Set the bitrate callback
-    stream.setBitrateCB(bitrateCallback);
+    audio.setBitrateCB(bitrateCallback);
 
     // Set the error callback
-    stream.setErrorCB(errorCallback);     
+    audio.setErrorCB(errorCallback);     
 
     // Set the EOF callback
-    stream.setEofCB(eofCallback);
+    audio.setEofCB(eofCallback);
 
-    Serial.println("VS1053 running - starting SD playback");
+    Serial.println("Starting SD playback");
 
     // Start playback from an SD file
-    stream.connectToFile(SD, "/track1.mp3");
+    audio.connectToFile(SD, "/track1.mp3");
 
-    if (!stream.isRunning())
-        Serial.println("No file running");
+    if (!audio.isRunning())
+        Serial.println("No audio running");
 }
 
 void loop() {
-    stream.loop();
+    audio.loop();
     delay(5);
 }

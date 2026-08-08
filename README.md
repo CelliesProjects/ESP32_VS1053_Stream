@@ -2,13 +2,16 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7571166c872e4dc8a899382389b73f8e)](https://app.codacy.com/gh/CelliesProjects/ESP32_VS1053_Stream?utm_source=github.com&utm_medium=referral&utm_content=CelliesProjects/ESP32_VS1053_Stream&utm_campaign=Badge_Grade_Settings)
 
-A streaming library for esp32, esp32-wrover, esp32-c3, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.  
-This library plays mp3, ogg, aac and flac files and streams.  
+An audio library for esp32, esp32-wrover, esp32-c3, esp32-s2 and esp32-s3 with a separate VS1053 codec chip.  
+This library plays http, insecure https and chunked radio streams.  
+Does not play hls radio streams.  
+
+Also plays mp3, m4a, ogg and flac files from local media.  
 
 - Supported codecs are **mp3**, **ogg**, **aac-adts**, **aac-adif**, **aac-m4a** and **16 bit flac**.
 - Supported stream methods are http and insecure https.  
 - Streams can be chunked.  
-- Also plays **mp3**, **ogg** and **flac** files from sdcard or any mounted filesystem.  
+- Also plays **mp3**, **m4a**, **ogg** and **flac** files from sdcard or any mounted filesystem.  
 
 Very lightweight, has a binary footprint of less than 7kB excluding the psram buffer.
 
@@ -42,7 +45,7 @@ Follow these steps to install the vs1053 library in the Arduino IDE:
 That's it.  
 With the vs1053 library installed this library can be compiled in the Arduino IDE. 
 
-## Example: play a stream
+## Example: play a radio stream
 ```c++
 #include <Arduino.h>
 #include <WiFi.h>
@@ -58,7 +61,7 @@ With the vs1053 library installed this library can be compiled in the Arduino ID
 #define VS1053_DCS 21
 #define VS1053_DREQ 22
 
-ESP32_VS1053_Stream stream;
+ESP32_VS1053_Stream audio;
 
 const char* SSID = "xxx";
 const char* PSK = "xxx";
@@ -117,38 +120,38 @@ void setup() {
     SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);
 
     // Initialize the VS1053 decoder
-    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected())
+    if (!audio.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !audio.isChipConnected())
         Serial.println("Decoder not running");
 
     // Set the codec callback
-    stream.setCodecCB(codecCallBack);
+    audio.setCodecCB(codecCallBack);
 
     // Set the bitrate callback
-    stream.setBitrateCB(bitrateCallback);   
+    audio.setBitrateCB(bitrateCallback);   
 
     // Set the station name callback
-    stream.setStationCB(stationCallback);
+    audio.setStationCB(stationCallback);
 
     // Set the stream metadata callback
-    stream.setInfoCB(infoCallback);
+    audio.setInfoCB(infoCallback);
 
     // Set the error callback
-    stream.setErrorCB(errorCallback); 
+    audio.setErrorCB(errorCallback); 
 
     // Set the EOF callback
-    stream.setEofCB(eofCallback);    
+    audio.setEofCB(eofCallback);    
 
     Serial.println("Starting radio stream");
 
     // Connect to the radio stream
-    stream.connectToHost("http://icecast.omroep.nl/radio6-bb-mp3");
+    audio.connectToHost("http://icecast.omroep.nl/radio6-bb-mp3");
 
-    if (!stream.isRunning())
-        Serial.println("Stream not running");
+    if (!audio.isRunning())
+       Serial.println("No audio running");
 }
 
 void loop() {
-    stream.loop();
+    audio.loop();
     delay(5);
 }
 
@@ -170,7 +173,7 @@ void loop() {
 #define VS1053_DREQ 22
 #define SDREADER_CS 26
 
-ESP32_VS1053_Stream stream;
+ESP32_VS1053_Stream audio;
 
 // Called when codec is detected
 void codecCallBack(const char *codec)
@@ -227,32 +230,32 @@ void setup() {
     Serial.println("Starting decoder...");
 
     // Initialize the VS1053 decoder
-    if (!stream.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !stream.isChipConnected()) 
+    if (!audio.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !audio.isChipConnected()) 
         Serial.println("Decoder not running");
 
     // Set the codec callback
-    stream.setCodecCB(codecCallBack);
+    audio.setCodecCB(codecCallBack);
 
     // Set the bitrate callback
-    stream.setBitrateCB(bitrateCallback);
+    audio.setBitrateCB(bitrateCallback);
 
     // Set the error callback
-    stream.setErrorCB(errorCallback);     
+    audio.setErrorCB(errorCallback);     
 
     // Set the EOF callback
-    stream.setEofCB(eofCallback);
+    audio.setEofCB(eofCallback);
 
-    Serial.println("VS1053 running - starting SD playback");
+    Serial.println("Starting SD playback");
 
     // Start playback from an SD file
-    stream.connectToFile(SD, "/track1.mp3");
+    audio.connectToFile(SD, "/track1.mp3");
 
-    if (!stream.isRunning())
-        Serial.println("No file running");
+    if (!audio.isRunning())
+        Serial.println("No audio running");
 }
 
 void loop() {
-    stream.loop();
+    audio.loop();
     delay(5);
 }
 
