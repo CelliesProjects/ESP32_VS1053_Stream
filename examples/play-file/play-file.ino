@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <SD.h>
-#include <VS1053.h>               // https://github.com/baldram/ESP_VS1053_Library
+#include <VS1053.h> // https://github.com/baldram/ESP_VS1053_Library
 #include <ESP32_VS1053_Stream.h>
 
 #define SPI_CLK_PIN 18
@@ -38,14 +38,17 @@ void eofCallback(const char *url)
     Serial.printf("eof: %s\n", url);
 }
 
-bool mountSDcard() {
-    if (!SD.begin(SDREADER_CS)) {
-        Serial.println("Card mount failed"); 
+bool mountSDcard()
+{
+    if (!SD.begin(SDREADER_CS))
+    {
+        Serial.println("Card mount failed");
         return false;
     }
 
     uint8_t cardType = SD.cardType();
-    if (cardType == CARD_NONE) {
+    if (cardType == CARD_NONE)
+    {
         Serial.println("No SD card attached");
         return false;
     }
@@ -55,7 +58,8 @@ bool mountSDcard() {
     return true;
 }
 
-void setup() {
+void setup()
+{
     Serial.begin(115200);
     Serial.println("\n\nVS1053 SD Card Playback Example\n");
 
@@ -63,13 +67,13 @@ void setup() {
     SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN);
 
     // Mount SD card
-    if (!mountSDcard()) 
+    if (!mountSDcard())
         Serial.println("SD card not mounted");
-    
+
     Serial.println("Starting decoder...");
 
     // Initialize the VS1053 decoder
-    if (!audio.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !audio.isChipConnected()) 
+    if (!audio.startDecoder(VS1053_CS, VS1053_DCS, VS1053_DREQ) || !audio.isChipConnected())
         Serial.println("Decoder not running");
 
     // Set the codec callback
@@ -79,7 +83,7 @@ void setup() {
     audio.setBitrateCB(bitrateCallback);
 
     // Set the error callback
-    audio.setErrorCB(errorCallback);     
+    audio.setErrorCB(errorCallback);
 
     // Set the EOF callback
     audio.setEofCB(eofCallback);
@@ -93,7 +97,8 @@ void setup() {
         Serial.println("No audio running");
 }
 
-void loop() {
+void loop()
+{
     audio.loop();
     delay(5);
 }

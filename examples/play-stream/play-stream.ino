@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <VS1053.h>               // https://github.com/baldram/ESP_VS1053_Library
+#include <VS1053.h> // https://github.com/baldram/ESP_VS1053_Library
 #include <ESP32_VS1053_Stream.h>
 
 #define SPI_CLK_PIN 18
@@ -14,8 +14,8 @@
 
 ESP32_VS1053_Stream audio;
 
-const char* SSID = "xxx";
-const char* PSK = "xxx";
+const char *SSID = "xxx";
+const char *PSK = "xxx";
 
 // Called when codec is detected
 void codecCallBack(const char *codec)
@@ -53,14 +53,15 @@ void eofCallback(const char *url)
     Serial.printf("eof: %s\n", url);
 }
 
-void setup() {
+void setup()
+{
     Serial.begin(115200);
     Serial.println("\n\nVS1053 Radio Streaming Example\n");
 
     // Connect to Wi-Fi
     Serial.printf("Connecting to WiFi network: %s\n", SSID);
-    WiFi.begin(SSID, PSK);  
-    WiFi.setSleep(false);  // Important to disable sleep to ensure stable connection
+    WiFi.begin(SSID, PSK);
+    WiFi.setSleep(false); // Important to disable sleep to ensure stable connection
 
     while (!WiFi.isConnected())
         delay(10);
@@ -78,7 +79,7 @@ void setup() {
     audio.setCodecCB(codecCallBack);
 
     // Set the bitrate callback
-    audio.setBitrateCB(bitrateCallback);   
+    audio.setBitrateCB(bitrateCallback);
 
     // Set the station name callback
     audio.setStationCB(stationCallback);
@@ -87,10 +88,10 @@ void setup() {
     audio.setInfoCB(infoCallback);
 
     // Set the error callback
-    audio.setErrorCB(errorCallback); 
+    audio.setErrorCB(errorCallback);
 
     // Set the EOF callback
-    audio.setEofCB(eofCallback);    
+    audio.setEofCB(eofCallback);
 
     Serial.println("Starting radio stream");
 
@@ -101,7 +102,8 @@ void setup() {
         Serial.println("No audio running");
 }
 
-void loop() {
+void loop()
+{
     audio.loop();
     delay(5);
 }
