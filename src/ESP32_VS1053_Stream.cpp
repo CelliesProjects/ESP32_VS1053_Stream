@@ -881,6 +881,9 @@ void ESP32_VS1053_Stream::loop()
         _streamStallStartMS = 0;
     }
 
+    if (!data && !_ringbuffer_handle)
+        return;
+
     if (data)
         _feedDecoder(stream);
 }
