@@ -881,7 +881,8 @@ void ESP32_VS1053_Stream::loop()
         _streamStallStartMS = 0;
     }
 
-    _feedDecoder(stream);
+    if (data)
+        _feedDecoder(stream);
 }
 
 bool ESP32_VS1053_Stream::isRunning()
