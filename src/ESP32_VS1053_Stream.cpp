@@ -1368,3 +1368,18 @@ void ESP32_VS1053_Stream::clearErrorCB()
 {
     _errorCallback = nullptr;
 }
+
+bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len)
+{
+    if (!_vs1053)
+        return false;
+
+    if (isRunning())
+    {
+        log_e("need to stop playback first");
+        return false;
+    }
+
+    _vs1053->playChunk(data, len);
+    return true;
+}

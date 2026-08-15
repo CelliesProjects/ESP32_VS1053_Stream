@@ -102,6 +102,8 @@ public:
         e.g. uint8_t rtone[4]  = {12, 15, 15, 15}; // initialize bass & treble
         See https://www.vlsi.fi/fileadmin/datasheets/vs1053.pdf section 9.6.3 */
 
+    bool playChunk(uint8_t *data, size_t len);
+
 private:
     VS1053 *_vs1053;
     HTTPClient *_http;
