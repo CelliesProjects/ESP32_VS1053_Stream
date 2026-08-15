@@ -1380,6 +1380,8 @@ bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len)
         return false;
     }
 
+    _vs1053->setVolume(_volume);
     _vs1053->playChunk(data, len);
+    _vs1053->setVolume(0);
     return true;
 }
