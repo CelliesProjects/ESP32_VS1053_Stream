@@ -138,6 +138,7 @@ private:
     void _playFromRingBuffer();
     void _streamToRingBuffer(WiFiClient *stream);
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
+    void _waitForEnd();
 
     codec_callback_t _codecCallback = nullptr;
     bitrate_callback_t _bitrateCallback = nullptr;
