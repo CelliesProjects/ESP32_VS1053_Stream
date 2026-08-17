@@ -901,9 +901,9 @@ void ESP32_VS1053_Stream::stopSong()
     if (!_http && !_playingFile)
         return;
 
+    _vs1053->setVolume(0);
     _vs1053->stopSong();
 
-    _vs1053->setVolume(0);
     _remainingBytes = 0;
     _offset = 0;
     _bitrate = 0;
