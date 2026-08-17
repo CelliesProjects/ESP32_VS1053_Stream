@@ -901,6 +901,8 @@ void ESP32_VS1053_Stream::stopSong()
     if (!_http && !_playingFile)
         return;
 
+    _vs1053->stopSong();
+
     _vs1053->setVolume(0);
     _remainingBytes = 0;
     _offset = 0;
@@ -918,8 +920,6 @@ void ESP32_VS1053_Stream::stopSong()
         _ringbuffer_filled = false;
         _bufferStallStartMS = 0;
     }
-
-    _waitForEnd();
 
     if (_playingFile)
     {
@@ -1366,17 +1366,7 @@ void ESP32_VS1053_Stream::clearErrorCB()
     _errorCallback = nullptr;
 }
 
-void ESP32_VS1053_Stream::_waitForEnd()
-{
-    uint16_t hdat1 = 0xFFFF;
-    while (hdat1)
-    {
-        hdat1 = _vs1053->readRegister(SCI_HDAT1);
-        yield();
-    }
-}
-
-bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len)
+bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len, bool stopSong)
 {
     if (!_vs1053)
         return false;
@@ -1389,7 +1379,11 @@ bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len)
 
     _vs1053->setVolume(_volume);
     _vs1053->playChunk(data, len);
-    _waitForEnd();
-    _vs1053->setVolume(0);
+
+    if (stopSong)
+    {
+        _vs1053->stopSong();
+        _vs1053->setVolume(0);
+    }
     return true;
 }
