@@ -899,6 +899,8 @@ void ESP32_VS1053_Stream::stopSong()
         return;
 
     _vs1053->setVolume(0);
+    _vs1053->stopSong();
+
     _remainingBytes = 0;
     _offset = 0;
     _bitrate = 0;
@@ -915,11 +917,6 @@ void ESP32_VS1053_Stream::stopSong()
         _ringbuffer_filled = false;
         _bufferStallStartMS = 0;
     }
-
-    while (!_vs1053->data_request())
-        yield();
-
-    _vs1053->startSong();
 
     if (_playingFile)
     {
@@ -1364,4 +1361,26 @@ void ESP32_VS1053_Stream::setErrorCB(error_callback_t cb)
 void ESP32_VS1053_Stream::clearErrorCB()
 {
     _errorCallback = nullptr;
+}
+
+bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len, bool stopSong)
+{
+    if (!_vs1053)
+        return false;
+
+    if (isRunning())
+    {
+        log_e("need to stop playback first");
+        return false;
+    }
+
+    _vs1053->setVolume(_volume);
+    _vs1053->playChunk(data, len);
+
+    if (stopSong)
+    {
+        _vs1053->stopSong();
+        _vs1053->setVolume(0);
+    }
+    return true;
 }
