@@ -622,7 +622,6 @@ void ESP32_VS1053_Stream::_setupStream()
 {
     if (!_offset)
         _vs1053->stopSong();
-    _vs1053->startSong();
     _bitrateTimer = millis();
     _dataSeen = true;
 }
@@ -899,7 +898,6 @@ void ESP32_VS1053_Stream::stopSong()
         return;
 
     _vs1053->setVolume(0);
-    _vs1053->stopSong();
 
     _remainingBytes = 0;
     _offset = 0;
@@ -1023,7 +1021,6 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     {
         _vs1053->stopSong();
         snprintf(_url, sizeof(_url), "%s", filename);
-        _vs1053->startSong();
     }
     _playingFile = true;
     _bufferIndex = 0;
