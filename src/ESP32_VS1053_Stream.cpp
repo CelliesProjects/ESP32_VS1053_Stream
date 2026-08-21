@@ -96,7 +96,6 @@ bool ESP32_VS1053_Stream::_checkSync(WiFiClient *stream)
 {
     if ((char)stream->read() != '\r' || (char)stream->read() != '\n')
     {
-        log_v("sync lost");
         if (_errorCallback)
             _errorCallback(ERROR_STREAM_SYNC_LOST);
         return false;
@@ -718,6 +717,9 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 {
     if (!_bytesLeftInChunk)
     {
+        if (!stream->available())
+            return;
+
         _bytesLeftInChunk = _nextChunkSize(stream);
         if (!_bytesLeftInChunk)
         {
@@ -759,14 +761,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 
     if (_metaDataStart && _musicDataPosition == _metaDataStart && _bytesLeftInChunk && stream->available())
     {
-        const auto required = stream->peek() * 16 + 20; /* extra margin for chunk end */
-        if (stream->available() < required)
-        {
-            if (_ringbuffer_handle && _remainingBytes)
-                _playFromRingBuffer();
-            return;
-        }
-
         const auto metaLen = stream->read() * 16;
         _bytesLeftInChunk--;
 
@@ -778,11 +772,17 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             {
                 if (!_bytesLeftInChunk)
                 {
+                    if (!stream->available())
+                        return;
+
                     if (!_checkSync(stream))
                     {
                         _remainingBytes = 0;
                         return;
                     }
+
+                    if (!stream->available())
+                        return;
 
                     _bytesLeftInChunk = _nextChunkSize(stream);
                     if (!_bytesLeftInChunk)
@@ -804,10 +804,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
     }
 
     if (!stream->available())
-    {
-        yield();
         return;
-    }
 
     if (!_bytesLeftInChunk)
     {
@@ -816,6 +813,9 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             _remainingBytes = 0;
             return;
         }
+
+        if (!stream->available())
+            return;
 
         _bytesLeftInChunk = _nextChunkSize(stream);
         if (!_bytesLeftInChunk)
