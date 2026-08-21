@@ -772,17 +772,11 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             {
                 if (!_bytesLeftInChunk)
                 {
-                    if (!stream->available())
-                        return;
-
                     if (!_checkSync(stream))
                     {
                         _remainingBytes = 0;
                         return;
                     }
-
-                    if (!stream->available())
-                        return;
 
                     _bytesLeftInChunk = _nextChunkSize(stream);
                     if (!_bytesLeftInChunk)
@@ -802,9 +796,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 
         _musicDataPosition = 0;
     }
-
-    if (!stream->available())
-        return;
 
     if (!_bytesLeftInChunk)
     {
