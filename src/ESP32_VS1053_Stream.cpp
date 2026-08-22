@@ -660,14 +660,6 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
 
     if (_metaDataStart && _musicDataPosition == _metaDataStart && stream->available())
     {
-        const auto required = stream->peek() * 16 + 1;
-        if (stream->available() < required)
-        {
-            if (_ringbuffer_handle && _remainingBytes)
-                _playFromRingBuffer();
-            return;
-        }
-
         const auto metaLen = stream->read() * 16;
         if (metaLen)
         {
