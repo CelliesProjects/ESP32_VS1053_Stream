@@ -658,30 +658,33 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
         log_d("%lu ms moving %i bytes stream->decoder", millis() - startTimeMS, bytesToDecoder);
     }
 
-    static uint16_t metadatabytesNeeded = 0;
-    static uint16_t idx = 0;
-    
     if (_metaDataStart && _musicDataPosition == _metaDataStart && stream->available())
     {
-        if (!metadatabytesNeeded)
+        if (!_metadatabytesNeeded)
         {
-            metadatabytesNeeded = stream->read() * 16;
-            idx = 0;
+            _metadatabytesNeeded = stream->read() * 16;
+            _metaIndex = 0;
+            log_i("need %d bytes of metadata", _metadatabytesNeeded);
         }
 
         uint16_t bytesavailable = stream->available();
-        while (bytesavailable-- && metadatabytesNeeded > 0)
+        while (bytesavailable-- && _metadatabytesNeeded > 0)
         {
-            _localbuffer[idx++] = stream->read();
-            metadatabytesNeeded--;
+            _localbuffer[_metaIndex++] = stream->read();
+            _metadatabytesNeeded--;
         }
 
-        if (metadatabytesNeeded == 0) // all metadata collected
+        log_i("collected %d bytes", _metaIndex);
+
+        if (_metadatabytesNeeded == 0) // all metadata collected
         {
-            if (_infoCallback)
-                _handleMetadata(reinterpret_cast<char *>(_localbuffer), metadatabytesNeeded);
+            if (_infoCallback && _metaIndex)
+            {
+                log_i("processing %d bytes metadata", _metaIndex);
+                _handleMetadata(reinterpret_cast<char *>(_localbuffer), _metadatabytesNeeded);
+            }
             _musicDataPosition = 0;
-            metadatabytesNeeded = 0;
+            _metadatabytesNeeded = 0;
         }
     }
 }
