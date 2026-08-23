@@ -180,7 +180,7 @@ private:
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
     size_t _bytesLeftInChunk = 0;
-    uint16_t _metadatabytesNeeded = 0;
+    uint16_t _metadataNeeded = 0;
     uint16_t _metaIndex = 0;
     int32_t _metaDataStart = 0;
     int32_t _musicDataPosition = 0;
