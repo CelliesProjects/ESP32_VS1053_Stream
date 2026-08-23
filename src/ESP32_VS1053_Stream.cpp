@@ -667,14 +667,14 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
             log_i("found %d bytes of metadata", _metadataNeeded);
         }
 
-        uint16_t bytesavailable = stream->available();
-        while (bytesavailable-- && _metadataNeeded > 0)
+        uint16_t available = stream->available();
+        while (available-- && _metadataNeeded > 0)
         {
             _localbuffer[_metaIndex++] = stream->read();
             _metadataNeeded--;
         }
 
-        if (_metadataNeeded == 0) // all metadata collected
+        if (_metadataNeeded == 0) // all metadata collected or none found
         {
             if (_infoCallback && _metaIndex)
             {
