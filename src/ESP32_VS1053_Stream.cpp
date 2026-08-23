@@ -664,7 +664,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
         {
             _metadataNeeded = stream->read() * 16;
             _metaIndex = 0;
-            log_i("found %d bytes of metadata", _metadataNeeded);
+            log_d("found %d bytes of metadata", _metadataNeeded);
         }
 
         uint16_t available = stream->available();
@@ -679,14 +679,14 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
             if (_infoCallback && _metaIndex)
             {
                 _handleMetadata(reinterpret_cast<char *>(_localbuffer), _metaIndex);
-                log_i("processed %d bytes metadata", _metaIndex);
+                log_d("processed %d bytes metadata", _metaIndex);
             }
             _musicDataPosition = 0;
             _metadataNeeded = 0;
             return;
         }
 
-        log_i("collected %d bytes sofar", _metaIndex);
+        log_d("collected %d bytes sofar", _metaIndex);
     }
 }
 
