@@ -807,7 +807,7 @@ bool ESP32_VS1053_Stream::_handleChunkedMetadata(WiFiClient *stream)
 
 void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 {
-    if (!_bytesLeftInChunk)
+    if (_bytesLeftInChunk < 1)
     {
         _bytesLeftInChunk = _nextChunkSize(stream);
         if (_bytesLeftInChunk == -1)
