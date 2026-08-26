@@ -118,7 +118,7 @@ private:
     File _file;
     bool _playingFile = false;
 
-    size_t _nextChunkSize(WiFiClient *stream);
+    int32_t _nextChunkSize(WiFiClient *stream);
     bool _checkSync(WiFiClient *stream);
     void _handleMetadata(char *data, const size_t len);
     void _eofStream();
@@ -130,6 +130,7 @@ private:
     void _setupStream();
     void _handleStream(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
+    bool _handleChunkedMetadata(WiFiClient *stream);
     void _handleLocalFile();
     void _handleLocalFileNoPSRAM();
     void _feedDecoder(WiFiClient *stream);
@@ -179,7 +180,7 @@ private:
 
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
-    size_t _bytesLeftInChunk = 0;
+    int32_t _bytesLeftInChunk = -1;
     uint16_t _metadataNeeded = 0;
     uint16_t _metaIndex = 0;
     int32_t _metaDataStart = 0;
@@ -192,6 +193,9 @@ private:
     unsigned long _bufferStallStartMS = 0;
     uint8_t _redirectCount = 0;
     bool _isHLS = false;
+
+    char _chunkHeader[12] = {};
+    uint8_t _chunkHeaderIndex = 0;
 
     const char *CONTENT_TYPE = "Content-Type";
     const char *ICY_NAME = "icy-name";
