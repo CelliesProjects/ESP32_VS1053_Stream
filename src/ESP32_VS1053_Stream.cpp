@@ -810,7 +810,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
     if (!_bytesLeftInChunk)
     {
         _bytesLeftInChunk = _nextChunkSize(stream);
-
         if (_bytesLeftInChunk == -1)
         {
             log_i("chunksize not fully read");
@@ -840,7 +839,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 
         const size_t MAX_MOVE = size() ? 2048 : 512; // everything without a size is radio so low bitrate
 
-        while (_bytesLeftInChunk && _musicDataPosition < _metaDataStart && bytesToDecoder < MAX_MOVE &&
+        while (_bytesLeftInChunk > 0 && _musicDataPosition < _metaDataStart && bytesToDecoder < MAX_MOVE &&
                stream->available() && _vs1053->data_request())
         {
             const size_t inStream = _metaDataStart ? _metaDataStart - _musicDataPosition : stream->available();
@@ -873,13 +872,12 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             return;
 
         _bytesLeftInChunk = _nextChunkSize(stream);
-
         if (_bytesLeftInChunk == -1)
         {
             log_i("chunksize not fully read");
             return;
         }
-        
+
         if (!_bytesLeftInChunk)
         {
             _remainingBytes = 0;
@@ -962,7 +960,13 @@ void ESP32_VS1053_Stream::loop()
         _feedDecoder(stream);
 
     if (!data && _ringbuffer_handle)
-        _playFromRingBuffer();
+    {
+        if (_remainingBytes)
+            _playFromRingBuffer();
+
+        if (!_remainingBytes)
+            _eofStream();
+    }
 }
 
 bool ESP32_VS1053_Stream::isRunning()

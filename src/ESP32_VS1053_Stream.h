@@ -181,6 +181,8 @@ private:
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
     int32_t _bytesLeftInChunk = -1;
+    char _chunkHeader[12] = {};
+    uint8_t _chunkHeaderIndex = 0;
     uint16_t _metadataNeeded = 0;
     uint16_t _metaIndex = 0;
     int32_t _metaDataStart = 0;
@@ -193,9 +195,6 @@ private:
     unsigned long _bufferStallStartMS = 0;
     uint8_t _redirectCount = 0;
     bool _isHLS = false;
-
-    char _chunkHeader[12] = {};
-    uint8_t _chunkHeaderIndex = 0;
 
     const char *CONTENT_TYPE = "Content-Type";
     const char *ICY_NAME = "icy-name";
