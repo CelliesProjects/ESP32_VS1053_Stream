@@ -900,7 +900,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         log_d("%lu ms moving %i bytes chunked->decoder", millis() - startTimeMS, bytesToDecoder);
     }
 
-    if (_bytesLeftInChunk < 1)
+    if (!_bytesLeftInChunk)
     {
         _bytesLeftInChunk = _nextChunkSize(stream);
         if (_bytesLeftInChunk == -1)
