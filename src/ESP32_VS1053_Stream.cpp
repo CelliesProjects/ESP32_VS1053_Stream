@@ -790,7 +790,7 @@ bool ESP32_VS1053_Stream::_handleChunkedMetadata(WiFiClient *stream)
             return true;
         }
 
-        log_i("found %d bytes of metadata", _metadataNeeded);
+        log_d("found %d bytes of metadata", _metadataNeeded);
     }
 
     while (_metadataNeeded)
@@ -851,9 +851,8 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             return;
     }
 
-    if (_bytesLeftInChunk == 0)
+    if (_bytesLeftInChunk < 0)
     {
-        log_i("called on start only");
         _bytesLeftInChunk = _nextChunkSize(stream);
         if (_bytesLeftInChunk == -1)
         {
@@ -866,6 +865,9 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             _remainingBytes = 0;
             return;
         }
+
+        log_i("next chunk size: %d", _bytesLeftInChunk);
+
         if (!_dataSeen)
             _setupStream();
     }
@@ -901,7 +903,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 
     if (_bytesLeftInChunk < 1)
     {
-        log_i("called on all chunk ends and partial fills");
         _bytesLeftInChunk = _nextChunkSize(stream);
         if (_bytesLeftInChunk == -1)
         {
@@ -914,6 +915,8 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             _remainingBytes = 0;
             return;
         }
+
+        log_i("next chunk size: %d", _bytesLeftInChunk);
     }
 }
 
