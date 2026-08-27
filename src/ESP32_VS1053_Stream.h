@@ -119,7 +119,6 @@ private:
     bool _playingFile = false;
 
     int32_t _nextChunkSize(WiFiClient *stream);
-    bool _checkSync(WiFiClient *stream);
     void _handleMetadata(char *data, const size_t len);
     void _eofStream();
     bool _canRedirect();

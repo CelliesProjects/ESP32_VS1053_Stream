@@ -142,17 +142,6 @@ int32_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient *stream)
     return -1;
 }
 
-bool ESP32_VS1053_Stream::_checkSync(WiFiClient *stream)
-{
-    if ((char)stream->read() != '\r' || (char)stream->read() != '\n')
-    {
-        if (_errorCallback)
-            _errorCallback(ERROR_STREAM_SYNC_LOST);
-        return false;
-    }
-    return true;
-}
-
 void ESP32_VS1053_Stream::_handleMetadata(char *data, const size_t len)
 {
     char *pch = strstr(data, "StreamTitle");
