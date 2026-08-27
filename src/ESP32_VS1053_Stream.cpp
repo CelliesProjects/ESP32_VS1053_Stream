@@ -1043,6 +1043,7 @@ void ESP32_VS1053_Stream::stopSong()
     delete _http;
     _http = nullptr;
     _bytesLeftInChunk = 0;
+    _chunkState = 0;
     _dataSeen = false;
 }
 
