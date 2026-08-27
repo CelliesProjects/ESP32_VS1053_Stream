@@ -84,7 +84,7 @@ int32_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient *stream)
         switch (_chunkState)
         {
         case CHUNK_START:
-            log_i("reading first chunk header");
+            log_v("reading first chunk header");
             _chunkHeaderIndex = 0;
             _chunkState = READ_HEADER;
             // The first chunk has no preceding CRLF.
@@ -844,6 +844,9 @@ bool ESP32_VS1053_Stream::_handleChunkedMetadata(WiFiClient *stream)
 
 void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 {
+    if (!_dataSeen)
+        _setupStream();
+
     if (_metaDataStart && _musicDataPosition == _metaDataStart)
     {
         if (!_handleChunkedMetadata(stream))
@@ -912,10 +915,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             return;
         }
 
-        if (!_dataSeen)
-            _setupStream();
-
-        log_v("next chunk size: %d", _bytesLeftInChunk);
+        log_i("next chunk size: %d", _bytesLeftInChunk);
     }
 }
 
