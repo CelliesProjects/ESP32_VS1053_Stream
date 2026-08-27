@@ -180,8 +180,9 @@ private:
 
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
-    int32_t _bytesLeftInChunk = -1;
+    int32_t _bytesLeftInChunk = 0;
     char _chunkHeader[12] = {};
+    uint8_t _chunkState = 0;
     uint8_t _chunkHeaderIndex = 0;
     uint16_t _metadataNeeded = 0;
     uint16_t _metaIndex = 0;

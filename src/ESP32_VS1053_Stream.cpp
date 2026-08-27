@@ -69,29 +69,74 @@ void ESP32_VS1053_Stream::_deallocateRingbuffer()
 
 int32_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient *stream)
 {
+    enum : uint8_t
+    {
+        CHUNK_START = 0,
+        EXPECT_CR,
+        EXPECT_LF,
+        READ_HEADER
+    };
+
     while (stream->available())
     {
         const int c = stream->read();
 
-        if (c == '\r')
-            continue;
-
-        if (c == '\n')
+        switch (_chunkState)
         {
-            _chunkHeader[_chunkHeaderIndex] = '\0';
-
-            const int32_t result = strtol(_chunkHeader, nullptr, 16);
-
+        case CHUNK_START:
+            log_i("reading first chunk header");
             _chunkHeaderIndex = 0;
-            return result;
-        }
+            _chunkState = READ_HEADER;
+            // The first chunk has no preceding CRLF.
+            [[fallthrough]];
 
-        if (_chunkHeaderIndex < sizeof(_chunkHeader) - 1)
-            _chunkHeader[_chunkHeaderIndex++] = c;
-        else
-        {
+        case READ_HEADER:
+            if (c == '\n')
+            {
+                _chunkHeader[_chunkHeaderIndex] = '\0';
+
+                const int32_t result =
+                    strtol(_chunkHeader, nullptr, 16);
+
+                _chunkState = EXPECT_CR;
+                _chunkHeaderIndex = 0;
+
+                return result > 0 ? result : 0;
+            }
+
+            if (c == '\r')
+                continue;
+
+            if (_chunkHeaderIndex < sizeof(_chunkHeader) - 1)
+            {
+                _chunkHeader[_chunkHeaderIndex++] = c;
+                continue;
+            }
+
+            _chunkState = CHUNK_START;
             _chunkHeaderIndex = 0;
-            return -1;
+            return 0;
+
+        case EXPECT_CR:
+            if (c != '\r')
+            {
+                _chunkState = CHUNK_START;
+                return 0;
+            }
+
+            _chunkState = EXPECT_LF;
+            break;
+
+        case EXPECT_LF:
+            if (c != '\n')
+            {
+                _chunkState = CHUNK_START;
+                return 0;
+            }
+
+            _chunkState = READ_HEADER;
+            _chunkHeaderIndex = 0;
+            break;
         }
     }
 
@@ -750,16 +795,9 @@ bool ESP32_VS1053_Stream::_handleChunkedMetadata(WiFiClient *stream)
 
     while (_metadataNeeded)
     {
-        if (!_bytesLeftInChunk)
+        if (_bytesLeftInChunk < 1)
         {
-            if (!_checkSync(stream))
-            {
-                _remainingBytes = 0;
-                return false;
-            }
-
-            if (!stream->available())
-                return false;
+            log_i("end of chunk in metadata handling");
 
             _bytesLeftInChunk = _nextChunkSize(stream);
             if (_bytesLeftInChunk == -1)
@@ -807,8 +845,15 @@ bool ESP32_VS1053_Stream::_handleChunkedMetadata(WiFiClient *stream)
 
 void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 {
-    if (_bytesLeftInChunk < 1)
+    if (_metaDataStart && _musicDataPosition == _metaDataStart)
     {
+        if (!_handleChunkedMetadata(stream))
+            return;
+    }
+
+    if (_bytesLeftInChunk == 0)
+    {
+        log_i("called on start only");
         _bytesLeftInChunk = _nextChunkSize(stream);
         if (_bytesLeftInChunk == -1)
         {
@@ -854,23 +899,9 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         log_d("%lu ms moving %i bytes chunked->decoder", millis() - startTimeMS, bytesToDecoder);
     }
 
-    if (_metaDataStart && _musicDataPosition == _metaDataStart)
+    if (_bytesLeftInChunk < 1)
     {
-        if (!_handleChunkedMetadata(stream))
-            return;
-    }
-
-    if (!_bytesLeftInChunk)
-    {
-        if (!_checkSync(stream))
-        {
-            _remainingBytes = 0;
-            return;
-        }
-
-        if (!stream->available())
-            return;
-
+        log_i("called on all chunk ends and partial fills");
         _bytesLeftInChunk = _nextChunkSize(stream);
         if (_bytesLeftInChunk == -1)
         {
