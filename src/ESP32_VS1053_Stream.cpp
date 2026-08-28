@@ -785,22 +785,8 @@ bool ESP32_VS1053_Stream::_handleChunkedMetadata(WiFiClient *stream)
     {
         if (_bytesLeftInChunk < 1)
         {
-            log_i("end of chunk in metadata handling, returning for chunk handling");
+            log_v("end of chunk in metadata handling, returning for chunk handling");
             return false;
-            /*
-                        _bytesLeftInChunk = _nextChunkSize(stream);
-                        if (_bytesLeftInChunk == -1)
-                        {
-                            log_i("chunksize not fully read");
-                            return false;
-                        }
-
-                        if (!_bytesLeftInChunk)
-                        {
-                            _remainingBytes = 0;
-                            return false;
-                        }
-            */
         }
 
         if (!stream->available())
@@ -843,6 +829,8 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             return;
     }
 
+    // -1 means the chunk-size line/framing is incomplete;
+    // _nextChunkSize() will resume parsing on the next call.
     if (_bytesLeftInChunk < 1)
     {
         _bytesLeftInChunk = _nextChunkSize(stream);
