@@ -785,20 +785,22 @@ bool ESP32_VS1053_Stream::_handleChunkedMetadata(WiFiClient *stream)
     {
         if (_bytesLeftInChunk < 1)
         {
-            log_i("end of chunk in metadata handling");
+            log_i("end of chunk in metadata handling, returning for chunk handling");
+            return false;
+            /*
+                        _bytesLeftInChunk = _nextChunkSize(stream);
+                        if (_bytesLeftInChunk == -1)
+                        {
+                            log_i("chunksize not fully read");
+                            return false;
+                        }
 
-            _bytesLeftInChunk = _nextChunkSize(stream);
-            if (_bytesLeftInChunk == -1)
-            {
-                log_v("chunksize not fully read");
-                return false;
-            }
-
-            if (!_bytesLeftInChunk)
-            {
-                _remainingBytes = 0;
-                return false;
-            }
+                        if (!_bytesLeftInChunk)
+                        {
+                            _remainingBytes = 0;
+                            return false;
+                        }
+            */
         }
 
         if (!stream->available())
@@ -809,7 +811,6 @@ bool ESP32_VS1053_Stream::_handleChunkedMetadata(WiFiClient *stream)
                                    static_cast<size_t>(VS1053_LOCALBUFFER_SIZE - _metaIndex)});
 
         const size_t inBuffer = stream->read(&_localbuffer[_metaIndex], toRead);
-
         if (!inBuffer)
             return false;
 
@@ -836,13 +837,13 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
     if (!_dataSeen)
         _setupStream();
 
-    if (_metaDataStart && _musicDataPosition == _metaDataStart)
+    if (_metaDataStart && _musicDataPosition == _metaDataStart && _bytesLeftInChunk > 0)
     {
         if (!_handleChunkedMetadata(stream))
             return;
     }
 
-    if (_bytesLeftInChunk == -1)
+    if (_bytesLeftInChunk < 1)
     {
         _bytesLeftInChunk = _nextChunkSize(stream);
         if (_bytesLeftInChunk == -1)
@@ -857,7 +858,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             return;
         }
 
-        log_i("next chunk size: %d", _bytesLeftInChunk);
+        log_v("next chunk size: %d", _bytesLeftInChunk);
     }
 
     if (_ringbuffer_handle)
@@ -887,24 +888,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             bytesToDecoder += inBuffer;
         }
         log_d("%lu ms moving %i bytes chunked->decoder", millis() - startTimeMS, bytesToDecoder);
-    }
-
-    if (!_bytesLeftInChunk)
-    {
-        _bytesLeftInChunk = _nextChunkSize(stream);
-        if (_bytesLeftInChunk == -1)
-        {
-            log_v("chunksize not fully read");
-            return;
-        }
-
-        if (!_bytesLeftInChunk)
-        {
-            _remainingBytes = 0;
-            return;
-        }
-
-        log_i("next chunk size: %d", _bytesLeftInChunk);
     }
 }
 
@@ -1033,6 +1016,7 @@ void ESP32_VS1053_Stream::stopSong()
     _bytesLeftInChunk = 0;
     _chunkState = 0;
     _chunkHeaderIndex = 0;
+    _metaIndex = 0;
     _dataSeen = false;
 }
 
@@ -1313,7 +1297,7 @@ void ESP32_VS1053_Stream::_readBitRate()
     {
         if (++_decoderSyncAttempts > 50)
         {
-            log_v("decoder failed to sync");
+            log_w("decoder failed to sync");
             _remainingBytes = 0;
         }
         return;
