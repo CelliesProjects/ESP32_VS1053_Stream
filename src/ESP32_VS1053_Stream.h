@@ -118,8 +118,7 @@ private:
     File _file;
     bool _playingFile = false;
 
-    size_t _nextChunkSize(WiFiClient *stream);
-    bool _checkSync(WiFiClient *stream);
+    int32_t _nextChunkSize(WiFiClient *stream);
     void _handleMetadata(char *data, const size_t len);
     void _eofStream();
     bool _canRedirect();
@@ -130,6 +129,7 @@ private:
     void _setupStream();
     void _handleStream(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
+    bool _handleChunkedMetadata(WiFiClient *stream);
     void _handleLocalFile();
     void _handleLocalFileNoPSRAM();
     void _feedDecoder(WiFiClient *stream);
@@ -179,7 +179,10 @@ private:
 
     size_t _offset = 0;
     int32_t _remainingBytes = 0;
-    size_t _bytesLeftInChunk = 0;
+    int32_t _bytesLeftInChunk = 0;
+    char _chunkHeader[12] = {};
+    uint8_t _chunkState = 0;
+    uint8_t _chunkHeaderIndex = 0;
     uint16_t _metadataNeeded = 0;
     uint16_t _metaIndex = 0;
     int32_t _metaDataStart = 0;
