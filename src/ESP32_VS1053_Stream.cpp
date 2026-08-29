@@ -849,8 +849,6 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         _bytesLeftInChunk > 0 && !_handleChunkedMetadata(stream))
         return;
 
-    // -1 means the chunk-size line/framing is incomplete;
-    // _handleChunkBoundary() will resume reading/parsing on the next call.
     if (_bytesLeftInChunk < 1 && !_handleChunkBoundary(stream))
         return;
 
