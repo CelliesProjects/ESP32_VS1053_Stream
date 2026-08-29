@@ -142,7 +142,7 @@ int32_t ESP32_VS1053_Stream::_nextChunkSize(WiFiClient *stream)
     return -1;
 }
 
-void ESP32_VS1053_Stream::_handleMetadata(char *data, const size_t len)
+void ESP32_VS1053_Stream::_parseMetadata(char *data, const size_t len)
 {
     char *pch = strstr(data, "StreamTitle");
     if (!pch)
@@ -717,7 +717,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
         {
             if (_infoCallback && _metaIndex)
             {
-                _handleMetadata(reinterpret_cast<char *>(_localbuffer), _metaIndex);
+                _parseMetadata(reinterpret_cast<char *>(_localbuffer), _metaIndex);
                 log_d("processed %d bytes metadata", _metaIndex);
             }
             _musicDataPosition = 0;
@@ -807,7 +807,7 @@ bool ESP32_VS1053_Stream::_handleChunkedMetadata(WiFiClient *stream)
 
     if (_infoCallback && _metaIndex)
     {
-        _handleMetadata(reinterpret_cast<char *>(_localbuffer), _metaIndex);
+        _parseMetadata(reinterpret_cast<char *>(_localbuffer), _metaIndex);
         log_v("processed %d bytes metadata", _metaIndex);
     }
 
