@@ -119,6 +119,7 @@ private:
     bool _playingFile = false;
 
     int32_t _nextChunkSize(WiFiClient *stream);
+    bool _handleChunkBoundary(WiFiClient *stream);
     void _parseMetadata(char *data, const size_t len);
     void _eofStream();
     bool _canRedirect();
@@ -128,6 +129,7 @@ private:
     const char *_parsePlaylist();
     void _setupStream();
     void _handleStream(WiFiClient *stream);
+    void _handleMetaData(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
     bool _handleChunkedMetadata(WiFiClient *stream);
     void _handleLocalFile();

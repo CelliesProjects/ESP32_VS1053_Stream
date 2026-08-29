@@ -664,10 +664,44 @@ void ESP32_VS1053_Stream::_setupStream()
     _dataSeen = true;
 }
 
+void ESP32_VS1053_Stream::_handleMetaData(WiFiClient *stream)
+{
+    if (!_metadataNeeded)
+    {
+        _metadataNeeded = stream->read() * 16;
+        _metaIndex = 0;
+        log_d("found %d bytes of metadata", _metadataNeeded);
+    }
+
+    uint16_t available = stream->available();
+    while (available-- && _metadataNeeded > 0)
+    {
+        _localbuffer[_metaIndex++] = stream->read();
+        _metadataNeeded--;
+    }
+
+    if (_metadataNeeded == 0) // all metadata collected or none found
+    {
+        if (_infoCallback && _metaIndex)
+        {
+            _parseMetadata(reinterpret_cast<char *>(_localbuffer), _metaIndex);
+            log_d("processed %d bytes metadata", _metaIndex);
+        }
+        _musicDataPosition = 0;
+        _metadataNeeded = 0;
+        return;
+    }
+
+    log_i("collected %d bytes sofar", _metaIndex);
+}
+
 void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
 {
     if (!_dataSeen)
         _setupStream();
+
+    if (_metaDataStart && _musicDataPosition == _metaDataStart && stream->available())
+        _handleMetaData(stream);
 
     if (_ringbuffer_handle)
     {
@@ -695,37 +729,6 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
             bytesToDecoder += inBuffer;
         }
         log_d("%lu ms moving %i bytes stream->decoder", millis() - startTimeMS, bytesToDecoder);
-    }
-
-    if (_metaDataStart && _musicDataPosition == _metaDataStart && stream->available())
-    {
-        if (!_metadataNeeded)
-        {
-            _metadataNeeded = stream->read() * 16;
-            _metaIndex = 0;
-            log_d("found %d bytes of metadata", _metadataNeeded);
-        }
-
-        uint16_t available = stream->available();
-        while (available-- && _metadataNeeded > 0)
-        {
-            _localbuffer[_metaIndex++] = stream->read();
-            _metadataNeeded--;
-        }
-
-        if (_metadataNeeded == 0) // all metadata collected or none found
-        {
-            if (_infoCallback && _metaIndex)
-            {
-                _parseMetadata(reinterpret_cast<char *>(_localbuffer), _metaIndex);
-                log_d("processed %d bytes metadata", _metaIndex);
-            }
-            _musicDataPosition = 0;
-            _metadataNeeded = 0;
-            return;
-        }
-
-        log_d("collected %d bytes sofar", _metaIndex);
     }
 }
 
@@ -818,36 +821,41 @@ bool ESP32_VS1053_Stream::_handleChunkedMetadata(WiFiClient *stream)
     return true;
 }
 
+bool ESP32_VS1053_Stream::_handleChunkBoundary(WiFiClient *stream)
+{
+    _bytesLeftInChunk = _nextChunkSize(stream);
+    if (_bytesLeftInChunk == -1)
+    {
+        log_v("chunksize not fully read");
+        return false;
+    }
+
+    if (!_bytesLeftInChunk)
+    {
+        _remainingBytes = 0;
+        return false;
+    }
+
+    log_v("next chunk size: %d", _bytesLeftInChunk);
+    return true;
+}
+
 void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
 {
     if (!_dataSeen)
         _setupStream();
 
-    if (_metaDataStart && _musicDataPosition == _metaDataStart && _bytesLeftInChunk > 0)
-    {
-        if (!_handleChunkedMetadata(stream))
-            return;
-    }
+    if (_metaDataStart && _musicDataPosition == _metaDataStart &&
+        _bytesLeftInChunk > 0 && !_handleChunkedMetadata(stream))
+        return;
 
     // -1 means the chunk-size line/framing is incomplete;
-    // _nextChunkSize() will resume reading/parsing on the next call.
-    if (_bytesLeftInChunk < 1)
-    {
-        _bytesLeftInChunk = _nextChunkSize(stream);
-        if (_bytesLeftInChunk == -1)
-        {
-            log_v("chunksize not fully read");
-            return;
-        }
+    // _handleChunkBoundary() will resume reading/parsing on the next call.
+    if (_bytesLeftInChunk < 1 && !_handleChunkBoundary(stream))
+        return;
 
-        if (!_bytesLeftInChunk)
-        {
-            _remainingBytes = 0;
-            return;
-        }
-
-        log_v("next chunk size: %d", _bytesLeftInChunk);
-    }
+    if (!_bytesLeftInChunk && !_remainingBytes) // eof
+        return;
 
     if (_ringbuffer_handle)
     {
