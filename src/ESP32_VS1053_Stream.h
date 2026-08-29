@@ -128,6 +128,7 @@ private:
     const char *_parsePlaylist();
     void _setupStream();
     void _handleStream(WiFiClient *stream);
+    void _handleMetaData(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
     bool _handleChunkedMetadata(WiFiClient *stream);
     void _handleLocalFile();
