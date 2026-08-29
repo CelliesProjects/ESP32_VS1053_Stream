@@ -925,13 +925,19 @@ void ESP32_VS1053_Stream::loop()
     const auto now = millis();
     const auto currentStallTimeMS = now - _streamStallStartMS;
 
-    if (!data && _streamStallStartMS && !_ringbuffer_handle &&
+    if (!data && _streamStallStartMS &&
         currentStallTimeMS > VS1053_STREAM_TIMEOUT_MS)
     {
-        log_v("Stream timeout %lu ms", VS1053_STREAM_TIMEOUT_MS);
+        log_w("Stream timeout %lu ms", VS1053_STREAM_TIMEOUT_MS);
         if (_errorCallback)
             _errorCallback(ERROR_STREAM_TIMEOUT);
-        _eofStream();
+
+        if (!_ringbuffer_handle)
+        {
+            _eofStream();
+            return;
+        }
+        _streamStallStartMS = 0;
         return;
     }
 
