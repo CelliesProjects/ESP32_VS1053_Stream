@@ -825,10 +825,7 @@ bool ESP32_VS1053_Stream::_handleChunkBoundary(WiFiClient *stream)
 {
     _bytesLeftInChunk = _nextChunkSize(stream);
     if (_bytesLeftInChunk == -1)
-    {
-        log_v("chunksize not fully read");
         return false;
-    }
 
     if (!_bytesLeftInChunk)
     {
