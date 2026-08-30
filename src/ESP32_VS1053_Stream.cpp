@@ -630,7 +630,7 @@ void ESP32_VS1053_Stream::_streamToRingBuffer(WiFiClient *stream)
     size_t bytesToRingBuffer = 0;
     [[maybe_unused]] const auto startTimeMS = millis();
 
-    const size_t MAX_MOVE = size() ? 2048 : 512; // everything without a size is radio so low bitrate
+    const size_t MAX_MOVE = (xRingbufferGetCurFreeSize(_ringbuffer_handle) < LOW_LEVEL) ? 4096 : 1024;
 
     if (_musicDataPosition < _metaDataStart &&
         xRingbufferGetCurFreeSize(_ringbuffer_handle) && stream->available())
@@ -737,7 +737,7 @@ void ESP32_VS1053_Stream::_chunkedStreamToRingBuffer(WiFiClient *stream)
     [[maybe_unused]] const auto startTimeMS = millis();
     size_t bytesToRingBuffer = 0;
 
-    const size_t MAX_MOVE = size() ? 2048 : 512; // everything without a size is radio so low bitrate
+    const size_t MAX_MOVE = (xRingbufferGetCurFreeSize(_ringbuffer_handle) < VS1053_PSRAM_BUFFER_LOW) ? 4096 : 1024;
 
     if (_bytesLeftInChunk > 0 && _musicDataPosition != _metaDataStart &&
         xRingbufferGetCurFreeSize(_ringbuffer_handle) && stream->available())
