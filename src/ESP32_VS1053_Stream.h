@@ -14,7 +14,7 @@
 #define VS1053_ICY_METADATA true
 #define VS1053_CONNECT_TIMEOUT_MS 500
 #define VS1053_CONNECT_TIMEOUT_MS_SSL 1000
-#define VS1053_STREAM_TIMEOUT_MS 900
+#define VS1053_STREAM_TIMEOUT_MS 500
 #define VS1053_MAX_URL_LENGTH 2048
 #define VS1053_MAX_REDIRECT_COUNT 3
 
@@ -222,7 +222,7 @@ private:
     const char *ERROR_RINGBUFFER_EMPTY = "Ringbuffer empty";
     const char *ERROR_RINGBUFFER_FAIL = "Ringbuffer error";
     const char *ERROR_CONNECTION_LOST = "Connection lost";
-    const char *ERROR_STREAM_TIMEOUT = "Stream timeout";
+    const char *ERROR_STREAM_TIMEOUT = "Stream stalled %d ms";
     const char *ERROR_COULD_NOT_OPEN = "Could not open";
     const char *ERROR_NOT_PLAYABLE = "Not playable";
     const char *ERROR_HLS_UNSUPPORTED = "HLS streams not supported";
