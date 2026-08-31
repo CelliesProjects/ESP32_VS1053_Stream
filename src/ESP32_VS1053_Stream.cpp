@@ -1025,6 +1025,7 @@ void ESP32_VS1053_Stream::stopSong()
     _bytesLeftInChunk = 0;
     _chunkState = 0;
     _chunkHeaderIndex = 0;
+    _metadataNeeded = 0;
     _metaIndex = 0;
     _dataSeen = false;
 }
