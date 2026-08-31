@@ -712,7 +712,7 @@ void ESP32_VS1053_Stream::_handleStream(WiFiClient *stream)
         [[maybe_unused]] const auto startTimeMS = millis();
         size_t bytesToDecoder = 0;
 
-        const size_t MAX_MOVE = size() ? 2048 : 512; // everything without a size is radio so low bitrate
+        const size_t MAX_MOVE = 2048;
 
         while (_musicDataPosition < _metaDataStart && bytesToDecoder < MAX_MOVE &&
                stream->available() && _vs1053->data_request())
@@ -864,7 +864,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
         [[maybe_unused]] const auto startTimeMS = millis();
         size_t bytesToDecoder = 0;
 
-        const size_t MAX_MOVE = size() ? 2048 : 512; // everything without a size is radio so low bitrate
+        const size_t MAX_MOVE = 2048;
 
         while (_bytesLeftInChunk > 0 && _musicDataPosition < _metaDataStart && bytesToDecoder < MAX_MOVE &&
                stream->available() && _vs1053->data_request())
@@ -878,7 +878,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
             _musicDataPosition += _metaDataStart ? inBuffer : 0;
             bytesToDecoder += inBuffer;
         }
-        log_d("%lu ms moving %i bytes chunked->decoder", millis() - startTimeMS, bytesToDecoder);
+        log_v("%lu ms moving %i bytes chunked->decoder", millis() - startTimeMS, bytesToDecoder);
     }
 }
 
@@ -934,11 +934,10 @@ void ESP32_VS1053_Stream::loop()
         if (_errorCallback)
         {
             char *error = reinterpret_cast<char *>(_localbuffer);
-            snprintf(error, sizeof(_localbuffer), ERROR_STREAM_TIMEOUT, VS1053_STREAM_TIMEOUT_MS);
+            snprintf(error, sizeof(_localbuffer), ERROR_STREAM_TIMEOUT, currentStallTimeMS);
             _errorCallback(error);
-
-            log_v("%s", error);
         }
+        log_e("Stream timeout %lu ms", currentStallTimeMS);
 
         _eofStream();
         return;
@@ -953,7 +952,7 @@ void ESP32_VS1053_Stream::loop()
 
     if (data && _streamStallStartMS)
     {
-        log_v("Stream stalled for %lu ms", currentStallTimeMS);
+        log_i("Stream stalled for %lu ms", currentStallTimeMS);
 
         if (currentStallTimeMS > VS1053_STREAM_TIMEOUT_MS && _errorCallback)
         {
