@@ -895,6 +895,13 @@ void ESP32_VS1053_Stream::_feedDecoder(WiFiClient *stream)
 
 void ESP32_VS1053_Stream::loop()
 {
+    if (_playingChunk)
+    {
+        if (_handleNonBlockingChunk())
+            _playingChunk = false;
+        return;
+    }
+
     if (_playingFile)
     {
         _handleLocalFile();
@@ -979,11 +986,24 @@ void ESP32_VS1053_Stream::loop()
 
 bool ESP32_VS1053_Stream::isRunning()
 {
-    return _http != nullptr || _playingFile;
+    return _http != nullptr ||
+           _playingFile ||
+           _playingChunk;
 }
 
 void ESP32_VS1053_Stream::stopSong()
 {
+    if (_playingChunk)
+    {
+        _playingChunk = false;
+        _chunk = nullptr;
+        _chunkRemaining = 0;
+
+        _vs1053->stopSong();
+        _vs1053->setVolume(0);
+        return;
+    }
+
     if (!_http && !_playingFile)
         return;
 
@@ -1474,4 +1494,44 @@ bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len, bool stopSong)
         _vs1053->setVolume(0);
     }
     return true;
+}
+
+bool ESP32_VS1053_Stream::playChunkNB(uint8_t *chunk, size_t len)
+{
+    if (!_vs1053 || !chunk || !len || isRunning())
+        return false;
+
+    _chunk = chunk;
+    _chunkRemaining = len;
+    _playingChunk = true;
+
+    _vs1053->setVolume(_volume);
+
+    return true;
+}
+
+bool ESP32_VS1053_Stream::_handleNonBlockingChunk()
+{
+    if (!_chunkRemaining)
+        return true;
+
+    if (!_vs1053->data_request())
+        return false;
+
+    const size_t len = min((size_t)VS1053_PLAYBUFFER_SIZE, _chunkRemaining);
+
+    _vs1053->playChunk(_chunk, len);
+
+    _chunk += len;
+    _chunkRemaining -= len;
+
+    if (!_chunkRemaining)
+    {
+        _vs1053->stopSong();
+        _vs1053->setVolume(0);
+        _chunk = nullptr;
+        return true;
+    }
+
+    return false;
 }
