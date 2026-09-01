@@ -145,7 +145,6 @@ private:
 
     bool _playChunkNB();
     bool _stopChunk = false;
-
     uint8_t *_chunk = nullptr;
     size_t _chunkRemaining = 0;
     bool _playingChunk = false;
