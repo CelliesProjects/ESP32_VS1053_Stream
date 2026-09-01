@@ -104,7 +104,8 @@ public:
         See https://www.vlsi.fi/fileadmin/datasheets/vs1053.pdf section 9.6.3 */
 
     bool playChunk(uint8_t *data, size_t len, bool stopSong = true);
-    bool playChunkNB(uint8_t *chunk, size_t len);
+    bool playChunkNB(uint8_t *chunk, size_t len, bool stopChunk = true);
+
 
 private:
     VS1053 *_vs1053;
@@ -142,7 +143,8 @@ private:
     void _streamToRingBuffer(WiFiClient *stream);
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
 
-    bool _handleNonBlockingChunk();
+    bool _playChunkNB();
+    bool _stopChunk = false;
 
     uint8_t *_chunk = nullptr;
     size_t _chunkRemaining = 0;

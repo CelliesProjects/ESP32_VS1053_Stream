@@ -370,7 +370,7 @@ bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
 bool ESP32_VS1053_Stream::connectToHost(const char *url, const char *username,
                                         const char *pwd, size_t offset)
 {
-    if (!_vs1053 || _http || _playingFile || !WiFi.isConnected())
+    if (!_vs1053 || isRunning())
     {
         log_e("system error");
         if (_errorCallback)
@@ -897,7 +897,7 @@ void ESP32_VS1053_Stream::loop()
 {
     if (_playingChunk)
     {
-        if (_handleNonBlockingChunk())
+        if (_playChunkNB())
             _playingChunk = false;
         return;
     }
@@ -1094,7 +1094,7 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename)
 
 bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const size_t offset)
 {
-    if (!_vs1053 || _playingFile || _http)
+    if (!_vs1053 || isRunning())
         return false;
 
     _file = fs.open(filename, FILE_READ, false);
@@ -1496,21 +1496,21 @@ bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len, bool stopSong)
     return true;
 }
 
-bool ESP32_VS1053_Stream::playChunkNB(uint8_t *chunk, size_t len)
+bool ESP32_VS1053_Stream::playChunkNB(uint8_t *chunk, size_t len, bool stopChunk)
 {
     if (!_vs1053 || !chunk || !len || isRunning())
         return false;
 
+    _playingChunk = true;
     _chunk = chunk;
     _chunkRemaining = len;
-    _playingChunk = true;
-
+    _stopChunk = stopChunk;
     _vs1053->setVolume(_volume);
 
     return true;
 }
 
-bool ESP32_VS1053_Stream::_handleNonBlockingChunk()
+bool ESP32_VS1053_Stream::_playChunkNB()
 {
     if (!_chunkRemaining)
         return true;
@@ -1527,8 +1527,11 @@ bool ESP32_VS1053_Stream::_handleNonBlockingChunk()
 
     if (!_chunkRemaining)
     {
-        _vs1053->stopSong();
-        _vs1053->setVolume(0);
+        if (_stopChunk)
+        {
+            _vs1053->stopSong();
+            _vs1053->setVolume(0);
+        }
         _chunk = nullptr;
         return true;
     }
