@@ -1515,14 +1515,14 @@ bool ESP32_VS1053_Stream::_playChunkNB()
     if (!_chunkRemaining)
         return true;
 
-    size_t bytesTodecoder = 0;
-    while (_vs1053->data_request() && _vs1053->data_request() && _chunkRemaining && bytesTodecoder < 512)
+    size_t bytesToDecoder = 0;
+    while (_vs1053->data_request() && _chunkRemaining && bytesTodecoder < 512)
     {
         const size_t len = min(VS1053_PLAYBUFFER_SIZE, _chunkRemaining);
         _vs1053->playChunk(_chunk, len);
         _chunk += len;
         _chunkRemaining -= len;
-        bytesTodecoder += len;
+        bytesToDecoder += len;
     }
 
     if (!_chunkRemaining)
