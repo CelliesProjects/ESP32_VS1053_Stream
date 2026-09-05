@@ -1197,10 +1197,14 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
     if (_remainingBytes && _file.position() < _file.size())
     {
+        constexpr size_t MAX_MOVE = 2048;
+
+        static_assert(MAX_MOVE <= sizeof(_localbuffer), "MAX_MOVE must be smaller than sizeof(_localbuffer)");
+
         const size_t free = xRingbufferGetCurFreeSize(_ringbuffer_handle);
-        if (free > 1024)
+        if (free >= MAX_MOVE) // if enough data is available, try to read in 2kB blocks which measures as optimal on SPI SD
         {
-            const size_t toRead = min(sizeof(_localbuffer), free);
+            const size_t toRead = min(MAX_MOVE, free);
             const size_t avail = min(toRead, (size_t)_remainingBytes);
             const size_t bytes = _file.read(_localbuffer, avail);
             if (bytes)
@@ -1220,7 +1224,8 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
     if (_remainingBytes)
         _playFromRingBuffer();
-    else
+
+    if (!_remainingBytes)
         _eofStream();
 }
 
@@ -1230,7 +1235,7 @@ void ESP32_VS1053_Stream::_handleLocalFileNoPSRAM()
     {
         if (_remainingBytes)
         {
-            constexpr int32_t MAX_MOVE = 1024;
+            constexpr int32_t MAX_MOVE = 2048;
 
             static_assert(MAX_MOVE <= sizeof(_localbuffer), "MAX_MOVE must be smaller than sizeof(_localbuffer)");
 
