@@ -1207,12 +1207,9 @@ void ESP32_VS1053_Stream::_handleLocalFile()
             const size_t bytes = _file.read(_localbuffer, avail);
 
             if (!bytes)
-            {
                 log_w("could not read from file with %i bytes left", _remainingBytes);
-                return;
-            }
 
-            if (xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0) == pdFALSE)
+            if (bytes && xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0) == pdFALSE)
             {
                 log_v("ringbuffer failed to receive %i bytes. Closing stream.", bytes);
                 if (_errorCallback)
