@@ -1197,28 +1197,30 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
     if (_remainingBytes && _file.position() < _file.size())
     {
-        constexpr size_t MAX_MOVE = 2048;
-
-        static_assert(MAX_MOVE <= sizeof(_localbuffer), "MAX_MOVE must be smaller than sizeof(_localbuffer)");
-
         const size_t free = xRingbufferGetCurFreeSize(_ringbuffer_handle);
-        if (free >= MAX_MOVE) // if enough data is available, try to read in 2kB blocks which measures as optimal on SPI SD
-        {
-            const size_t toRead = min(MAX_MOVE, free);
-            const size_t avail = min(toRead, (size_t)_remainingBytes);
-            const size_t bytes = _file.read(_localbuffer, avail);
-            if (bytes)
-            {
-                if (xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0) == pdFALSE)
-                {
-                    log_v("ringbuffer failed to receive %i bytes. Closing stream.", bytes);
-                    if (_errorCallback)
-                        _errorCallback(ERROR_RINGBUFFER_FAIL);
-                    _remainingBytes = 0;
-                }
+        const size_t maxMove = (free < VS1053_PSRAM_BUFFER_LOW) ? sizeof(_localbuffer) : 2048;
 
-                log_d("%lu ms moving %i bytes localfile->ringbuffer", millis() - startTimeMS, bytes);
+        if (free >= maxMove) // if enough data is available, try to read in 2kB blocks which measures as optimal on SPI SD
+        {
+            const size_t toRead = min(maxMove, free);
+            const size_t avail = min(toRead, static_cast<size_t>(_remainingBytes));
+            const size_t bytes = _file.read(_localbuffer, avail);
+
+            if (!bytes)
+            {
+                log_w("could not read from file with %i bytes left", _remainingBytes);
+                return;
             }
+
+            if (xRingbufferSend(_ringbuffer_handle, _localbuffer, bytes, 0) == pdFALSE)
+            {
+                log_v("ringbuffer failed to receive %i bytes. Closing stream.", bytes);
+                if (_errorCallback)
+                    _errorCallback(ERROR_RINGBUFFER_FAIL);
+                _remainingBytes = 0;
+                return;
+            }
+            log_d("%lu ms moving %i bytes localfile->ringbuffer", millis() - startTimeMS, bytes);
         }
     }
 
