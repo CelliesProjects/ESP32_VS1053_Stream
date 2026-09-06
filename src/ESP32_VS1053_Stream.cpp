@@ -1202,9 +1202,8 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 
         if (free >= maxMove) // if enough data is available, try to read in 2kB blocks which measures as optimal on SPI SD
         {
-            const size_t toRead = min(maxMove, free);
-            const size_t avail = min(toRead, static_cast<size_t>(_remainingBytes));
-            const size_t bytes = _file.read(_localbuffer, avail);
+            const size_t toRead = min(maxMove, static_cast<size_t>(_remainingBytes));
+            const size_t bytes = _file.read(_localbuffer, toRead);
 
             if (!bytes)
                 log_w("could not read from file with %i bytes left", _remainingBytes);
