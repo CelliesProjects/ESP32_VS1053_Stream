@@ -882,7 +882,7 @@ void ESP32_VS1053_Stream::_handleChunkedStream(WiFiClient *stream)
     }
 }
 
-void ESP32_VS1053_Stream::_feedDecoder(WiFiClient *stream)
+void ESP32_VS1053_Stream::_handleData(WiFiClient *stream)
 {
     if (_chunkedResponse)
         _handleChunkedStream(stream);
@@ -959,7 +959,7 @@ void ESP32_VS1053_Stream::loop()
 
     if (data && _streamStallStartMS)
     {
-        log_i("Stream stalled for %lu ms", currentStallTimeMS);
+        log_v("Stream stalled for %lu ms", currentStallTimeMS);
 
         if (currentStallTimeMS > VS1053_STREAM_TIMEOUT_MS && _errorCallback)
         {
@@ -972,7 +972,7 @@ void ESP32_VS1053_Stream::loop()
     }
 
     if (data)
-        _feedDecoder(stream);
+        _handleData(stream);
 
     if (!data && _ringbuffer_handle)
     {
@@ -1527,16 +1527,14 @@ bool ESP32_VS1053_Stream::_playChunkNB()
         bytesToDecoder += len;
     }
 
-    if (!_chunkRemaining)
-    {
-        if (_stopChunk)
-        {
-            _vs1053->stopSong();
-            _vs1053->setVolume(0);
-        }
-        _chunk = nullptr;
-        return true;
-    }
+    if (_chunkRemaining)
+        return false;
 
-    return false;
+    if (_stopChunk)
+    {
+        _vs1053->stopSong();
+        _vs1053->setVolume(0);
+    }
+    _chunk = nullptr;
+    return true;
 }

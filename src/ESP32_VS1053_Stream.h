@@ -130,13 +130,13 @@ private:
     bool _isPlaylistContentType();
     const char *_parsePlaylist();
     void _setupStream();
+    void _handleData(WiFiClient *stream);
     void _handleStream(WiFiClient *stream);
     void _handleMetaData(WiFiClient *stream);
     void _handleChunkedStream(WiFiClient *stream);
     bool _handleChunkedMetadata(WiFiClient *stream);
     void _handleLocalFile();
     void _handleLocalFileNoPSRAM();
-    void _feedDecoder(WiFiClient *stream);
     void _allocateRingbuffer();
     void _deallocateRingbuffer();
     void _playFromRingBuffer();
