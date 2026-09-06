@@ -959,7 +959,7 @@ void ESP32_VS1053_Stream::loop()
 
     if (data && _streamStallStartMS)
     {
-        log_d("Stream stalled for %lu ms", currentStallTimeMS);
+        log_v("Stream stalled for %lu ms", currentStallTimeMS);
 
         if (currentStallTimeMS > VS1053_STREAM_TIMEOUT_MS && _errorCallback)
         {
