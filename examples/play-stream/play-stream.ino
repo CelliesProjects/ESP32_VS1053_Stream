@@ -96,7 +96,7 @@ void setup()
     Serial.println("Starting radio stream");
 
     // Connect to the radio stream
-    audio.connectToHost("http://icecast.omroep.nl/radio6-bb-mp3");
+    audio.connectToHost("http://icecast.omroep.nl/radio2-bb-mp3");
 
     if (!audio.isRunning())
         Serial.println("No audio running");
