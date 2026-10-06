@@ -1101,7 +1101,7 @@ size_t ESP32_VS1053_Stream::_fileLastMP3Byte()
         if (memcmp(ID3v2_header, "ID3", 3) == 0)
         {
             size_t ID3v2_size = 0;
-            
+
             log_i("ID3v2_header[9] -> %02X\n", ID3v2_header[9]);
             ID3v2_size |= (size_t)ID3v2_header[9];
             log_i("ID3v2_header[8] -> %02X\n", ID3v2_header[8]);
@@ -1223,6 +1223,14 @@ void ESP32_VS1053_Stream::_handleLocalFile()
 {
     log_d("file pos: %lu", _file.position());
     log_d("remaining bytes: %lu", _remainingBytes);
+
+    if (_wavoffset) // wav file, read and send riff header 44 bytes and move to desired offset
+    {
+        _file.read(_localbuffer, 44); // riff header
+        xRingbufferSend(_ringbuffer_handle, _localbuffer, 44, 0);
+        _file.seek(_wavoffset);
+        _wavoffset = 0;
+    }
 
     _updateBitRate();
 
