@@ -106,7 +106,6 @@ public:
     bool playChunk(uint8_t *data, size_t len, bool stopSong = true);
     bool playChunkNB(uint8_t *chunk, size_t len, bool stopChunk = true);
 
-
 private:
     VS1053 *_vs1053;
     HTTPClient *_http;
@@ -183,6 +182,8 @@ private:
     uint32_t _bitrate = 0;
 
     size_t _fileLastWAVByte();
+    size_t _wavoffset = 0;
+    size_t _fileLastMP3Byte();
 
     size_t _bufferIndex = 0;
     size_t _bufferFill = 0;
