@@ -265,7 +265,7 @@ void loop() {
 On some recent ESP32 Arduino Core versions there are some issues with LittleFS and FFat.  
 Some versions have issues with the tooling for these filesystems.  
 
-[Arduino 3.2.1 version](https://github.com/espressif/arduino-esp32/releases/tag/3.2.1) is tested and does work with these filesystems.
+[Arduino version 3.2.1](https://github.com/espressif/arduino-esp32/releases/tag/3.2.1) is tested and does work with these filesystems.
 
 ## Tips for troublefree streaming
 
