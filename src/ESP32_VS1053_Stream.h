@@ -106,7 +106,6 @@ public:
     bool playChunk(uint8_t *data, size_t len, bool stopSong = true);
     bool playChunkNB(uint8_t *chunk, size_t len, bool stopChunk = true);
 
-
 private:
     VS1053 *_vs1053;
     HTTPClient *_http;
@@ -181,6 +180,7 @@ private:
     unsigned long _bitrateTimer = 0;
     uint8_t _decoderSyncAttempts = 0;
     uint32_t _bitrate = 0;
+    bool _endMute = true;
 
     size_t _fileLastWAVByte();
 
@@ -205,8 +205,6 @@ private:
     unsigned long _bufferStallStartMS = 0;
     uint8_t _redirectCount = 0;
     bool _isHLS = false;
-
-    bool _endMute = true;
 
     const char *CONTENT_TYPE = "Content-Type";
     const char *ICY_NAME = "icy-name";
