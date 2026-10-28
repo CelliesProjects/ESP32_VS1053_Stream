@@ -349,7 +349,8 @@ bool connectToFile(filesystem, filename, offset);
 bool connectToFile(filesystem, filename, offset, muteOnEof = true);
 ```
 - `filesystem` has to be mounted.  
-- If `muteOnEof` is set to false, the decoder is not muted after the file is fed to the decoder.  
+- `muteOnEof` is an optional argument, defaults to `true` and can be omitted.
+- If `muteOnEof` is set to `false`, the decoder is not muted after the file is fed to the decoder.  
 ---
 ### Stop running audio
 ```c++
