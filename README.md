@@ -346,7 +346,6 @@ bool connectToFile(filesystem, filename, offset);
 bool connectToFile(filesystem, filename, offset, muteEof = true);
 ```
 - If `muteEof` is set to false, the decoder is not muted after the file is fed to the decoder.  
-Sometimes needed for very small files.
 - `filesystem` has to be mounted.  
 ---
 ### Stop running audio

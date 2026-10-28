@@ -56,7 +56,7 @@ public:
     bool connectToHost(const char *url, const char *username, const char *pwd, const size_t offset);
 
     bool connectToFile(fs::FS &fs, const char *filename);
-    bool connectToFile(fs::FS &fs, const char *filename, const size_t offset, bool endMute = true);
+    bool connectToFile(fs::FS &fs, const char *filename, const size_t offset, bool muteEof = true);
 
     void setCodecCB(codec_callback_t cb);
     void clearCodecCB();
@@ -180,7 +180,7 @@ private:
     unsigned long _bitrateTimer = 0;
     uint8_t _decoderSyncAttempts = 0;
     uint32_t _bitrate = 0;
-    bool _endMute = true;
+    bool _muteEof = true;
 
     size_t _fileLastWAVByte();
 
