@@ -56,7 +56,7 @@ public:
     bool connectToHost(const char *url, const char *username, const char *pwd, const size_t offset);
 
     bool connectToFile(fs::FS &fs, const char *filename);
-    bool connectToFile(fs::FS &fs, const char *filename, const size_t offset);
+    bool connectToFile(fs::FS &fs, const char *filename, const size_t offset, bool muteOnEof = true);
 
     void setCodecCB(codec_callback_t cb);
     void clearCodecCB();
@@ -103,9 +103,8 @@ public:
         e.g. uint8_t rtone[4]  = {12, 15, 15, 15}; // initialize bass & treble
         See https://www.vlsi.fi/fileadmin/datasheets/vs1053.pdf section 9.6.3 */
 
-    bool playChunk(uint8_t *data, size_t len, bool stopSong = true);
-    bool playChunkNB(uint8_t *chunk, size_t len, bool stopChunk = true);
-
+    bool playChunk(uint8_t *data, size_t len, bool muteOnEof = true);
+    bool playChunkNB(uint8_t *chunk, size_t len, bool muteOnEof = true);
 
 private:
     VS1053 *_vs1053;
@@ -144,10 +143,10 @@ private:
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
 
     bool _playChunkNB();
-    bool _stopChunk = false;
     uint8_t *_chunk = nullptr;
     size_t _chunkRemaining = 0;
     bool _playingChunk = false;
+    bool _muteOnEof = true;
 
     codec_callback_t _codecCallback = nullptr;
     bitrate_callback_t _bitrateCallback = nullptr;
