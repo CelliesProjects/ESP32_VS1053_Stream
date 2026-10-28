@@ -411,7 +411,7 @@ size_t position();
 ```c++
 void bufferStatus(size_t &used, size_t &capacity);
 ```
-- Note: A buffer will only be allocated if there is enough free psram.
+- Note: a buffer will only be allocated if there is enough free psram.
 ---
 # Event callback setup
 
