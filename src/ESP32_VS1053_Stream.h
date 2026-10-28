@@ -206,7 +206,7 @@ private:
     uint8_t _redirectCount = 0;
     bool _isHLS = false;
 
-    bool _endMute = false;
+    bool _endMute = true;
 
     const char *CONTENT_TYPE = "Content-Type";
     const char *ICY_NAME = "icy-name";
