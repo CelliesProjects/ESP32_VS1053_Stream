@@ -1007,7 +1007,7 @@ void ESP32_VS1053_Stream::stopSong()
     if (!_http && !_playingFile)
         return;
 
-    if (_muteEof)
+    if (_muteOnEof)
         _vs1053->setVolume(0);
 
     _remainingBytes = 0;
@@ -1093,7 +1093,7 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename)
     return connectToFile(fs, filename, 0, true);
 }
 
-bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const size_t offset, bool muteEof)
+bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const size_t offset, bool muteOnEof)
 {
     if (!_vs1053 || isRunning())
         return false;
@@ -1141,7 +1141,7 @@ bool ESP32_VS1053_Stream::connectToFile(fs::FS &fs, const char *filename, const 
     _bufferIndex = 0;
     _bufferFill = 0;
     _bitrateTimer = millis();
-    _muteEof = muteEof;
+    _muteOnEof = muteOnEof;
 
     return true;
 }
