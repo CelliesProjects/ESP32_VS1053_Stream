@@ -315,10 +315,12 @@ You can now see the hardware revision when you upload a sketch.
 ```c++
 bool startDecoder(CS, DCS, DREQ);
 ```
+---
 ### Check if VS1053 is responding
 ```c++
 bool isChipConnected();
 ```
+---
 ### Start or resume a stream
 ```c++
 bool connectToHost(url);
@@ -332,43 +334,48 @@ bool connectToHost(url, user, pwd);
 ```c++
 bool connectToHost(url, user, pwd, offset);
 ```
-Note: When a stream does not start in this library but it does play on your desktop or laptop you can try increasing the connection timeout.  
-You can do this in `ESP32_VS1053_Stream.h` by increasing these values:  
-```c++
-#define VS1053_CONNECT_TIMEOUT_MS 500
-#define VS1053_CONNECT_TIMEOUT_MS_SSL 1000
-```
-### Start or resume a local file
+---
+### Start or resume a local file  
 ```c++
 bool connectToFile(filesystem, filename);
 ```
 ```c++
 bool connectToFile(filesystem, filename, offset);
 ```
-`filesystem` has to be mounted.  
-### Stop a running stream
+```c++
+bool connectToFile(filesystem, filename, offset, muteEof = true);
+```
+- If `muteEof` is set to false, the decoder is not muted after the file is fed to the decoder.  
+Sometimes needed for very small files.
+- `filesystem` has to be mounted.  
+---
+### Stop running audio
 ```c++
 void stopSong();
 ```
+---
 ### Feed the decoder
 ```c++
 void loop();
 ```
-This function has to called every couple of ms to feed the decoder with data.  
-For bitrates up to 320kbps somewhere between 2-5 ms is about right.
-### Check if stream is running
+- This function has to called every couple of ms to feed the decoder with data.  
+---
+### Check if audio is running
 ```c++
 bool isRunning();
 ```
+---
 ### Get the current volume
 ```c++
 uint8_t getVolume();
 ```
+---
 ### Set the volume
 ```c++
 void setVolume(newVolume);
 ```
-`newVolume` should be in the range 0-100.
+- `newVolume` should be in the range 0-100.
+---
 ### Set bass and treble
 ```c++
 uint8_t rtone[4]  = {toneha, tonehf, tonela, tonelf};
@@ -381,28 +388,31 @@ tonehf       = <0..15>        // Setting treble frequency lower limit x 1000 Hz
 tonela       = <0..15>        // Setting bass gain (0 = off, 1dB steps)
 tonelf       = <0..15>        // Setting bass frequency lower limit x 10 Hz
 ```
-### Get the current stream url
+---
+### Get the current audio url or path
 ```c++
 const char* lastUrl();
 ```
-The current stream url might differ from the request url if the request url points to a playlist.
+- The current stream url might differ from the request url if the request url points to a playlist.
+---
 ### Get the filesize
 ```c++
 size_t size();
 ```
-Returns `0` if the stream is a radio stream.
+- Returns `0` if the stream is a radio stream.
+---
 ### Get the current position in the file
 ```c++
 size_t position();
 ```
-Returns `0` if the stream is a radio stream.
+- Returns `0` if the stream is a radio stream.
+---
 ### Get the buffer fill status
 ```c++
 void bufferStatus(size_t &used, size_t &capacity);
 ```
-
-Note: A buffer will only be allocated if there is enough free psram.
-
+- Note: A buffer will only be allocated if there is enough free psram.
+---
 # Event callback setup
 
 With event callbacks you can run user defined routines on stream events.  
