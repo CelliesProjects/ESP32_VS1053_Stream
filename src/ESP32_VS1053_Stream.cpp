@@ -1479,7 +1479,7 @@ void ESP32_VS1053_Stream::clearErrorCB()
     _errorCallback = nullptr;
 }
 
-bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len, bool stopSong)
+bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len, bool muteOnEof)
 {
     if (!_vs1053)
         return false;
@@ -1493,7 +1493,7 @@ bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len, bool stopSong)
     _vs1053->setVolume(_volume);
     _vs1053->playChunk(data, len);
 
-    if (stopSong)
+    if (muteOnEof)
     {
         _vs1053->stopSong();
         _vs1053->setVolume(0);
@@ -1501,7 +1501,7 @@ bool ESP32_VS1053_Stream::playChunk(uint8_t *data, size_t len, bool stopSong)
     return true;
 }
 
-bool ESP32_VS1053_Stream::playChunkNB(uint8_t *chunk, size_t len, bool stopChunk)
+bool ESP32_VS1053_Stream::playChunkNB(uint8_t *chunk, size_t len, bool muteOnEof)
 {
     if (!_vs1053 || !chunk || !len || isRunning())
         return false;
@@ -1509,7 +1509,7 @@ bool ESP32_VS1053_Stream::playChunkNB(uint8_t *chunk, size_t len, bool stopChunk
     _playingChunk = true;
     _chunk = chunk;
     _chunkRemaining = len;
-    _stopChunk = stopChunk;
+    _muteOnEof = muteOnEof;
     _vs1053->setVolume(_volume);
 
     return true;
@@ -1530,7 +1530,7 @@ bool ESP32_VS1053_Stream::_playChunkNB()
     if (_chunkRemaining)
         return false;
 
-    if (_stopChunk)
+    if (_muteOnEof)
     {
         _vs1053->stopSong();
         _vs1053->setVolume(0);

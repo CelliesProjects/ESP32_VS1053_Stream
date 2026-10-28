@@ -103,8 +103,8 @@ public:
         e.g. uint8_t rtone[4]  = {12, 15, 15, 15}; // initialize bass & treble
         See https://www.vlsi.fi/fileadmin/datasheets/vs1053.pdf section 9.6.3 */
 
-    bool playChunk(uint8_t *data, size_t len, bool stopSong = true);
-    bool playChunkNB(uint8_t *chunk, size_t len, bool stopChunk = true);
+    bool playChunk(uint8_t *data, size_t len, bool muteOnEof = true);
+    bool playChunkNB(uint8_t *chunk, size_t len, bool muteOnEof = true);
 
 private:
     VS1053 *_vs1053;
@@ -143,10 +143,10 @@ private:
     void _chunkedStreamToRingBuffer(WiFiClient *stream);
 
     bool _playChunkNB();
-    bool _stopChunk = false;
     uint8_t *_chunk = nullptr;
     size_t _chunkRemaining = 0;
     bool _playingChunk = false;
+    bool _muteOnEof = true;
 
     codec_callback_t _codecCallback = nullptr;
     bitrate_callback_t _bitrateCallback = nullptr;
@@ -180,7 +180,6 @@ private:
     unsigned long _bitrateTimer = 0;
     uint8_t _decoderSyncAttempts = 0;
     uint32_t _bitrate = 0;
-    bool _muteOnEof = true;
 
     size_t _fileLastWAVByte();
 
