@@ -262,8 +262,8 @@ void loop() {
 ```
 
 ## Known issues
-On some recent ESP32 Arduino Core versions there are some issues with LittleFS and FFat.  
-Some versions have issues with the tooling for these filesystems.  
+On some recent ESP32 Arduino Core versions there are some issues with playback from LittleFS and FFat.  
+There are also some issues with the tooling for these filesystems -in PIO-.  
 
 [Arduino version 3.2.1](https://github.com/espressif/arduino-esp32/releases/tag/3.2.1) is tested and does work with these filesystems.
 
@@ -454,7 +454,6 @@ Clear the metadata callback.
 void setEofCB(callback);
 ```
 Set a callback on the end-of-file.  
-Also called if a stream or file times out/errors.
 
 You can use the eof callback to code a playlist.  
 Use `connectToHost()` or `connectToFile()` inside the eof callback to start the next item.
