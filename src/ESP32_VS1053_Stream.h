@@ -56,7 +56,7 @@ public:
     bool connectToHost(const char *url, const char *username, const char *pwd, const size_t offset);
 
     bool connectToFile(fs::FS &fs, const char *filename);
-    bool connectToFile(fs::FS &fs, const char *filename, const size_t offset);
+    bool connectToFile(fs::FS &fs, const char *filename, const size_t offset, bool endMute = true);
 
     void setCodecCB(codec_callback_t cb);
     void clearCodecCB();
@@ -205,6 +205,8 @@ private:
     unsigned long _bufferStallStartMS = 0;
     uint8_t _redirectCount = 0;
     bool _isHLS = false;
+
+    bool _endMute = false;
 
     const char *CONTENT_TYPE = "Content-Type";
     const char *ICY_NAME = "icy-name";
