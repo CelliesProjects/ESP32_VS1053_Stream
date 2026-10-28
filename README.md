@@ -13,7 +13,7 @@ Also plays mp3, m4a, ogg and flac files from local media.
 - Streams can be chunked.  
 - Also plays **mp3**, **m4a**, **ogg** and **flac** files from sdcard or any mounted filesystem.  
 
-Very lightweight, has a binary footprint of less than 7kB excluding the psram buffer.
+Very lightweight, has a binary footprint < 7kB excluding the psram buffer.
 
 [ESP_VS1053_Library](https://github.com/baldram/ESP_VS1053_Library) is used to communicate with the decoder.
 
@@ -262,7 +262,10 @@ void loop() {
 ```
 
 ## Known issues
-`Ogg` and `flac` files can not be resumed from an offset without first playing a couple of seconds from the start of the file. 
+On some recent ESP32 Arduino Core versions there are some issues with LittleFS and FFat.  
+Some versions have issues with the tooling for these filesystems.  
+
+[Arduino 3.2.1 version](https://github.com/espressif/arduino-esp32/releases/tag/3.2.1) is tested and does work with these filesystems.
 
 ## Tips for troublefree streaming
 
